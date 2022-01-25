@@ -1,1 +1,1 @@
-# OS-RISKV
+# OS-RISCV
