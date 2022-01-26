@@ -1,6 +1,12 @@
-# RISCV64之旅
+# RISCV64 之旅
 
 ## RISC-V
+
+### 一些features
+
+启动必然在M级(?)
+
+Trap包括垂直Trap(异常级上升)和水平Trap(异常级不变)
 
 ### 寄存器列表
 
@@ -68,14 +74,25 @@ printf("x=%d\n", x)
 
 ### 机器特权态
 
+#### 三种模式
+
 最高级: 机器模式(M)
 
 次高级: 监管者模式(S)
 
 最低级: 用户模式(U)
 
+#### CSRs
 
+全称 Control and Status Registers
 
+在不同模式下有不同的 CSRs
+
+##### Machine(CSRs)
+
+| 寄存器      | 作用    |
+|----------|-------|
+| mscratch | M栈顶指针 |
 
 
 
