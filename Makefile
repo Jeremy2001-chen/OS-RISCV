@@ -9,6 +9,7 @@ init_dir	:=	$(kernel_dir)/init
 
 linkscript	:= 	$(linker_dir)/Qemu.ld
 vmlinux_img	:=	$(target_dir)/vmlinux.img
+vmlinux_asm	:= 	$(target_dir)/vmlinux_asm.txt
 
 modules := 	$(kernel_dir) $(user_dir)
 objects	:=	$(boot_dir)/*.o \
@@ -22,6 +23,7 @@ objects	:=	$(boot_dir)/*.o \
 
 build: $(modules)
 	$(LD) $(LDFLAGS) -T $(linkscript) -o $(vmlinux_img) $(objects)
+	$(OBJDUMP) -S $(vmlinux_img) > $(vmlinux_asm)
 
 $(modules):
 	$(MAKE) build --directory=$@
