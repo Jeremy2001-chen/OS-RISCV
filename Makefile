@@ -36,4 +36,7 @@ clean:
 run: clean build
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS)
 
+asm: clean build
+	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS) -d in_asm
+
 include include.mk
