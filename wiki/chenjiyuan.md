@@ -1,5 +1,29 @@
 # RISCV64 之旅
 
+## QEMU 
+安装5.0.0的版本
+
+首先下载
+
+```shell
+wget https://download.qemu.org/qemu-5.0.0.tar.xz
+```
+
+解压缩
+
+```shell
+tar xvJf qemu-5.0.0.tar.xz
+```
+
+进入该目录，并进行配置
+
+```shell
+cd qemu-5.0.0
+./configure
+```
+
+
+
 ## RISC-V
 
 ### 一些features
@@ -96,7 +120,6 @@ printf("x=%d\n", x)
 
 
 
+## RUSTSBI的理解
 
-
-
-
+感觉就是一个抽象的平台（类似与QEMU之上的硬件模拟器），因为K210的ISA是RISC-V特权级v1.9.1，而当前的硬件模拟器是RISC-V v1.10，版本完全不同（有相当多的寄存器是不一样的）
