@@ -1,9 +1,10 @@
-#ifndef DRIVER_H
-#define DRIVER_H
+#ifndef _DRIVER_H_
+#define _DRIVER_H_
 
 #include <Type.h>
 
 void consoleInit(void);
+void printfInit(void);
 
 void putchar(char c);
 

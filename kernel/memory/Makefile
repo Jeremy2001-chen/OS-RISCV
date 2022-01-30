@@ -1,6 +1,6 @@
 INCLUDES := -I../../include
 
-target = 
+target = MemoryInit.o Page.o
 
 .PHONY: build clean
 

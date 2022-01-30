@@ -1,6 +1,0 @@
-#ifndef MEMORY_CONFIG_H
-#define MEMORY_CONFIG_H
-
-#define KERNEL_STACK_TOP 0x80010000
-
-#endif

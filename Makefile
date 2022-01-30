@@ -13,9 +13,9 @@ vmlinux_img	:=	$(target_dir)/vmlinux.img
 modules := 	$(kernel_dir) $(user_dir)
 objects	:=	$(boot_dir)/*.o \
 			$(init_dir)/*.o \
-			$(driver_dir)/*.o
+			$(driver_dir)/*.o \
+			$(memory_dir)/*.o
 			
-#$(memory_dir)/*.o
 #$(user_dir)/*.x
 
 .PHONY: build clean $(modules) run

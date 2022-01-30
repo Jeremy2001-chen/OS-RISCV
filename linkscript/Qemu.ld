@@ -6,11 +6,11 @@ SECTIONS
 {
     . = BASE_ADDRESS;
 
-    kernel_start = .;
+    kernelStart = .;
 
-    . = ALIGN(4096);
+    . = ALIGN(PAGE_SIZE);
 
-    text_start = .;
+    textStart = .;
     .text : {
         *(.text .text.*)
         . = ALIGN(4096);
@@ -18,30 +18,34 @@ SECTIONS
         *(trampsce)
         . = ALIGN(4096);
         ASSERT(. - _trampoline <= 4096, "error: trampoline larger than one page");
-        PROVIDE(text_end = .);
+        PROVIDE(textEnd = .);
     }
 
     . = ALIGN(4096);
-    rodata_start = .;
+    rodataStart = .;
     .rodata : {
         *(.rodata .rodata.*)
-        rodata_end = .;
+        rodataEnd = .;
     }
 
     . = ALIGN(4096);
-    data_start = .;
+    dataStart = .;
     .data : {
         *(.data .data.*)
-        data_end = .;
+        dataEnd = .;
     }
 
     . = ALIGN(4096);
-    bss_start = .;
+    bssStart = .;
     .bss : {
         *(.bss .bss.*)
-        bss_end = .;
+        . = ALIGN(4096);
+        _pgdir = .;
+        *(.pgdir)
+        ASSERT(. - _pgdir == 4096, "error: pgdir not one page");
+        bssEnd = .;
     }
 
     . = ALIGN(4096);
-    PROVIDE(kernel_end = .);
+    PROVIDE(kernelEnd = .);
 }

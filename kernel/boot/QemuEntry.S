@@ -1,4 +1,4 @@
-#include <MemoryConfig.h>
+#include <MemoryManage.h>
 
     .section .text
     .globl _entry
@@ -9,3 +9,8 @@ _entry:
 loop:
     j loop
     
+    .section .pgdir
+    .align 12
+    .globl kernelPageDirectory
+kernelPageDirectory:
+    .space PAGE_SIZE
