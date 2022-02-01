@@ -1,6 +1,8 @@
 #ifndef _MEMORY_MANAGE_H_
 #define _MEMORY_MANAGE_H_
 
+#define QEMU
+
 #define VIRT_OFFSET             0x3F00000000L
 #ifdef QEMU
 #define UART                    0x10000000L

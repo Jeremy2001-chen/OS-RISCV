@@ -1,12 +1,15 @@
 #include <Page.h>
 #include <Driver.h>
+#include <MemoryManage.h>
+#include <Riscv.h>
 
 PageList freePages;
 PhysicalPage pages[PHYSICAL_PAGE_NUM];
+extern char kernelStart[];
+extern char kernelEnd[];
+extern u64 kernelPageDirectory[];
 
 static void initFreePages() {
-    extern char kernelStart[];
-    extern char kernelEnd[];
     u32 i;
     u32 n = PA2PPN(KERNEL_STACK_TOP);
     for (i = 0; i < n; i++) {
@@ -32,14 +35,51 @@ static void initFreePages() {
 }
 
 static void virtualMemory() {
-    extern u64 kernelPageDirectory[];
-    pageInsert(kernelPageDirectory, 0, )
+    pageInsert(kernelPageDirectory, UART_V, UART, PTE_READ | PTE_WRITE);
+    #ifdef QEMU
+    pageInsert(kernelPageDirectory, VIRTIO0_V, VIRTIO0, PTE_READ | PTE_WRITE);
+    #endif
+    u64 va = CLINT_V, pa = CLINT, i;
+    for (i = 0; i < 0x10000; i += PAGE_SIZE) {
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
+    }
+    va = PLIC_V; pa = PLIC;
+    for (i = 0; i < 0x4000; i += PAGE_SIZE) {
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
+    }
+    va = PLIC_V + 0x200000; pa = PLIC + 0x200000;
+    for (i = 0; i < 0x4000; i += PAGE_SIZE) {
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
+    }
+    #ifndef QEMU
+    // to do
+    #endif
+
+    va = pa = PHYSICAL_ADDRESS_BASE;
+    for (i = 0; va + i < KERNEL_STACK_TOP; i += PAGE_SIZE) {
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
+    }
+    extern char textEnd[];
+    va = pa = (u64)kernelStart;
+    for (i = 0; va + i < (u64)textEnd; i += PAGE_SIZE) {
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_EXECUTE);
+    }
+    va = pa = (u64)textEnd;
+    for (i = 0; va + i < PHYSICAL_MEMORY_TOP; i += PAGE_SIZE) {
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
+    }
+}
+
+void startPage() {
+    w_satp(MAKE_SATP(kernelPageDirectory));
+    sfence_vma();
 }
 
 void memoryInit() {
     printf("memory init start\n");
     initFreePages();
     virtualMemory();
+    startPage();
     printf("memory init finish\n");
 }
 

@@ -6,11 +6,11 @@ SECTIONS
 {
     . = BASE_ADDRESS;
 
-    kernelStart = .;
+    PROVIDE(kernelStart = .);
 
-    . = ALIGN(PAGE_SIZE);
+    . = ALIGN(4096);
 
-    textStart = .;
+    PROVIDE(textStart = .);
     .text : {
         *(.text .text.*)
         . = ALIGN(4096);
