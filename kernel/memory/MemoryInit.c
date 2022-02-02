@@ -1,6 +1,6 @@
 #include <Page.h>
 #include <Driver.h>
-#include <MemoryManage.h>
+#include <MemoryConfig.h>
 #include <Riscv.h>
 
 PageList freePages;
@@ -70,17 +70,31 @@ static void virtualMemory() {
     }
 }
 
-void startPage() {
+static void startPage() {
     w_satp(MAKE_SATP(kernelPageDirectory));
     sfence_vma();
 }
 
+static void testMemory() {
+    PhysicalPage *p;
+    pageAlloc(&p);
+    printf("alloced page1:  %lx\n", page2pa(p));
+    pageInsert(kernelPageDirectory, 1ll << 35, page2pa(p), PTE_READ | PTE_WRITE);
+    *((u32*)(1ll<<35)) = 147893;
+    printf("value1 of %lx:  %d\n", 1ll << 35, *((u32*)(1ll<<35)));
+    pageAlloc(&p);
+    printf("alloced page2:  %lx\n", page2pa(p));
+    pageInsert(kernelPageDirectory, 1ll << 35, page2pa(p), PTE_READ | PTE_WRITE);
+    *((u32*)(1ll<<35)) = 609475;
+    printf("value1 of %lx:  %d\n", 1ll << 35, *((u32*)(1ll<<35)));
+}
+
 void memoryInit() {
-    printf("memory init start\n");
     initFreePages();
     virtualMemory();
     startPage();
     printf("memory init finish\n");
+    testMemory();
 }
 
 void bcopy(void *src, void *dst, u32 len) {

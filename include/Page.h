@@ -3,7 +3,7 @@
 
 #include <Type.h>
 #include <Queue.h>
-#include <MemoryManage.h>
+#include <MemoryConfig.h>
 #include <Driver.h>
 
 #define DOWN_ALIGN(x, y) (((u64)(x)) & (~((u64)((y) - 1))))
