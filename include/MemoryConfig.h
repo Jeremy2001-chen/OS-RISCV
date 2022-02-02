@@ -1,5 +1,5 @@
-#ifndef _MEMORY_MANAGE_H_
-#define _MEMORY_MANAGE_H_
+#ifndef _MEMORY_CONFIG_H_
+#define _MEMORY_CONFIG_H_
 
 #define QEMU
 

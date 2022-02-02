@@ -30,7 +30,6 @@ void printf(char *fmt, ...);
 		      : "+r" (a0)				\
 		      : "r" (a1), "r" (a2), "r" (a3), "r" (a7)	\
 		      : "memory");				\
-	a0;							\
 })
 
 /* Lazy implementations until SBI is finalized */

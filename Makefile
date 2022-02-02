@@ -6,6 +6,7 @@ driver_dir	:= 	$(kernel_dir)/driver
 memory_dir	:= 	$(kernel_dir)/memory
 boot_dir	:=	$(kernel_dir)/boot
 init_dir	:=	$(kernel_dir)/init
+trap_dir	:=	$(kernel_dir)/trap
 
 linkscript	:= 	$(linker_dir)/Qemu.ld
 vmlinux_img	:=	$(target_dir)/vmlinux.img
@@ -15,7 +16,8 @@ modules := 	$(kernel_dir) $(user_dir)
 objects	:=	$(boot_dir)/*.o \
 			$(init_dir)/*.o \
 			$(driver_dir)/*.o \
-			$(memory_dir)/*.o
+			$(memory_dir)/*.o \
+			$(trap_dir)/*.o
 			
 #$(user_dir)/*.x
 
@@ -40,5 +42,8 @@ run: clean build
 
 asm: clean build
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS) -d in_asm
+
+int: clean build
+	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS) -d int
 
 include include.mk
