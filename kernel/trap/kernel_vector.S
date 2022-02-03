@@ -3,6 +3,7 @@
 .globl kernelTrap
 .section .text
 .globl kernelVector
+.align 2
 kernelVector:
     addi sp, sp, -256
 

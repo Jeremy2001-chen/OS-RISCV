@@ -4,8 +4,9 @@
 
 void kernelVector();
 void trapInit() {
+//    printf("%ld", (u64)kernelVector);
     w_stvec((u64)kernelVector);
-    w_sscratch(r_sstatus() | SSTATUS_SIE | SSTATUS_SPIE);
+    w_sstatus(r_sstatus() | SSTATUS_SIE | SSTATUS_SPIE);
     w_sie(r_sie() | SIE_SEIE | SIE_SSIE | SIE_STIE);
     SBI_CALL_1(SBI_SET_TIMER, r_time() + INTERVAL);
     while (true);

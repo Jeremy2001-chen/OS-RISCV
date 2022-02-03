@@ -1,8 +1,8 @@
 #include <MemoryConfig.h>
 
     .section .text
-    .globl _entry
-_entry:
+    .globl _start
+_start:
     li sp, KERNEL_STACK_TOP
     call main
 
