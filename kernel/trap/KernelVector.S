@@ -1,5 +1,3 @@
-#include <Assembly.h>
-
 .globl kernelTrap
 .section .text
 .globl kernelVector
@@ -74,3 +72,4 @@ kernelVector:
     ld t6, 240(sp)
 
     addi sp, sp, 256
+    sret
