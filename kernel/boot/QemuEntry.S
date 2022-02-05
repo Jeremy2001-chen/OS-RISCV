@@ -3,11 +3,19 @@
     .section .text
     .globl _start
 _start:
-    li sp, KERNEL_STACK_TOP
+    la sp, kernelStack
+    li t0, KERNEL_STACK_SIZE
+    add sp, sp, t0
     call main
 
 loop:
     j loop
+
+    .section .stack
+    .globl kernelStack
+    .align 12
+kernelStack:
+    .space KERNEL_STACK_SIZE
     
     .section .pgdir
     .align 12

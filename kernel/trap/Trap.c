@@ -51,7 +51,6 @@ int trapDevice() {
 }
 
 void kernelTrap() {
-    printf("aaaaaaaaaa\n");
     u64 sepc = r_sepc();
     u64 sstatus = r_sstatus();
 

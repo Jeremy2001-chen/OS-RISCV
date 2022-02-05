@@ -11,19 +11,8 @@ extern u64 kernelPageDirectory[];
 
 static void initFreePages() {
     u32 i;
-    u32 n = PA2PPN(KERNEL_STACK_TOP);
+    u32 n = PA2PPN(kernelEnd);
     for (i = 0; i < n; i++) {
-        pages[i].ref = 1;
-    }
-    
-    n = PA2PPN(kernelStart);
-    for (; i < n; i++) {
-        pages[i].ref = 0;
-        LIST_INSERT_HEAD(&freePages, &pages[i], link);
-    }
-
-    n = PA2PPN(kernelEnd);
-    for (; i < n; i++) {
         pages[i].ref = 1;
     }
 
@@ -54,11 +43,7 @@ static void virtualMemory() {
     #ifndef QEMU
     // to do
     #endif
-
-    va = pa = PHYSICAL_ADDRESS_BASE;
-    for (i = 0; va + i < KERNEL_STACK_TOP; i += PAGE_SIZE) {
-        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
-    }
+    
     extern char textEnd[];
     va = pa = (u64)kernelStart;
     for (i = 0; va + i < (u64)textEnd; i += PAGE_SIZE) {

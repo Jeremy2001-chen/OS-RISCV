@@ -32,6 +32,9 @@ SECTIONS
     dataStart = .;
     .data : {
         *(.data .data.*)
+        . = ALIGN(4096);
+        _stack = .;
+        *(.stack)
         dataEnd = .;
     }
 
