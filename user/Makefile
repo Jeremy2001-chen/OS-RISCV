@@ -12,6 +12,7 @@ build: $(USER_LIB) $(USER_TARGET)
 	$(GCC) $(CFLAGS) -c -o $@ $<
 
 %.b.c: %.b
+	chmod +x bintoc
 	./bintoc $* $< > $@~ && mv -f $@~ $@
 
 %.b: Entry.o %.o $(USER_LIB)
