@@ -4,7 +4,6 @@
 #include <Trap.h>
 #include <Process.h>
 
-void kernelVector();
 void trapInit() {
     w_stvec((u64)kernelVector);
     w_sstatus(r_sstatus() | SSTATUS_SIE | SSTATUS_SPIE);
@@ -51,6 +50,7 @@ int trapDevice() {
 }
 
 void kernelTrap() {
+    printf("kernel trap\n");
     u64 sepc = r_sepc();
     u64 sstatus = r_sstatus();
 
@@ -66,10 +66,7 @@ void kernelTrap() {
         panic("kernel trap");
     }
     if (device == TIMER_INTERRUPT) {
-        Process *cur = currentProcess();
-        if (cur != NULL && cur->state == RUNNING) {
-            yield();
-        }
+        yield();
     }
     w_sepc(sepc);
     w_sstatus(sstatus);

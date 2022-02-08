@@ -5,6 +5,9 @@
 #include <Riscv.h>
 
 void trapInit();
+void kernelVector();
+void userVector();
+void userReturn();
 
 inline static u32 interruptServed() {
     int hart = r_tp();

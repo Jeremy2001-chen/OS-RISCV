@@ -2,8 +2,7 @@ ENTRY(_start)
 
 BASE_ADDRESS        =   0x80200000;
 
-SECTIONS
-{
+SECTIONS {
     . = BASE_ADDRESS;
 
     PROVIDE(kernelStart = .);
@@ -15,9 +14,9 @@ SECTIONS
         *(.text .text.*)
         . = ALIGN(4096);
         _trampoline = .;
-        *(trampsce)
+        *(.trampoline)
         . = ALIGN(4096);
-        ASSERT(. - _trampoline <= 4096, "error: trampoline larger than one page");
+        ASSERT(. - _trampoline == 4096, "error: trampoline larger than one page");
         PROVIDE(textEnd = .);
     }
 
