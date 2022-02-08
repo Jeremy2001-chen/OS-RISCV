@@ -18,10 +18,10 @@ build: $(USER_LIB) $(USER_TARGET)
 	$(LD) -o $@ $(LDFLAGS) -G 0 -static -n -nostdlib -T ../linkscript/User.ld $^
 
 %.o: %.c
-	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+	$(GCC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 %.o: %.S
-	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
+	$(GCC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
 
 clean:
 	for d in $(modules); \
