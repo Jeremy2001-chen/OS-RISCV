@@ -68,12 +68,13 @@ static void testMemory() {
     pageAlloc(&p);
     printf("alloced page1:  %lx\n", page2pa(p));
     pageInsert(kernelPageDirectory, 1ll << 35, page2pa(p), PTE_READ | PTE_WRITE);
-    *((u32*)(1ll<<35)) = 147893;
+    *((u32*)page2pa(p)) = 147893;
     printf("value1 of %lx:  %d\n", 1ll << 35, *((u32*)(1ll<<35)));
     pageAlloc(&p);
+    //sfence_vma();
     printf("alloced page2:  %lx\n", page2pa(p));
     pageInsert(kernelPageDirectory, 1ll << 35, page2pa(p), PTE_READ | PTE_WRITE);
-    *((u32*)(1ll<<35)) = 609475;
+    *((u32*)page2pa(p)) = 65536;
     printf("value1 of %lx:  %d\n", 1ll << 35, *((u32*)(1ll<<35)));
 }
 
