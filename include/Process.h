@@ -16,7 +16,7 @@
 typedef struct Trapframe {
     u64 kernelSatp;
     u64 kernelSp;
-    u64 kernelTrap;
+    u64 trapHandler;
     u64 epc;
     u64 kernelHartId;
     u64 ra;
@@ -40,6 +40,7 @@ typedef struct Trapframe {
     u64 s3;
     u64 s4;
     u64 s5;
+    u64 s6;
     u64 s7;
     u64 s8;
     u64 s9;

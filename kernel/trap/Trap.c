@@ -65,9 +65,54 @@ void kernelTrap() {
     if (device == UNKNOWN_DEVICE) {
         panic("kernel trap");
     }
-    if (device == TIMER_INTERRUPT) {
+    extern Process *current;
+    if (device == TIMER_INTERRUPT && current != NULL && current->state == RUNNING) {
         yield();
     }
     w_sepc(sepc);
     w_sstatus(sstatus);
+}
+
+void userTrap() {
+    printf("user trap\n");
+    u64 sstatus = r_sstatus();
+    if (sstatus & SSTATUS_SPP) {
+        panic("usertrap: not from user mode\n");
+    }
+    w_stvec((u64) kernelVector);
+    extern Process *currentProcess;
+    currentProcess->trapframe.epc = r_sepc();
+    
+    u64 scause = r_scause();
+    printf("scause is: %lx\n", scause);
+    int device = UNKNOWN_DEVICE;
+    if (scause == SCAUSE_ENVIRONMENT_CALL) {
+        printf("%d\n", currentProcess->trapframe.a0);
+        // todo
+    } else if ((device = trapDevice()) == UNKNOWN_DEVICE) {
+        panic("unexpected scause\n");
+    }
+    if (device == TIMER_INTERRUPT) {
+        yield();
+    }
+}
+
+void userTrapReturn() {
+    extern char trampoline[];
+    w_stvec(TRAMPOLINE_BASE + ((u64)userVector - (u64)trampoline));
+    extern Process *currentProcess;
+    currentProcess->trapframe.trapHandler = (u64)userTrap;
+    extern char kernelStack[];
+    currentProcess->trapframe.kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE;
+    currentProcess->trapframe.kernelHartId = r_tp();
+
+    u64 sstatus = r_sstatus();
+    sstatus &= ~SSTATUS_SPP;
+    sstatus |= SSTATUS_SPIE;
+    w_sstatus(sstatus);
+    w_sepc(currentProcess->trapframe.epc);
+    u64 satp = MAKE_SATP(currentProcess->pgdir);
+    u64 fn = TRAMPOLINE_BASE + ((u64)userReturn - (u64)trampoline);
+    extern char trapframe[];
+    ((void(*)(u64, u64))fn)(TRAMPOLINE_BASE + trapframe - trampoline, satp);
 }

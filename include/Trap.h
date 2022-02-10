@@ -8,6 +8,7 @@ void trapInit();
 void kernelVector();
 void userVector();
 void userReturn();
+void userTrapReturn();
 
 inline static u32 interruptServed() {
     int hart = r_tp();

@@ -1,8 +1,8 @@
 INCLUDES	:=	-I../include/
 
-USER_LIB	:= Libos.o
+USER_LIB	:=
 
-USER_TARGET	:= Test.x
+USER_TARGET	:= Entry.x
 
 .PHONY:	build clean
 

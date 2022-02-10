@@ -2,6 +2,8 @@
 #include <Page.h>
 #include <Error.h>
 #include <Elf.h>
+#include <Riscv.h>
+#include <Trap.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
@@ -19,6 +21,8 @@ void processInit() {
         processes[i].trapframe.kernelSatp = (u64) kernelPageDirectory;
         LIST_INSERT_HEAD(&freeProcesses, &processes[i], link);
     }
+    extern char trapframe[];
+    w_sscratch((u64) trapframe);
 }
 
 u32 generateProcessId(Process *p) {
@@ -136,15 +140,15 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
     LIST_INSERT_TAIL(&scheduleList[0], p, scheduleLink);
 }
 
-extern void userReturn(void*, u64*);
 void processRun(Process *p) {
+    intr_off();
     extern char trapframe[];
     if (currentProcess) {
         bcopy(trapframe, &(currentProcess->trapframe), sizeof(Trapframe));
     }
     currentProcess = p;
     bcopy(&(p->trapframe), trapframe, sizeof(Trapframe));
-    userReturn(trapframe, p->pgdir);
+    userTrapReturn();
 }
 
 void wakeup(void *channel) {
@@ -171,6 +175,5 @@ void yield() {
         count = next_env->priority;
     }
     count--;
-    //printf("next_env is : %d\n", next_env->id);
     processRun(next_env);
 }
