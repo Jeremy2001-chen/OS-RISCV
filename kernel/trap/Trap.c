@@ -3,13 +3,13 @@
 #include <Timer.h>
 #include <Trap.h>
 #include <Process.h>
+#include <Page.h>
 
 void trapInit() {
     w_stvec((u64)kernelVector);
     w_sstatus(r_sstatus() | SSTATUS_SIE | SSTATUS_SPIE);
     w_sie(r_sie() | SIE_SEIE | SIE_SSIE | SIE_STIE);
     setNextTimeout();
-    while (true);
 }
 
 int trapDevice() {
@@ -65,8 +65,9 @@ void kernelTrap() {
     if (device == UNKNOWN_DEVICE) {
         panic("kernel trap");
     }
-    extern Process *current;
-    if (device == TIMER_INTERRUPT && current != NULL && current->state == RUNNING) {
+    extern Process *currentProcess;
+    if (device == TIMER_INTERRUPT && currentProcess != NULL && 
+        currentProcess->state == RUNNING) {
         yield();
     }
     w_sepc(sepc);
@@ -81,13 +82,13 @@ void userTrap() {
     }
     w_stvec((u64) kernelVector);
     extern Process *currentProcess;
-    currentProcess->trapframe.epc = r_sepc();
     
     u64 scause = r_scause();
     printf("scause is: %lx\n", scause);
     int device = UNKNOWN_DEVICE;
+    extern char trapframe[];
     if (scause == SCAUSE_ENVIRONMENT_CALL) {
-        printf("%d\n", currentProcess->trapframe.a0);
+        printf("ffffff  %d\n", ((Trapframe*)trapframe)->a0);
         // todo
     } else if ((device = trapDevice()) == UNKNOWN_DEVICE) {
         panic("unexpected scause\n");
@@ -95,24 +96,27 @@ void userTrap() {
     if (device == TIMER_INTERRUPT) {
         yield();
     }
+    userTrapReturn();
 }
 
 void userTrapReturn() {
     extern char trampoline[];
     w_stvec(TRAMPOLINE_BASE + ((u64)userVector - (u64)trampoline));
+
     extern Process *currentProcess;
-    currentProcess->trapframe.trapHandler = (u64)userTrap;
     extern char kernelStack[];
     currentProcess->trapframe.kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE;
+    currentProcess->trapframe.trapHandler = (u64)userTrap;
     currentProcess->trapframe.kernelHartId = r_tp();
+
+    extern char trapframe[];
+    bcopy(&(currentProcess->trapframe), trapframe, sizeof(Trapframe));
 
     u64 sstatus = r_sstatus();
     sstatus &= ~SSTATUS_SPP;
     sstatus |= SSTATUS_SPIE;
     w_sstatus(sstatus);
-    w_sepc(currentProcess->trapframe.epc);
     u64 satp = MAKE_SATP(currentProcess->pgdir);
     u64 fn = TRAMPOLINE_BASE + ((u64)userReturn - (u64)trampoline);
-    extern char trapframe[];
-    ((void(*)(u64, u64))fn)(TRAMPOLINE_BASE + trapframe - trampoline, satp);
+    ((void(*)(u64, u64))fn)(TRAMPOLINE_BASE + (u64)trapframe - (u64)trampoline, satp);
 }

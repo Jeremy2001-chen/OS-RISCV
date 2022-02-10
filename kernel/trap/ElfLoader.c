@@ -24,9 +24,9 @@ int loadElf(u8 *binary, int size, u64 *entry, void *userData,
     entry_size = ehdr->phentsize;
 
     while (entry_cnt--) {
-        phdr = ph_table;
+        phdr = (Phdr*)ph_table;
         if (phdr->type == PT_LOAD) {
-            r = map(phdr->vaddr, phdr->memsz, binary + phdr->offset, phdr->filesz, user_data);
+            r = map(phdr->vaddr, phdr->memsz, binary + phdr->offset, phdr->filesz, userData);
             if (r < 0) {
                 return r;
             }

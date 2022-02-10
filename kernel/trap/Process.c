@@ -18,7 +18,7 @@ void processInit() {
     extern u64 kernelPageDirectory[];
     for (i = PROCESS_TOTAL_NUMBER - 1; i >= 0; i--) {
         processes[i].state = UNUSED;
-        processes[i].trapframe.kernelSatp = (u64) kernelPageDirectory;
+        processes[i].trapframe.kernelSatp = MAKE_SATP(kernelPageDirectory);
         LIST_INSERT_HEAD(&freeProcesses, &processes[i], link);
     }
     extern char trapframe[];
@@ -44,8 +44,9 @@ static int setup(Process *p) {
     page->ref++;
     p->pgdir = (u64*) page2pa(page);
     
-    extern char textEnd[];
-    pageInsert(p->pgdir, (u64)userVector, (u64)textEnd, PTE_EXECUTE | PTE_READ | PTE_WRITE);
+    extern char trampoline[];
+    pageInsert(p->pgdir, TRAMPOLINE_BASE, (u64)trampoline, 
+        PTE_READ | PTE_WRITE | PTE_EXECUTE);
     return 0;
 }
 
@@ -87,7 +88,8 @@ int codeMapper(u64 va, u32 segmentSize, u8 *binary, u32 binSize, void *userData)
             if (pageAlloc(&p) < 0) {
                 return -1;
             }
-            pageInsert(env->pgdir, va, page2pa(p), PTE_READ | PTE_WRITE | PTE_USER);
+            pageInsert(env->pgdir, va, page2pa(p), 
+                PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
         }
         r = MIN(binSize, PAGE_SIZE - offset);
         bcopy(binary, (void*) page2pa(p) + offset, r);
@@ -96,7 +98,8 @@ int codeMapper(u64 va, u32 segmentSize, u8 *binary, u32 binSize, void *userData)
         if (pageAlloc(&p) != 0) {
             return -1;
         }
-        pageInsert(env->pgdir, va + i, page2pa(p), PTE_READ | PTE_WRITE | PTE_USER);
+        pageInsert(env->pgdir, va + i, page2pa(p), 
+            PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
         r = MIN(PAGE_SIZE, binSize - i);
         bcopy(binary + i, (void*) page2pa(p), r);
     }
@@ -108,7 +111,8 @@ int codeMapper(u64 va, u32 segmentSize, u8 *binary, u32 binSize, void *userData)
             if (pageAlloc(&p) != 0) {
                 return -1;
             }
-            pageInsert(env->pgdir, va + i, page2pa(p), PTE_READ | PTE_WRITE | PTE_USER);
+            pageInsert(env->pgdir, va + i, page2pa(p), 
+                PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
         }
         r = MIN(segmentSize - i, PAGE_SIZE - offset);
         bzero((void*) page2pa(p) + offset, r);
@@ -117,7 +121,8 @@ int codeMapper(u64 va, u32 segmentSize, u8 *binary, u32 binSize, void *userData)
         if (pageAlloc(&p) != 0) {
             return -1;
         }
-        pageInsert(env->pgdir, va + i, page2pa(p), PTE_READ | PTE_WRITE | PTE_USER);
+        pageInsert(env->pgdir, va + i, page2pa(p), 
+            PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
         r = MIN(PAGE_SIZE, segmentSize - i);
         bzero((void*) page2pa(p), r);
     }
@@ -136,18 +141,17 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
     if (loadElf(binary, size, &entryPoint, p, codeMapper) < 0) {
         panic("process create error\n");
     }
+    p->trapframe.epc = entryPoint;
 
     LIST_INSERT_TAIL(&scheduleList[0], p, scheduleLink);
 }
 
 void processRun(Process *p) {
-    intr_off();
     extern char trapframe[];
     if (currentProcess) {
         bcopy(trapframe, &(currentProcess->trapframe), sizeof(Trapframe));
     }
     currentProcess = p;
-    bcopy(&(p->trapframe), trapframe, sizeof(Trapframe));
     userTrapReturn();
 }
 

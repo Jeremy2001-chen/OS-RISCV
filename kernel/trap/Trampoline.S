@@ -70,9 +70,12 @@ userVector:
     ld tp, KERNEL_HART_ID(a0)
     # load the address of usertrap(), p->trapframe->kernel_trap
     ld t0, TRAP_HANDLER(a0)
+    csrr t1, sepc
+    sd t1, EPC(a0)
     # restore kernel page table from p->trapframe->kernel_satp
     ld t1, KERNEL_SATP(a0)
     csrw satp, t1
+
     # sfence.vma zero, zero
     sfence.vma
     # a0 is no longer valid, since the kernel page
@@ -88,14 +91,17 @@ userReturn:
     # a0: TRAPFRAME, in user page table.
     # a1: user page table, for satp.
     # switch to the user page table.
+
     csrw satp, a1
     # sfence.vma zero, zero
     sfence.vma
-    
+
     # put the saved user a0 in sscratch, so we
     # can swap it with our a0 (TRAPFRAME) in the last step.
     ld t0, REG_A0(a0)
     csrw sscratch, t0
+    ld t1, EPC(a0)
+    csrw sepc, t1
     # restore all but a0 from TRAPFRAME
     ld ra, REG_RA(a0)
     ld sp, REG_SP(a0)
@@ -127,7 +133,6 @@ userReturn:
     ld t4, REG_T4(a0)
     ld t5, REG_T5(a0)
     ld t6, REG_T6(a0)
-
 	# restore user a0, and save TRAPFRAME in sscratch
     csrrw a0, sscratch, a0
     # return to user mode and user pc.

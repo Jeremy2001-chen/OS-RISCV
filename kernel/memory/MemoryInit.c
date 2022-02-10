@@ -47,12 +47,15 @@ static void virtualMemory() {
     extern char textEnd[];
     va = pa = (u64)kernelStart;
     for (i = 0; va + i < (u64)textEnd; i += PAGE_SIZE) {
-        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_EXECUTE);
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_EXECUTE | PTE_WRITE);
     }
     va = pa = (u64)textEnd;
     for (i = 0; va + i < PHYSICAL_MEMORY_TOP; i += PAGE_SIZE) {
         pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
     }
+    extern char trampoline[];
+    pageInsert(kernelPageDirectory, TRAMPOLINE_BASE, (u64)trampoline, 
+        PTE_READ | PTE_WRITE | PTE_EXECUTE);
 }
 
 static void startPage() {
@@ -87,24 +90,24 @@ void bcopy(void *src, void *dst, u32 len) {
 
     if (len <= 7) {
         while (src < finish) {
-            *(u8*)src = *(u8*)dst;
+            *(u8*)dst = *(u8*)src;
             src++;
             dst++;
         }
         return;
     }
     while (((u64)src) & 7) {
-        *(u8*)src = *(u8*)dst;
+        *(u8*)dst = *(u8*)src;
         src++;
         dst++;
     }
     while (src + 7 < finish) {
-        *(u64*)src = *(u64*)dst;
+        *(u64*)dst = *(u64*)src;
         src += 8;
         dst += 8;
     }
     while (src < finish){
-        *(u8*)src = *(u8*)dst;
+        *(u8*)dst = *(u8*)src;
         src++;
         dst++;
     }

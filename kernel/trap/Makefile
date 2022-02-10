@@ -1,6 +1,6 @@
 INCLUDES := -I../../include
 
-target = KernelVector.o Process.o Trap.o Timer.o Trampoline.o
+target = KernelVector.o Process.o Trap.o Timer.o Trampoline.o ElfLoader.o
 
 .PHONY: build clean
 
