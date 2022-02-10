@@ -29,6 +29,6 @@ clean:
 		do \
 			$(MAKE) --directory=$$d clean; \
 		done
-	rm -rf *.o *~ *.d
+	rm -rf *.o *~ *.d *.x
 
 include ../include.mk
