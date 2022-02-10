@@ -11,19 +11,8 @@ extern u64 kernelPageDirectory[];
 
 static void initFreePages() {
     u32 i;
-    u32 n = PA2PPN(KERNEL_STACK_TOP);
+    u32 n = PA2PPN(kernelEnd);
     for (i = 0; i < n; i++) {
-        pages[i].ref = 1;
-    }
-    
-    n = PA2PPN(kernelStart);
-    for (; i < n; i++) {
-        pages[i].ref = 0;
-        LIST_INSERT_HEAD(&freePages, &pages[i], link);
-    }
-
-    n = PA2PPN(kernelEnd);
-    for (; i < n; i++) {
         pages[i].ref = 1;
     }
 
@@ -54,20 +43,19 @@ static void virtualMemory() {
     #ifndef QEMU
     // to do
     #endif
-
-    va = pa = PHYSICAL_ADDRESS_BASE;
-    for (i = 0; va + i < KERNEL_STACK_TOP; i += PAGE_SIZE) {
-        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
-    }
+    
     extern char textEnd[];
     va = pa = (u64)kernelStart;
     for (i = 0; va + i < (u64)textEnd; i += PAGE_SIZE) {
-        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_EXECUTE);
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_EXECUTE | PTE_WRITE);
     }
     va = pa = (u64)textEnd;
     for (i = 0; va + i < PHYSICAL_MEMORY_TOP; i += PAGE_SIZE) {
         pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
     }
+    extern char trampoline[];
+    pageInsert(kernelPageDirectory, TRAMPOLINE_BASE, (u64)trampoline, 
+        PTE_READ | PTE_WRITE | PTE_EXECUTE);
 }
 
 static void startPage() {
@@ -102,24 +90,24 @@ void bcopy(void *src, void *dst, u32 len) {
 
     if (len <= 7) {
         while (src < finish) {
-            *(u8*)src = *(u8*)dst;
+            *(u8*)dst = *(u8*)src;
             src++;
             dst++;
         }
         return;
     }
     while (((u64)src) & 7) {
-        *(u8*)src = *(u8*)dst;
+        *(u8*)dst = *(u8*)src;
         src++;
         dst++;
     }
     while (src + 7 < finish) {
-        *(u64*)src = *(u64*)dst;
+        *(u64*)dst = *(u64*)src;
         src += 8;
         dst += 8;
     }
     while (src < finish){
-        *(u8*)src = *(u8*)dst;
+        *(u8*)dst = *(u8*)src;
         src++;
         dst++;
     }

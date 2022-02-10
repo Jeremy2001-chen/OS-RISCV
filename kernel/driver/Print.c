@@ -34,12 +34,10 @@ static inline void printInt(i64 xx, int base, bool sign) {
     }
 }
 
-void printf(char *fmt, ...) {
-    va_list ap;
+static void print(const char *fmt, va_list ap) {
     int i, c;
     char *s;
 
-    va_start(ap, fmt);
     for(i = 0; fmt[i]; i++) {
         if(fmt[i] != '%'){
             putchar(fmt[i]);
@@ -51,7 +49,7 @@ void printf(char *fmt, ...) {
             l = true;
             c = fmt[++i];
         }
-        switch(c){
+        switch(c) {
         case 'd':
             if (l) {
                 printInt(va_arg(ap, i64), 10, true);
@@ -81,4 +79,21 @@ void printf(char *fmt, ...) {
             break;
         }
     }
+}
+
+void printf(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    print(fmt, ap);
+    va_end(ap);
+}
+
+void _panic_(const char *file, int line, const char *fmt, ...) {
+    printf("panic at %s: %d: ", file, line);
+    va_list ap;
+    va_start(ap, fmt);
+    print(fmt, ap);
+    va_end(ap);
+    putchar('\n');
+    while (true) ;
 }

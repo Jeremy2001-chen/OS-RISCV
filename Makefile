@@ -17,9 +17,8 @@ objects	:=	$(boot_dir)/*.o \
 			$(init_dir)/*.o \
 			$(driver_dir)/*.o \
 			$(memory_dir)/*.o \
-			$(trap_dir)/*.o
-			
-#$(user_dir)/*.x
+			$(trap_dir)/*.o \
+			$(user_dir)/*.x
 
 .PHONY: build clean $(modules) run
 

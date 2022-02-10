@@ -84,8 +84,11 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
     if (ret < 0) {
         return ret;
     }
-    if (pte != NULL && (*pte & PTE_VALID) && PTE2PA(pte) != pa) {
+    if (pte != NULL && (*pte & PTE_VALID)) {
         pageRemove(pgdir, va);
+    }
+    if (pa >= PHYSICAL_ADDRESS_BASE && pa < PHYSICAL_MEMORY_TOP) {
+        pa2page(pa)->ref++;
     }
     *pte = PA2PTE(pa) | perm | PTE_VALID;
     return 0;

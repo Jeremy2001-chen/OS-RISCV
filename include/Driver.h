@@ -2,13 +2,10 @@
 #define _DRIVER_H_
 
 #include <Type.h>
+#include <assembly/Scause.h>
 
 void consoleInit(void);
 void printfInit(void);
-
-void putchar(char c);
-
-void printf(char *fmt, ...);
 
 #define SBI_SET_TIMER 0
 #define SBI_CONSOLE_PUTCHAR 1
@@ -19,6 +16,26 @@ void printf(char *fmt, ...);
 #define SBI_REMOTE_SFENCE_VMA 6
 #define SBI_REMOTE_SFENCE_VMA_ASID 7
 #define SBI_SHUTDOWN 8
+
+inline void putchar(char c) {
+    register u64 a0 asm ("a0") = (u64) c;
+    register u64 a7 asm ("a7") = (u64) SBI_CONSOLE_PUTCHAR;
+    asm volatile ("ecall" : "+r" (a0) : "r" (a7) : "memory");
+};
+
+inline int getchar() {
+    register u64 a7 asm ("a7") = (u64) SBI_CONSOLE_GETCHAR;
+    register u64 a0 asm ("a0");
+    asm volatile ("ecall" : "+r" (a0) : "r" (a7) : "memory");
+    return a0;
+}
+
+void printf(const char *fmt, ...);
+void _panic_(const char*, int, const char*, ...)__attribute__((noreturn));
+#define panic(...) _panic_(__FILE__, __LINE__, __VA_ARGS__)
+
+void consoleInterrupt(int);
+
 
 #define SBI_CALL(which, arg0, arg1, arg2, arg3) ({		\
 	register u64 a0 asm ("a0") = (u64)(arg0);	\

@@ -19,4 +19,11 @@ typedef __builtin_va_list va_list;
 #define va_end(ap) __builtin_va_end(ap)
 #define va_arg(ap, type) __builtin_va_arg(ap, type)
 
+#define MIN(_a, _b) \
+    ({  \
+        typeof(_a) __a = (_a); \
+        typeof(_b) __b = (_b); \
+        __a <= __b ? __a : __b; \
+    })
+
 #endif

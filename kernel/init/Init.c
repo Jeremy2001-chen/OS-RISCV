@@ -1,6 +1,7 @@
 #include <Driver.h>
 #include <Page.h>
 #include <Trap.h>
+#include <Process.h>
 
 static inline void initHartId(u64 hartId) {
     asm volatile("mv tp, %0" : : "r" (hartId & 0x1));
@@ -15,4 +16,8 @@ void main(u64 hartId) {
 
     memoryInit();
     trapInit();
+    processInit();
+    PROCESS_CREATE_PRIORITY(user_Entry, 1);
+
+    yield();
 }
