@@ -1,8 +1,8 @@
-INCLUDES	:=	-I../include/
+INCLUDES	:=	-I./include/
 
-USER_LIB	:=
+USER_LIB	:= LibMain.o
 
-USER_TARGET	:= Entry.x
+USER_TARGET	:= ProcessA.x ProcessB.x
 
 .PHONY:	build clean
 

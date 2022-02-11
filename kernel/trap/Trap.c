@@ -75,7 +75,6 @@ void kernelTrap() {
 }
 
 void userTrap() {
-    printf("user trap\n");
     u64 sstatus = r_sstatus();
     if (sstatus & SSTATUS_SPP) {
         panic("usertrap: not from user mode\n");
@@ -84,17 +83,24 @@ void userTrap() {
     extern Process *currentProcess;
     
     u64 scause = r_scause();
-    printf("scause is: %lx\n", scause);
-    int device = UNKNOWN_DEVICE;
     extern char trapframe[];
-    if (scause == SCAUSE_ENVIRONMENT_CALL) {
-        printf("ffffff  %d\n", ((Trapframe*)trapframe)->a0);
-        // todo
-    } else if ((device = trapDevice()) == UNKNOWN_DEVICE) {
-        panic("unexpected scause\n");
-    }
-    if (device == TIMER_INTERRUPT) {
+    if (scause & SCAUSE_INTERRUPT) {
+        trapDevice();
         yield();
+    } else {
+        switch (scause & SCAUSE_EXCEPTION_CODE)
+        {
+        case SCAUSE_ENVIRONMENT_CALL:
+            putchar(((Trapframe*)trapframe)->a0);
+            break;
+        case SCAUSE_LOAD_PAGE_FAULT:
+        case SCAUSE_STORE_PAGE_FAULT:
+            pageout(currentProcess->pgdir, r_stval());
+            break;
+        default:
+            panic("unhandled error %d\n", scause);
+            break;
+        }
     }
     userTrapReturn();
 }

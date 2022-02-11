@@ -93,3 +93,18 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
     *pte = PA2PTE(pa) | perm | PTE_VALID;
     return 0;
 }
+
+void pageout(u64 *pgdir, u64 badAddr) {
+    if (badAddr <= PAGE_SIZE) {
+        panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
+    }
+    printf("pageout at %lx", badAddr);
+    PhysicalPage *page;
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    if (pageInsert(pgdir, badAddr, page2pa(page), 
+        PTE_USER | PTE_READ | PTE_WRITE) < 0) {
+        panic("");
+    }
+}

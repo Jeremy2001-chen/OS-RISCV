@@ -160,7 +160,6 @@ void wakeup(void *channel) {
 }
 
 void yield() {
-    printf("process yield\n");
     static int count = 0;
     static int point = 0;
     Process* next_env = currentProcess;

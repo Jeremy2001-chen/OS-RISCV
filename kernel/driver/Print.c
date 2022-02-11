@@ -1,5 +1,5 @@
-#include <Type.h>
 #include <Driver.h>
+#include <Riscv.h>
 
 static inline void printString(const char* s) {
     while (*s) {
@@ -89,6 +89,7 @@ void printf(const char *fmt, ...) {
 }
 
 void _panic_(const char *file, int line, const char *fmt, ...) {
+    intr_off();
     printf("panic at %s: %d: ", file, line);
     va_list ap;
     va_start(ap, fmt);
