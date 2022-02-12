@@ -1,6 +1,6 @@
 #include <MemoryConfig.h>
 
-    .section .text
+    .section .boot
     .globl _start
 _start:
     la sp, kernelStack

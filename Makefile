@@ -5,7 +5,6 @@ target_dir	:= 	target
 driver_dir	:= 	$(kernel_dir)/driver
 memory_dir	:= 	$(kernel_dir)/memory
 boot_dir	:=	$(kernel_dir)/boot
-init_dir	:=	$(kernel_dir)/init
 trap_dir	:=	$(kernel_dir)/trap
 
 linkscript	:= 	$(linker_dir)/Qemu.ld
@@ -14,7 +13,6 @@ vmlinux_asm	:= 	$(target_dir)/vmlinux_asm.txt
 
 modules := 	$(kernel_dir) $(user_dir)
 objects	:=	$(boot_dir)/*.o \
-			$(init_dir)/*.o \
 			$(driver_dir)/*.o \
 			$(memory_dir)/*.o \
 			$(trap_dir)/*.o \

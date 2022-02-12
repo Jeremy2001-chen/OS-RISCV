@@ -11,6 +11,7 @@ SECTIONS {
 
     PROVIDE(textStart = .);
     .text : {
+        *(.boot)
         *(.text .text.*)
         . = ALIGN(4096);
         _trampoline = .;
