@@ -4,6 +4,10 @@
 #include <Type.h>
 
 #define MAG_SIZE 4
+#define ELF_MAGIC0  0x7f
+#define ELF_MAGIC1  0x45
+#define ELF_MAGIC2  0x4c
+#define ELF_MAGIC3  0x46
 
 #define PT_NULL		0x00000000
 #define PT_LOAD		0x00000001
