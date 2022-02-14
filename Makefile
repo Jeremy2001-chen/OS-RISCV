@@ -45,4 +45,7 @@ asm: clean build
 int: clean build
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS) -d int
 
+gdb: clean build
+	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS) -nographic -s -S
+
 include include.mk
