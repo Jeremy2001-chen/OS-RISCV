@@ -2,7 +2,7 @@
 #include <Error.h>
 
 static inline bool is_elf_format(u8 *binary) {
-    u8 *magic = ((Indent*) binary) -> magic;
+    u8 *magic = ((Indent*) binary)->magic;
     if (magic[0] == ELF_MAGIC0 &&
         magic[1] == ELF_MAGIC1 &&
         magic[2] == ELF_MAGIC2 &&
