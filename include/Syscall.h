@@ -1,6 +1,14 @@
 #ifndef _KERNEL_SYSCALL_H_
 #define _KERNEL_SYSCALL_H_
 
-#define SYSCALL_PUTCHAR 0
+#include <SyscallId.h>
+
+void syscallPutchar();
+void syscallGetProcessId();
+void syscallYield();
+void syscallProcessDestroy();
+void syscallFork();
+
+extern void (*syscallVector[])(void);
 
 #endif

@@ -1,11 +1,9 @@
 driver_dir	:= driver
 memory_dir	:= memory
 boot_dir	:= boot
-init_dir	:= init
 trap_dir	:= trap
 
-modules		:= 	$(driver_dir) $(memory_dir) $(boot_dir) $(init_dir) \
-				$(trap_dir)
+modules		:= 	$(driver_dir) $(memory_dir) $(boot_dir) $(trap_dir)
 
 .PHONY:	build clean $(modules)
 

@@ -4,6 +4,7 @@
 #include <Trap.h>
 #include <Process.h>
 #include <Page.h>
+#include <Syscall.h>
 
 void trapInit() {
     w_stvec((u64)kernelVector);
@@ -91,7 +92,7 @@ void userTrap() {
         switch (scause & SCAUSE_EXCEPTION_CODE)
         {
         case SCAUSE_ENVIRONMENT_CALL:
-            putchar(((Trapframe*)trapframe)->a0);
+            syscallVector[((Trapframe*)trapframe)->a7]();
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
         case SCAUSE_STORE_PAGE_FAULT:
