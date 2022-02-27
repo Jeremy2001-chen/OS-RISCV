@@ -2,6 +2,6 @@
 
 void userMain() {
     while (1) {
-        syscallPutchar('b');
+       // syscallPutchar('b');
     }   
 }
