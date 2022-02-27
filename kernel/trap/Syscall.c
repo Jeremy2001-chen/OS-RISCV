@@ -23,5 +23,4 @@ void syscallYield() {
 }
 
 void syscallFork() {
-
 }
