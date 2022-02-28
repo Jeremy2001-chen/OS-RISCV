@@ -12,11 +12,11 @@ LD				:= $(CROSS_COMPILE)ld
 LDFLAGS			:= -z max-page-size=4096
 QEMU			:= qemu-system-riscv64
 
-RUSTSBI			:=	./bootloader/sbi-qemu
+RUSTSBI			:=	./bootloader/open-sbi
 
 CPUS := 2
 
-QEMUOPTS = -machine virt -m 8M -nographic
+QEMUOPTS = -machine sifive_u -m 1G -nographic
 QEMUOPTS += -smp $(CPUS)
 QEMUOPTS += -bios $(RUSTSBI)
 #QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 
