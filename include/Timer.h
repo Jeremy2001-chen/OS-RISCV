@@ -1,7 +1,7 @@
 #ifndef _TIMER_H_
 #define _TIMER_H_
 
-#define INTERVAL (390000000 / 200)
+#define INTERVAL 200000
 
 void setNextTimeout(void);
 void timerTick();

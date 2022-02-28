@@ -14,7 +14,7 @@ QEMU			:= qemu-system-riscv64
 
 RUSTSBI			:=	./bootloader/open-sbi
 
-CPUS := 2
+CPUS := 4
 
 QEMUOPTS = -machine sifive_u -m 1G -nographic
 QEMUOPTS += -smp $(CPUS)
