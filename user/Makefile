@@ -17,6 +17,7 @@ build: $(USER_LIB) $(USER_TARGET)
 
 %.b: Entry.o %.o $(USER_LIB)
 	$(LD) -o $@ $(LDFLAGS) -G 0 -static -n -nostdlib -T ../linkscript/User.ld $^
+	$(OBJDUMP) -D $@ > $@.txt
 
 %.o: %.c
 	$(GCC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
