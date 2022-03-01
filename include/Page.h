@@ -68,6 +68,7 @@ int pageAlloc(PhysicalPage **page);
 int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm);
 void pageRemove(u64 *pgdir, u64 va);
 u64 pageLookup(u64 *pgdir, u64 va, u64 **pte);
+int allocPgdir(PhysicalPage **page);
 void pageout(u64 *pgdir, u64 badAddr);
 
 #define IS_RAM(pa) (pa >= PHYSICAL_ADDRESS_BASE && pa < PHYSICAL_MEMORY_TOP)
