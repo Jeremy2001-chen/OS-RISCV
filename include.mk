@@ -12,7 +12,7 @@ LD				:= $(CROSS_COMPILE)ld
 LDFLAGS			:= -z max-page-size=4096
 QEMU			:= qemu-system-riscv64
 
-RUSTSBI			:=	./bootloader/open-sbi
+RUSTSBI			:=	./bootloader/aaa
 
 CPUS := 4
 
