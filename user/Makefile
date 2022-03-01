@@ -30,6 +30,6 @@ clean:
 		do \
 			$(MAKE) --directory=$$d clean; \
 		done
-	rm -rf *.o *~ *.d *.x
+	rm -rf *.o *~ *.d *.x *.b.txt
 
 include ../include.mk
