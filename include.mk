@@ -16,7 +16,7 @@ RUSTSBI			:=	./bootloader/aaa
 
 CPUS := 4
 
-QEMUOPTS = -machine sifive_u -m 1G -nographic
+QEMUOPTS = -machine virt -m 1G -nographic
 QEMUOPTS += -smp $(CPUS)
 QEMUOPTS += -bios $(RUSTSBI)
 #QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 

@@ -2,7 +2,7 @@ INCLUDES	:=	-I./include/
 
 USER_LIB	:= LibMain.o
 
-USER_TARGET	:= ProcessA.x ProcessB.x ProcessA.b.c ProcessB.b.c
+USER_TARGET	:= ProcessA.x ProcessB.x
 
 .PHONY: bintoc build clean
 
@@ -20,6 +20,7 @@ build: bintoc $(USER_LIB) $(USER_TARGET)
 
 %.b: Entry.o %.o $(USER_LIB)
 	$(LD) -o $@ $(LDFLAGS) -G 0 -static -n -nostdlib -T ../linkscript/User.ld $^
+	$(OBJDUMP) -D $@ > $@.txt
 
 %.o: %.c
 	$(GCC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
@@ -32,6 +33,6 @@ clean:
 		do \
 			$(MAKE) --directory=$$d clean; \
 		done
-	rm -rf *.o *~ *.d *.x BinaryToC
+	rm -rf *.o *~ *.d *.x *.b.txt BinaryToC
 
 include ../include.mk
