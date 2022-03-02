@@ -2,18 +2,21 @@ INCLUDES	:=	-I./include/
 
 USER_LIB	:= LibMain.o
 
-USER_TARGET	:= ProcessA.x ProcessB.x
+USER_TARGET	:= ProcessA.x ProcessB.x ProcessA.b.c ProcessB.b.c
 
-.PHONY:	build clean
+.PHONY: bintoc build clean
 
-build: $(USER_LIB) $(USER_TARGET)
+bintoc:
+	gcc BinaryToC.c -o BinaryToC
+	chmod +x BinaryToC
+
+build: bintoc $(USER_LIB) $(USER_TARGET)
 
 %.x: %.b.c
 	$(GCC) $(CFLAGS) -c -o $@ $<
 
 %.b.c: %.b
-	chmod +x bintoc
-	./bintoc $* $< > $@~ && mv -f $@~ $@
+	./BinaryToC -f $< -o $@
 
 %.b: Entry.o %.o $(USER_LIB)
 	$(LD) -o $@ $(LDFLAGS) -G 0 -static -n -nostdlib -T ../linkscript/User.ld $^
@@ -29,6 +32,6 @@ clean:
 		do \
 			$(MAKE) --directory=$$d clean; \
 		done
-	rm -rf *.o *~ *.d *.x
+	rm -rf *.o *~ *.d *.x BinaryToC
 
 include ../include.mk

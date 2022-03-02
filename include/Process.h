@@ -8,9 +8,9 @@
 #define PROCESS_TOTAL_NUMBER (1 << LOG_PROCESS_NUM)
 
 #define PROCESS_CREATE_PRIORITY(x, y) { \
-    extern u8 binary_##x##_start[]; \
-    extern int binary_##x##_size; \
-    processCreatePriority(binary_##x##_start, binary_##x##_size, y); \
+    extern u8 binary##x##Start[]; \
+    extern int binary##x##Size; \
+    processCreatePriority(binary##x##Start, binary##x##Size, y); \
 }
 
 typedef struct Trapframe {
