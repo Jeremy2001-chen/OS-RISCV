@@ -77,5 +77,6 @@ void processInit();
 void processCreatePriority(u8 *binary, u32 size, u32 priority);
 void wakeup(void *channel);
 void yield();
+void processFork();
 
 #endif

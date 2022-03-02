@@ -10,6 +10,7 @@ static struct ProcessList freeProcesses;
 struct ProcessList scheduleList[2];
 Process *currentProcess;
 
+extern Trapframe trapframe[];
 void processInit() {
     LIST_INIT(&freeProcesses);
     LIST_INIT(&scheduleList[0]);
@@ -21,7 +22,6 @@ void processInit() {
         processes[i].trapframe.kernelSatp = MAKE_SATP(kernelPageDirectory);
         LIST_INSERT_HEAD(&freeProcesses, &processes[i], link);
     }
-    extern char trapframe[];
     w_sscratch((u64) trapframe);
 }
 
@@ -146,7 +146,6 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
 }
 
 void processRun(Process *p) {
-    extern char trapframe[];
     if (currentProcess) {
         bcopy(trapframe, &(currentProcess->trapframe), sizeof(Trapframe));
     }
@@ -178,4 +177,19 @@ void yield() {
     }
     count--;
     processRun(next_env);
+}
+
+void processFork() {
+    Process *process;
+    int r = processAlloc(&process, currentProcess->id);
+    if (r < 0) {
+        currentProcess->trapframe.a0 = r;
+        return;
+    }
+    process->priority = currentProcess->priority;
+    bcopy(trapframe, &process->trapframe, sizeof(Trapframe));
+    process->trapframe.a0 = 0;
+    LIST_INSERT_TAIL(&scheduleList[0], process, scheduleLink);
+    currentProcess->trapframe.a0 = process->id;
+    return;
 }
