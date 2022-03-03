@@ -191,5 +191,17 @@ void processFork() {
     process->trapframe.a0 = 0;
     LIST_INSERT_TAIL(&scheduleList[0], process, scheduleLink);
     currentProcess->trapframe.a0 = process->id;
+
+    int i, j, k;
+    for (i = 0; i < 512; i++) {
+        if (i = GET_PAGE_TABLE_INDEX(USER_PAGE_TABLE, 2)) continue;
+        u64 *vpd = USER_PAGE_TABLE;
+        if (vpd[i] & PTE_VALID) continue;
+        for (j = 0; j < 512; j++) {
+            for (k = 0; k < 512; k++) {
+
+            }
+        }
+    }
     return;
 }
