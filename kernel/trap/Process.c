@@ -219,7 +219,6 @@ void processFork() {
             }
         }
     }
-            
     sfence_vma();
     return;
 }
