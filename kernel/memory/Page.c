@@ -91,6 +91,7 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
         pa2page(pa)->ref++;
     }
     *pte = PA2PTE(pa) | perm | PTE_VALID;
+    sfence_vma();
     return 0;
 }
 
