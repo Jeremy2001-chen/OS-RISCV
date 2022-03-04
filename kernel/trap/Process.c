@@ -150,6 +150,7 @@ void processRun(Process *p) {
         bcopy(trapframe, &(currentProcess->trapframe), sizeof(Trapframe));
     }
     currentProcess = p;
+    bcopy(&(currentProcess->trapframe), trapframe, sizeof(Trapframe));
     userTrapReturn();
 }
 

@@ -84,7 +84,7 @@ void userTrap() {
     extern Process *currentProcess;
     
     u64 scause = r_scause();
-    extern char trapframe[];
+    extern Trapframe trapframe[];
     if (scause & SCAUSE_INTERRUPT) {
         trapDevice();
         yield();
@@ -92,7 +92,7 @@ void userTrap() {
         switch (scause & SCAUSE_EXCEPTION_CODE)
         {
         case SCAUSE_ENVIRONMENT_CALL:
-            syscallVector[((Trapframe*)trapframe)->a7]();
+            syscallVector[trapframe->a7]();
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
         case SCAUSE_STORE_PAGE_FAULT:
@@ -112,12 +112,12 @@ void userTrapReturn() {
 
     extern Process *currentProcess;
     extern char kernelStack[];
-    currentProcess->trapframe.kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE;
-    currentProcess->trapframe.trapHandler = (u64)userTrap;
-    currentProcess->trapframe.kernelHartId = r_tp();
+    extern Trapframe trapframe[];
+    trapframe->kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE;
+    trapframe->trapHandler = (u64)userTrap;
+    trapframe->kernelHartId = r_tp();
 
-    extern char trapframe[];
-    bcopy(&(currentProcess->trapframe), trapframe, sizeof(Trapframe));
+    //bcopy(&(currentProcess->trapframe), trapframe, sizeof(Trapframe));
 
     u64 sstatus = r_sstatus();
     sstatus &= ~SSTATUS_SPP;
