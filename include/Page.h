@@ -51,7 +51,7 @@ void memoryInit(void);
 #define PTE_WRITE (1ll << 2)
 #define PTE_EXECUTE (1ll << 3)
 #define PTE_USER (1ll << 4)
-#define PTE_COW (1ll << 63)
+#define PTE_COW (1ll << 8)
 #define PERM_WIDTH 10
 #define PTE2PERM(pte) (((u64)(pte)) & ~((1ull << 54) - (1ull << 10)))
 #define PTE2PA(pte) (((((u64)(pte)) & ((1ull << 54) - (1ull << 10))) >> PERM_WIDTH) << PAGE_SHIFT)

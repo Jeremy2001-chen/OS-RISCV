@@ -214,8 +214,10 @@ void processFork() {
                 if (va == TRAMPOLINE_BASE) {
                     continue;
                 }
-                pa2[k] |= PTE_COW;
-                pa2[k] &= ~PTE_WRITE;
+                if (pa2[k] & PTE_WRITE) {
+                    pa2[k] |= PTE_COW;
+                    pa2[k] &= ~PTE_WRITE;
+                }
                 pageInsert(process->pgdir, va, PTE2PA(pa2[k]), PTE2PERM(pa2[k]));
             }
         }

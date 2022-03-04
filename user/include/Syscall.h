@@ -9,7 +9,7 @@ inline void syscallPutchar(char c) {
     asm volatile ("ecall": "+r" (a0): "r" (a7):);
 }
 
-inline int syscallFork() {
+inline long syscallFork() {
     register long a7 asm("a7") = SYSCALL_FORK;
     asm volatile ("ecall": : "r"(a7):);
     register long a0 asm("a0");

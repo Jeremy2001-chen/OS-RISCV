@@ -109,7 +109,7 @@ void pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
-    printf("pageout at %lx", badAddr);
+    printf("pageout at %lx\n", badAddr);
     PhysicalPage *page;
     if (pageAlloc(&page) < 0) {
         panic("");
@@ -121,7 +121,6 @@ void pageout(u64 *pgdir, u64 badAddr) {
 }
 
 void cowHandler(u64 *pgdir, u64 badAddr) {
-    panic("addr: %lx", badAddr);
     u64 *pte;
     u64 pa = pageLookup(pgdir, badAddr, &pte);
     if (!(*pte & PTE_COW)) {

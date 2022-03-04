@@ -97,11 +97,15 @@ void userTrap() {
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
         case SCAUSE_STORE_PAGE_FAULT:
-            pageout(currentProcess->pgdir, r_stval());
-            break;
-        case SCAUSE_STORE_ACCESS_FAULT:
-            printf("aaaaaaaa\n");
-            cowHandler(currentProcess->pgdir, r_stval());
+            u64 *pte;
+            u64 pa = pageLookup(currentProcess->pgdir, r_stval(), &pte);
+            if (pa == 0) {
+                pageout(currentProcess->pgdir, r_stval());
+            } else if (*pte & PTE_COW) {
+                cowHandler(currentProcess->pgdir, r_stval());
+            } else {
+                panic("unknown");
+            }
             break;
         default:
             panic("unhandled error %d,  %lx\n", scause, r_stval());
