@@ -141,4 +141,4 @@ userReturn:
 
     .globl trapframe
 trapframe:
-    .space 300
+    .space 1200

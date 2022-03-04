@@ -98,6 +98,9 @@ void userTrap() {
         case SCAUSE_STORE_PAGE_FAULT:
             pageout(currentProcess->pgdir, r_stval());
             break;
+        case SCAUSE_STORE_ACCESS_FAULT:
+            cowHandler(currentProcess->pgdir, r_stval());
+            break;
         default:
             panic("unhandled error %d\n", scause);
             break;

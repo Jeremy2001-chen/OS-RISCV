@@ -185,24 +185,41 @@ void processFork() {
     int r = processAlloc(&process, currentProcess->id);
     if (r < 0) {
         currentProcess->trapframe.a0 = r;
+        panic("");
         return;
     }
     process->priority = currentProcess->priority;
     bcopy(trapframe, &process->trapframe, sizeof(Trapframe));
     process->trapframe.a0 = 0;
     LIST_INSERT_TAIL(&scheduleList[0], process, scheduleLink);
-    currentProcess->trapframe.a0 = process->id;
+    trapframe->a0 = process->id;
 
     int i, j, k;
     for (i = 0; i < 512; i++) {
-        if (i == GET_PAGE_TABLE_INDEX(USER_PAGE_TABLE, 2)) continue;
-        u64 *vpd = (u64*) USER_PAGE_TABLE;
-        if (vpd[i] & PTE_VALID) continue;
+        if (!(currentProcess->pgdir[i] & PTE_VALID)) {
+            continue;
+        }
+        u64 *pa = (u64*) PTE2PA(currentProcess->pgdir[i]);
         for (j = 0; j < 512; j++) {
+            if (!(pa[j] & PTE_VALID)) {
+                continue;
+            }
+            u64 *pa2 = (u64*) PTE2PA(pa[j]);
             for (k = 0; k < 512; k++) {
-
+                if (!(pa2[k] & PTE_VALID)) {
+                    continue;
+                }
+                u64 va = (i << 30) + (j << 21) + (k << 12);
+                if (va == TRAMPOLINE_BASE) {
+                    continue;
+                }
+                pa2[k] |= PTE_COW;
+                pa2[k] &= ~PTE_WRITE;
+                pageInsert(process->pgdir, va, PTE2PA(pa2[k]), PTE2PERM(pa2[k]));
             }
         }
     }
+            
+    sfence_vma();
     return;
 }
