@@ -12,12 +12,12 @@ LD				:= $(CROSS_COMPILE)ld
 LDFLAGS			:= -z max-page-size=4096
 QEMU			:= qemu-system-riscv64
 
-RUSTSBI			:=	./bootloader/sbi-qemu
+OPENSBI			:=	./bootloader/dynamic.bin
 
-CPUS := 2
+CPUS := 4
 
-QEMUOPTS = -machine virt -m 8M -nographic
+QEMUOPTS = -machine sifive_u -m 1G -nographic
 QEMUOPTS += -smp $(CPUS)
-QEMUOPTS += -bios $(RUSTSBI)
+QEMUOPTS += -bios $(OPENSBI)
 #QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 
 #QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0

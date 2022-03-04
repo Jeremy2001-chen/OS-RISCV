@@ -35,13 +35,12 @@ extern void userVector();
 static int setup(Process *p) {
     int r;
     PhysicalPage *page;
-    r = pageAlloc(&page);
+    r = allocPgdir(&page);
     if (r < 0) {
         panic("setup page alloc error\n");
         return r;
     }
 
-    page->ref++;
     p->pgdir = (u64*) page2pa(page);
     
     extern char trampoline[];
@@ -75,7 +74,7 @@ int processAlloc(Process **new, u64 parentId) {
 }
 
 int codeMapper(u64 va, u32 segmentSize, u8 *binary, u32 binSize, void *userData) {
-    Process *env = (Process*)userData;
+    Process *process = (Process*)userData;
     PhysicalPage *p = NULL;
     u64 i;
     int r = 0;
@@ -83,12 +82,12 @@ int codeMapper(u64 va, u32 segmentSize, u8 *binary, u32 binSize, void *userData)
     u64* j;
 
     if (offset > 0) {
-        p = pa2page(pageLookup(env->pgdir, va, &j));
+        p = pa2page(pageLookup(process->pgdir, va, &j));
         if (p == NULL) {
             if (pageAlloc(&p) < 0) {
                 return -1;
             }
-            pageInsert(env->pgdir, va, page2pa(p), 
+            pageInsert(process->pgdir, va, page2pa(p), 
                 PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
         }
         r = MIN(binSize, PAGE_SIZE - offset);
@@ -98,7 +97,7 @@ int codeMapper(u64 va, u32 segmentSize, u8 *binary, u32 binSize, void *userData)
         if (pageAlloc(&p) != 0) {
             return -1;
         }
-        pageInsert(env->pgdir, va + i, page2pa(p), 
+        pageInsert(process->pgdir, va + i, page2pa(p), 
             PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
         r = MIN(PAGE_SIZE, binSize - i);
         bcopy(binary + i, (void*) page2pa(p), r);
@@ -106,12 +105,12 @@ int codeMapper(u64 va, u32 segmentSize, u8 *binary, u32 binSize, void *userData)
 
     offset = va + i - DOWN_ALIGN(va + i, PAGE_SIZE);
     if (offset > 0) {
-        p = pa2page(pageLookup(env->pgdir, va + i, &j));
+        p = pa2page(pageLookup(process->pgdir, va + i, &j));
         if (p == NULL) {
             if (pageAlloc(&p) != 0) {
                 return -1;
             }
-            pageInsert(env->pgdir, va + i, page2pa(p), 
+            pageInsert(process->pgdir, va + i, page2pa(p), 
                 PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
         }
         r = MIN(segmentSize - i, PAGE_SIZE - offset);
@@ -121,7 +120,7 @@ int codeMapper(u64 va, u32 segmentSize, u8 *binary, u32 binSize, void *userData)
         if (pageAlloc(&p) != 0) {
             return -1;
         }
-        pageInsert(env->pgdir, va + i, page2pa(p), 
+        pageInsert(process->pgdir, va + i, page2pa(p), 
             PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
         r = MIN(PAGE_SIZE, segmentSize - i);
         bzero((void*) page2pa(p), r);
@@ -160,7 +159,6 @@ void wakeup(void *channel) {
 }
 
 void yield() {
-    printf("yield\n");
     static int count = 0;
     static int point = 0;
     Process* next_env = currentProcess;

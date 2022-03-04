@@ -94,6 +94,15 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
     return 0;
 }
 
+int allocPgdir(PhysicalPage **page) {
+    int r;
+    if ((r = pageAlloc(page)) < 0) {
+        return r;
+    }
+    (*page)->ref++;
+    return 0;
+}
+
 void pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
