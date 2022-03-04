@@ -1,6 +1,7 @@
 #include <Page.h>
 #include <Driver.h>
 #include <Error.h>
+#include <Riscv.h>
 
 extern PageList freePages;
 int pageAlloc(PhysicalPage **pp) {

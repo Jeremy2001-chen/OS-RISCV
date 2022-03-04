@@ -194,8 +194,8 @@ void processFork() {
 
     int i, j, k;
     for (i = 0; i < 512; i++) {
-        if (i = GET_PAGE_TABLE_INDEX(USER_PAGE_TABLE, 2)) continue;
-        u64 *vpd = USER_PAGE_TABLE;
+        if (i == GET_PAGE_TABLE_INDEX(USER_PAGE_TABLE, 2)) continue;
+        u64 *vpd = (u64*) USER_PAGE_TABLE;
         if (vpd[i] & PTE_VALID) continue;
         for (j = 0; j < 512; j++) {
             for (k = 0; k < 512; k++) {
