@@ -100,10 +100,11 @@ void userTrap() {
             pageout(currentProcess->pgdir, r_stval());
             break;
         case SCAUSE_STORE_ACCESS_FAULT:
+            printf("aaaaaaaa\n");
             cowHandler(currentProcess->pgdir, r_stval());
             break;
         default:
-            panic("unhandled error %d\n", scause);
+            panic("unhandled error %d,  %lx\n", scause, r_stval());
             break;
         }
     }

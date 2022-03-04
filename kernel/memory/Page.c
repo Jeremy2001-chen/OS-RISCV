@@ -121,6 +121,7 @@ void pageout(u64 *pgdir, u64 badAddr) {
 }
 
 void cowHandler(u64 *pgdir, u64 badAddr) {
+    panic("addr: %lx", badAddr);
     u64 *pte;
     u64 pa = pageLookup(pgdir, badAddr, &pte);
     if (!(*pte & PTE_COW)) {

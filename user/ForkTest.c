@@ -2,8 +2,7 @@
 
 void userMain(void) {
 	int id = 0;
-	int i;
-        syscallPutchar('n');
+	volatile int i;
 	if ((id = syscallFork()) == 0) {
 		if ((id = syscallFork()) == 0) {
 			for (i = 0; i < 500; i++) {
@@ -15,6 +14,7 @@ void userMain(void) {
 			}
 		}
 	} else {
+        syscallPutchar('n');
 		for (i = 0; i < 500; i++) {
 			syscallPutchar('c');
 		}

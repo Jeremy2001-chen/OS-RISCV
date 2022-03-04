@@ -51,10 +51,10 @@ void memoryInit(void);
 #define PTE_WRITE (1ll << 2)
 #define PTE_EXECUTE (1ll << 3)
 #define PTE_USER (1ll << 4)
-#define PTE_COW (1ll << 54)
+#define PTE_COW (1ll << 63)
 #define PERM_WIDTH 10
-#define PTE2PERM(pte) (((u64)(pte)) & ~((1ul << 54) - (1ul << 10)))
-#define PTE2PA(pte) ((((u64)(pte)) >> PERM_WIDTH) << PAGE_SHIFT)
+#define PTE2PERM(pte) (((u64)(pte)) & ~((1ull << 54) - (1ull << 10)))
+#define PTE2PA(pte) (((((u64)(pte)) & ((1ull << 54) - (1ull << 10))) >> PERM_WIDTH) << PAGE_SHIFT)
 #define PA2PTE(pa) ((((u64)(pa)) >> PAGE_SHIFT) << PERM_WIDTH)
 
 inline u64 page2pte(PhysicalPage *page) {

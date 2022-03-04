@@ -177,6 +177,7 @@ void yield() {
         count = next_env->priority;
     }
     count--;
+    printf("\nyield %d\n", next_env->id);
     processRun(next_env);
 }
 
@@ -194,7 +195,7 @@ void processFork() {
     LIST_INSERT_TAIL(&scheduleList[0], process, scheduleLink);
     trapframe->a0 = process->id;
 
-    int i, j, k;
+    u64 i, j, k;
     for (i = 0; i < 512; i++) {
         if (!(currentProcess->pgdir[i] & PTE_VALID)) {
             continue;
