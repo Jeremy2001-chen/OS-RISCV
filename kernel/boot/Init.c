@@ -4,7 +4,7 @@
 #include <Process.h>
 
 static inline void initHartId(u64 hartId) {
-    asm volatile("mv tp, %0" : : "r" (hartId & 0x1));
+    asm volatile("mv tp, %0" : : "r" (hartId & 0x3));
 }
 
 void main(u64 hartId) {
