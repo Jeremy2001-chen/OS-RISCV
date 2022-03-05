@@ -3,6 +3,9 @@
 
 static inline void printString(const char* s) {
     while (*s) {
+        if (*s == '\n') {
+            putchar('\r');
+        }
         putchar(*s++);
     }
 }
@@ -25,11 +28,11 @@ static inline void printInt(i64 xx, int base, bool sign) {
         buf[i++] = digits[x % base];
     } while((x /= base) != 0);
 
-    if(sign) {
+    if (sign) {
         buf[i++] = '-';
     }
 
-    while(--i >= 0) {
+    while (--i >= 0) {
         putchar(buf[i]);
     }
 }
@@ -38,45 +41,48 @@ static void print(const char *fmt, va_list ap) {
     int i, c;
     char *s;
 
-    for(i = 0; fmt[i]; i++) {
-        if(fmt[i] != '%'){
+    for (i = 0; fmt[i]; i++) {
+        if (fmt[i] != '%'){
+            if (fmt[i] == '\n') {
+                putchar('\r');
+            }
             putchar(fmt[i]);
             continue;
         }
         c = fmt[++i];
         bool l = false;
-        if(c == 'l') {
+        if (c == 'l') {
             l = true;
             c = fmt[++i];
         }
-        switch(c) {
-        case 'd':
-            if (l) {
-                printInt(va_arg(ap, i64), 10, true);
-            } else {
-                printInt((i64) va_arg(ap, i32), 10, true);
-            }
-            break;
-        case 'x':
-            if (l) {
-                printInt(va_arg(ap, u64), 16, false);
-            } else {
-                printInt((u64) va_arg(ap, u32), 16, false);
-            }
-            break;
-        case 's':
-            if((s = va_arg(ap, char*)) == 0) {
-                s = "(null)";
-            }
-            printString(s);
-            break;
-        case '%':
-            putchar('%');
-            break;
-        default:
-            putchar('%');
-            putchar(c);
-            break;
+        switch (c) {
+            case 'd':
+                if (l) {
+                    printInt(va_arg(ap, i64), 10, true);
+                } else {
+                    printInt((i64) va_arg(ap, i32), 10, true);
+                }
+                break;
+            case 'x':
+                if (l) {
+                    printInt(va_arg(ap, u64), 16, false);
+                } else {
+                    printInt((u64) va_arg(ap, u32), 16, false);
+                }
+                break;
+            case 's':
+                if ((s = va_arg(ap, char*)) == 0) {
+                    s = "(null)";
+                }
+                printString(s);
+                break;
+            case '%':
+                putchar('%');
+                break;
+            default:
+                putchar('%');
+                putchar(c);
+                break;
         }
     }
 }
@@ -96,5 +102,5 @@ void _panic_(const char *file, int line, const char *fmt, ...) {
     print(fmt, ap);
     va_end(ap);
     putchar('\n');
-    while (true) ;
+    while (true);
 }
