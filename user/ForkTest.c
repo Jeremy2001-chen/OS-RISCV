@@ -1,10 +1,11 @@
 #include <Syscall.h>
+#include <Fork.h>
 
 void userMain(void) {
 	int id = 0;
 	volatile int i;
-	if ((id = syscallFork()) == 0) {
-		if ((id = syscallFork()) == 0) {
+	if ((id = fork()) == 0) {
+		if ((id = fork()) == 0) {
 			syscallPutchar('m');
 			for (i = 0; i < 500; i++) {
 				syscallPutchar('a');
@@ -20,8 +21,7 @@ void userMain(void) {
 	} else {
         syscallPutchar('n');
 		for (i = 0; i < 500; i++) {
-						syscallPutchar('c');
-
+            syscallPutchar('c');
 		}
 	}
 }
