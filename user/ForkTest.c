@@ -1,7 +1,9 @@
 #include <Syscall.h>
 #include <Fork.h>
+#include <Printf.h>
 
 void userMain(void) {
+    uPrintf("start fork test....\n");
 	int id = 0;
 	volatile int i;
 	if ((id = fork()) == 0) {
