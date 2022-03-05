@@ -1,5 +1,7 @@
 INCLUDES	:=	-I./include/
 
+BIN_TOC     := ../utility/BinaryToC.c
+
 USER_LIB	:= LibMain.o
 
 USER_TARGET	:= ProcessA.x ProcessB.x ForkTest.x
@@ -7,7 +9,7 @@ USER_TARGET	:= ProcessA.x ProcessB.x ForkTest.x
 .PHONY: bintoc build clean
 
 bintoc:
-	gcc BinaryToC.c -o BinaryToC
+	gcc $(BIN_TOC) -o BinaryToC
 	chmod +x BinaryToC
 
 build: bintoc $(USER_LIB) $(USER_TARGET)
