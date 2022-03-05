@@ -1,6 +1,7 @@
 #include <Page.h>
 #include <Driver.h>
 #include <Error.h>
+#include <Riscv.h>
 
 extern PageList freePages;
 int pageAlloc(PhysicalPage **pp) {
@@ -108,7 +109,7 @@ void pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
-    printf("pageout at %lx", badAddr);
+    printf("pageout at %lx\n", badAddr);
     PhysicalPage *page;
     if (pageAlloc(&page) < 0) {
         panic("");
@@ -117,4 +118,21 @@ void pageout(u64 *pgdir, u64 badAddr) {
         PTE_USER | PTE_READ | PTE_WRITE) < 0) {
         panic("");
     }
+}
+
+void cowHandler(u64 *pgdir, u64 badAddr) {
+    u64 *pte;
+    u64 pa = pageLookup(pgdir, badAddr, &pte);
+    if (!(*pte & PTE_COW)) {
+        printf("access denied");
+        return;
+    }
+    PhysicalPage *page;
+    int r = pageAlloc(&page);
+    if (r < 0) {
+        panic("");
+        return;
+    }
+    pageInsert(pgdir, badAddr, page2pa(page), (PTE2PERM(*pte) | PTE_WRITE) & ~PTE_COW);
+    bcopy((void*) pa, (void*) page2pa(page), PAGE_SIZE);
 }

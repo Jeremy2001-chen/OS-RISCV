@@ -2,7 +2,7 @@ INCLUDES	:=	-I./include/
 
 USER_LIB	:= LibMain.o
 
-USER_TARGET	:= ProcessA.x ProcessB.x
+USER_TARGET	:= ProcessA.x ProcessB.x ForkTest.x
 
 .PHONY: bintoc build clean
 

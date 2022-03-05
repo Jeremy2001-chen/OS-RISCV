@@ -17,8 +17,8 @@ void main(u64 hartId) {
     memoryInit();
     trapInit();
     processInit();
-    PROCESS_CREATE_PRIORITY(ProcessA, 1);
-    PROCESS_CREATE_PRIORITY(ProcessB, 1);
+    PROCESS_CREATE_PRIORITY(ForkTest, 1);
+    // PROCESS_CREATE_PRIORITY(ProcessB, 1);
 
     yield();
 }
