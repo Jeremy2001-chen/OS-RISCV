@@ -79,11 +79,14 @@ static void testMemory() {
 }
 
 void memoryInit() {
+    printf("Memory init start...\n");
     initFreePages();
     virtualMemory();
     startPage();
-    printf("memory init finish\n");
+    printf("Memory init finish!\n");
+    printf("Test memory start...\n");
     testMemory();
+    printf("Test memory finish!\n");
 }
 
 void bcopy(void *src, void *dst, u32 len) {

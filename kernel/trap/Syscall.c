@@ -7,6 +7,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_PROCESS_ID]    syscallGetProcessId,
     [SYSCALL_YIELD]             syscallYield,
     [SYSCALL_FORK]              syscallFork,
+    [SYSCALL_PUT_STRING]        syscallPutString
 };
 
 extern Trapframe trapframe[];
@@ -24,4 +25,8 @@ void syscallYield() {
 
 void syscallFork() {
     processFork();
+}
+
+void syscallPutString() {
+
 }

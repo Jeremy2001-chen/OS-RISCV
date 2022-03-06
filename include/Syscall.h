@@ -8,6 +8,7 @@ void syscallGetProcessId();
 void syscallYield();
 void syscallProcessDestroy();
 void syscallFork();
+void syscallPutString();
 
 extern void (*syscallVector[])(void);
 

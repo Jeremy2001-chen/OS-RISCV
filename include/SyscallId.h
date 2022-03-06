@@ -6,5 +6,6 @@
 #define SYSCALL_YIELD 2
 #define SYSCALL_PROCESS_DESTORY 3
 #define SYSCALL_FORK 4
+#define SYSCALL_PUT_STRING 5
 
 #endif

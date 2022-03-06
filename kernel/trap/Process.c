@@ -8,10 +8,11 @@
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
 struct ProcessList scheduleList[2];
-Process *currentProcess;
+Process *currentProcess[HART_TOTAL_NUMBER] = {0};
 
 extern Trapframe trapframe[];
 void processInit() {
+    printf("Process init start...\n");
     LIST_INIT(&freeProcesses);
     LIST_INIT(&scheduleList[0]);
     LIST_INIT(&scheduleList[1]);
@@ -23,6 +24,7 @@ void processInit() {
         LIST_INSERT_HEAD(&freeProcesses, &processes[i], link);
     }
     w_sscratch((u64) trapframe);
+    printf("Process init finish!\n");
 }
 
 u32 generateProcessId(Process *p) {
@@ -146,11 +148,12 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
 }
 
 void processRun(Process *p) {
-    if (currentProcess) {
-        bcopy(trapframe, &(currentProcess->trapframe), sizeof(Trapframe));
+    int hartId = r_mhartid();
+    if (currentProcess[hartId]) {
+        bcopy(trapframe, &(currentProcess[hartId]->trapframe), sizeof(Trapframe));
     }
-    currentProcess = p;
-    bcopy(&(currentProcess->trapframe), trapframe, sizeof(Trapframe));
+    currentProcess[hartId] = p;
+    bcopy(&(currentProcess[hartId]->trapframe), trapframe, sizeof(Trapframe));
     userTrapReturn();
 }
 
@@ -161,7 +164,8 @@ void wakeup(void *channel) {
 void yield() {
     static int count = 0;
     static int point = 0;
-    Process* next_env = currentProcess;
+    int hartId = r_mhartid();
+    Process* next_env = currentProcess[hartId];
     while ((count == 0) || (next_env == NULL) || (next_env->state != RUNNABLE)) {
         if (next_env != NULL) {
             LIST_INSERT_TAIL(&scheduleList[point ^ 1], next_env, scheduleLink);
@@ -183,13 +187,14 @@ void yield() {
 
 void processFork() {
     Process *process;
-    int r = processAlloc(&process, currentProcess->id);
+    int hartId = r_mhartid();
+    int r = processAlloc(&process, currentProcess[hartId]->id);
     if (r < 0) {
-        currentProcess->trapframe.a0 = r;
+        currentProcess[hartId]->trapframe.a0 = r;
         panic("");
         return;
     }
-    process->priority = currentProcess->priority;
+    process->priority = currentProcess[hartId]->priority;
     bcopy(trapframe, &process->trapframe, sizeof(Trapframe));
     process->trapframe.a0 = 0;
     LIST_INSERT_TAIL(&scheduleList[0], process, scheduleLink);
@@ -197,10 +202,10 @@ void processFork() {
 
     u64 i, j, k;
     for (i = 0; i < 512; i++) {
-        if (!(currentProcess->pgdir[i] & PTE_VALID)) {
+        if (!(currentProcess[hartId]->pgdir[i] & PTE_VALID)) {
             continue;
         }
-        u64 *pa = (u64*) PTE2PA(currentProcess->pgdir[i]);
+        u64 *pa = (u64*) PTE2PA(currentProcess[hartId]->pgdir[i]);
         for (j = 0; j < 512; j++) {
             if (!(pa[j] & PTE_VALID)) {
                 continue;

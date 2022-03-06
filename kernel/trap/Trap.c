@@ -7,10 +7,12 @@
 #include <Syscall.h>
 
 void trapInit() {
+    printf("Trap init start...\n");
     w_stvec((u64)kernelVector);
     w_sstatus(r_sstatus() | SSTATUS_SIE | SSTATUS_SPIE);
     w_sie(r_sie() | SIE_SEIE | SIE_SSIE | SIE_STIE);
     setNextTimeout();
+    printf("Trap init finish!\n");
 }
 
 int trapDevice() {
@@ -66,9 +68,10 @@ void kernelTrap() {
     if (device == UNKNOWN_DEVICE) {
         panic("kernel trap");
     }
-    extern Process *currentProcess;
-    if (device == TIMER_INTERRUPT && currentProcess != NULL && 
-        currentProcess->state == RUNNING) {
+    extern Process *currentProcess[HART_TOTAL_NUMBER];
+    int hartId = r_mhartid();
+    if (device == TIMER_INTERRUPT && currentProcess[hartId] != NULL &&
+        currentProcess[hartId]->state == RUNNING) {
         yield();
     }
     w_sepc(sepc);
@@ -81,8 +84,9 @@ void userTrap() {
         panic("usertrap: not from user mode\n");
     }
     w_stvec((u64) kernelVector);
-    extern Process *currentProcess;
-    
+    extern Process *currentProcess[HART_TOTAL_NUMBER];
+    int hartId = r_mhartid();
+
     u64 scause = r_scause();
     extern Trapframe trapframe[];
     if (scause & SCAUSE_INTERRUPT) {
@@ -98,11 +102,11 @@ void userTrap() {
         case SCAUSE_LOAD_PAGE_FAULT:
         case SCAUSE_STORE_PAGE_FAULT:
             u64 *pte;
-            u64 pa = pageLookup(currentProcess->pgdir, r_stval(), &pte);
+            u64 pa = pageLookup(currentProcess[hartId]->pgdir, r_stval(), &pte);
             if (pa == 0) {
-                pageout(currentProcess->pgdir, r_stval());
+                pageout(currentProcess[hartId]->pgdir, r_stval());
             } else if (*pte & PTE_COW) {
-                cowHandler(currentProcess->pgdir, r_stval());
+                cowHandler(currentProcess[hartId]->pgdir, r_stval());
             } else {
                 panic("unknown");
             }
@@ -119,9 +123,10 @@ void userTrapReturn() {
     extern char trampoline[];
     w_stvec(TRAMPOLINE_BASE + ((u64)userVector - (u64)trampoline));
 
-    extern Process *currentProcess;
+    extern Process *currentProcess[HART_TOTAL_NUMBER];
     extern char kernelStack[];
     extern Trapframe trapframe[];
+    int hartId = r_mhartid();
     trapframe->kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE;
     trapframe->trapHandler = (u64)userTrap;
     trapframe->kernelHartId = r_tp();
@@ -132,7 +137,7 @@ void userTrapReturn() {
     sstatus &= ~SSTATUS_SPP;
     sstatus |= SSTATUS_SPIE;
     w_sstatus(sstatus);
-    u64 satp = MAKE_SATP(currentProcess->pgdir);
+    u64 satp = MAKE_SATP(currentProcess[hartId]->pgdir);
     u64 fn = TRAMPOLINE_BASE + ((u64)userReturn - (u64)trampoline);
     ((void(*)(u64, u64))fn)(TRAMPOLINE_BASE + (u64)trapframe - (u64)trampoline, satp);
 }

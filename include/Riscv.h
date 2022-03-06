@@ -3,10 +3,12 @@
 
 #include <Type.h>
 
+#define HART_TOTAL_NUMBER 4
+
 // which hart (core) is this?
 static inline u64 r_mhartid() {
     u64 x;
-    asm volatile("csrr %0, mhartid" : "=r" (x) );
+    asm volatile("mv %0, tp" : "=r" (x) );
     return x;
 }
 
