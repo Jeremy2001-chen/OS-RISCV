@@ -6,7 +6,7 @@
 #define HART_TOTAL_NUMBER 4
 
 // which hart (core) is this?
-static inline u64 r_mhartid() {
+static inline u64 r_hartid() {
     u64 x;
     asm volatile("mv %0, tp" : "=r" (x) );
     return x;

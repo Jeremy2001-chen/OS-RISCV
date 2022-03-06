@@ -148,7 +148,7 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
 }
 
 void processRun(Process *p) {
-    int hartId = r_mhartid();
+    int hartId = r_hartid();
     if (currentProcess[hartId]) {
         bcopy(trapframe, &(currentProcess[hartId]->trapframe), sizeof(Trapframe));
     }
@@ -164,7 +164,7 @@ void wakeup(void *channel) {
 void yield() {
     static int count = 0;
     static int point = 0;
-    int hartId = r_mhartid();
+    int hartId = r_hartid();
     Process* next_env = currentProcess[hartId];
     while ((count == 0) || (next_env == NULL) || (next_env->state != RUNNABLE)) {
         if (next_env != NULL) {
@@ -187,7 +187,7 @@ void yield() {
 
 void processFork() {
     Process *process;
-    int hartId = r_mhartid();
+    int hartId = r_hartid();
     int r = processAlloc(&process, currentProcess[hartId]->id);
     if (r < 0) {
         currentProcess[hartId]->trapframe.a0 = r;

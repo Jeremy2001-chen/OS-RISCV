@@ -9,9 +9,9 @@ static void uPrint(const char *fmt, va_list ap) {
     for (i = 0; fmt[i]; i++) {
         if (fmt[i] != '%') {
             if (fmt[i] == '\n') {
-                syscallPutchar('\r');
+                addCharToBuffer('\r');
             }
-            syscallPutchar(fmt[i]);
+            addCharToBuffer(fmt[i]);
             continue;
         }
         c = fmt[++i];
@@ -41,11 +41,11 @@ static void uPrint(const char *fmt, va_list ap) {
                 uPrintString(s);
                 break;
             case '%':
-                syscallPutchar('%');
+                addCharToBuffer('%');
                 break;
             default:
-                syscallPutchar('%');
-                syscallPutchar(c);
+                addCharToBuffer('%');
+                addCharToBuffer(c);
                 break;
         }
     }
@@ -56,6 +56,7 @@ void uPrintf(const char *fmt, ...) {
     va_start(ap, fmt);
     uPrint(fmt, ap);
     va_end(ap);
+    clearBuffer();
 }
 
 void _uPanic_(const char *file, int line, const char *fmt, ...) {

@@ -11,9 +11,10 @@ static inline void initHartId(u64 hartId) {
 }
 
 void main(u64 hartId) {
+    initHartId(hartId);
+
     if (mainCount == 0) {
         mainCount = mainCount + 1;
-        initHartId(hartId);
 
         consoleInit();
         printfInit();
@@ -24,7 +25,7 @@ void main(u64 hartId) {
         processInit();
 
         PROCESS_CREATE_PRIORITY(ForkTest, 1);
-        // PROCESS_CREATE_PRIORITY(ProcessB, 1);
+//        PROCESS_CREATE_PRIORITY(ProcessB, 1);
 
         yield();
     } else {

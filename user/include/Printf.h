@@ -4,13 +4,30 @@
 #include <Syscall.h>
 #include "../../include/Type.h"
 
-#define 	LP_MAX_BUF 100
+#define 	BUFFER_MAX_LEN 128
+
+static char printfBuffer[BUFFER_MAX_LEN];
+static int bufferLen = 0;
+
+static inline void clearBuffer() {
+    if (bufferLen > 0) {
+        syscallPutString(printfBuffer, bufferLen);
+        bufferLen = 0;
+    }
+}
+
+static inline void addCharToBuffer(char c) {
+    printfBuffer[bufferLen++] = c;
+    if (bufferLen == BUFFER_MAX_LEN) {
+        clearBuffer();
+    }
+}
 
 static inline void uPrintString(const char* s) {
     while (*s) {
         if (*s == '\n')
-            syscallPutchar('\r');
-        syscallPutchar(*s++);
+            addCharToBuffer('\r');
+        addCharToBuffer(*s++);
     }
 }
 
@@ -37,7 +54,7 @@ static inline void uPrintInt(i64 xx, int base, bool sign) {
     }
 
     while (--i >= 0) {
-        syscallPutchar(buf[i]);
+        addCharToBuffer(buf[i]);
     }
 }
 

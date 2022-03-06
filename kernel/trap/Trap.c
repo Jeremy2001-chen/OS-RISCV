@@ -69,7 +69,7 @@ void kernelTrap() {
         panic("kernel trap");
     }
     extern Process *currentProcess[HART_TOTAL_NUMBER];
-    int hartId = r_mhartid();
+    int hartId = r_hartid();
     if (device == TIMER_INTERRUPT && currentProcess[hartId] != NULL &&
         currentProcess[hartId]->state == RUNNING) {
         yield();
@@ -85,7 +85,7 @@ void userTrap() {
     }
     w_stvec((u64) kernelVector);
     extern Process *currentProcess[HART_TOTAL_NUMBER];
-    int hartId = r_mhartid();
+    int hartId = r_hartid();
 
     u64 scause = r_scause();
     extern Trapframe trapframe[];
@@ -126,7 +126,7 @@ void userTrapReturn() {
     extern Process *currentProcess[HART_TOTAL_NUMBER];
     extern char kernelStack[];
     extern Trapframe trapframe[];
-    int hartId = r_mhartid();
+    int hartId = r_hartid();
     trapframe->kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE;
     trapframe->trapHandler = (u64)userTrap;
     trapframe->kernelHartId = r_tp();
