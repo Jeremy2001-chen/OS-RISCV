@@ -93,6 +93,8 @@ void userTrap() {
         trapDevice();
         yield();
     } else {
+        u64 *pte = NULL;
+        u64 pa = -1;
         switch (scause & SCAUSE_EXCEPTION_CODE)
         {
         case SCAUSE_ENVIRONMENT_CALL:
@@ -101,8 +103,7 @@ void userTrap() {
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
         case SCAUSE_STORE_PAGE_FAULT:
-            u64 *pte;
-            u64 pa = pageLookup(currentProcess[hartId]->pgdir, r_stval(), &pte);
+            pa = pageLookup(currentProcess[hartId]->pgdir, r_stval(), &pte);
             if (pa == 0) {
                 pageout(currentProcess[hartId]->pgdir, r_stval());
             } else if (*pte & PTE_COW) {
