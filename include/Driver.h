@@ -58,4 +58,8 @@ void consoleInterrupt(int);
 #define SBI_CALL_4(which, arg0, arg1, arg2, arg3) \
 		SBI_CALL(which, arg0, arg1, arg2, arg3)
 
+static inline void sbi_send_ipi(const unsigned long* hart_mask) {
+    SBI_CALL_1(SBI_SEND_IPI, hart_mask);
+}
+
 #endif

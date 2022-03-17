@@ -14,7 +14,7 @@ QEMU			:= qemu-system-riscv64
 
 OPENSBI			:=	./bootloader/dynamic.bin
 
-CPUS := 4
+CPUS := 5
 
 QEMUOPTS = -machine sifive_u -m 1G -nographic
 QEMUOPTS += -smp $(CPUS)
