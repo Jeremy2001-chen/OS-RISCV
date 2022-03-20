@@ -24,11 +24,13 @@ static volatile u32 * const spi = (void *)(SPI_CTRL_ADDR);
 static inline u8 spi_xfer(u8 d)
 {
 	i32 r;
-
+	int cnt = 0;
 	REG32(spi, SPI_REG_TXFIFO) = d;
 	do {
+		cnt++;
 		r = REG32(spi, SPI_REG_RXFIFO);
 	} while (r < 0);
+	printf("aaa  %d\n", cnt);
 	return r;
 }
 
@@ -55,11 +57,11 @@ static u8 sd_cmd(u8 cmd, u32 arg, u8 crc)
 	do {
 		r = sd_dummy();
 		if (!(r & 0x80)) {
-//			dprintf("sd:cmd: %hx\r\n", r);
+			printf("sd:cmd: %x\r\n", r);
 			goto done;
 		}
 	} while (--n > 0);
-	printf("sd_cmd: timeout");
+	printf("sd_cmd: timeout\n");
 done:
 	return r;
 }

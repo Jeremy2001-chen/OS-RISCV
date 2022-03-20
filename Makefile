@@ -25,7 +25,7 @@ build: $(modules) fs
 	$(OBJDUMP) -S $(vmlinux_img) > $(vmlinux_asm)
 
 fs:
-	dd if=/dev/zero of=disk.img bs=4096 count=512
+	dd if=/dev/zero of=target/disk.img bs=4096 count=512
 
 $(modules):
 	$(MAKE) build --directory=$@
