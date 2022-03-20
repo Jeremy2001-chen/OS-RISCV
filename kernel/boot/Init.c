@@ -3,6 +3,7 @@
 #include <Trap.h>
 #include <Process.h>
 #include <Riscv.h>
+#include <Sd.h>
 
 static int mainCount = 0;
 
@@ -19,9 +20,10 @@ void main(u64 hartId) {
         consoleInit();
         printfInit();
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
-
-        memoryInit();
-        trapInit();
+        sdInit();
+/*
+        //memoryInit();
+        //trapInit();
         //processInit();
 
         for (int i = 1; i < 5; ++ i)
@@ -35,7 +37,7 @@ void main(u64 hartId) {
 //        PROCESS_CREATE_PRIORITY(ProcessB, 1);
 
         printf("aaaa\n");
-//        yield();
+//        yield();*/
     } else {
         putchar('a' + hartId);
         while(1);

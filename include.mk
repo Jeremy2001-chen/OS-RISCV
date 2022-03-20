@@ -19,5 +19,5 @@ CPUS := 5
 QEMUOPTS = -machine sifive_u -m 1G -nographic
 QEMUOPTS += -smp $(CPUS)
 QEMUOPTS += -bios $(OPENSBI)
-#QEMUOPTS += -drive file=fs.img,if=none,format=raw,id=x0 
+QEMUOPTS += -drive file=disk.img,if=sd,format=raw 
 #QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0

@@ -1,6 +1,6 @@
 INCLUDES := -I../../include
 
-target = Console.o Print.o
+target = Console.o Print.o sd.o
 
 .PHONY: build clean
 
