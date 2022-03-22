@@ -162,13 +162,14 @@ static u16 crc16_round(u16 crc, u8 data) {
 
 //static const char spinner[] = { '-', '/', '|', '\\' };
 
-#define buf_size (512*2+1)
-char copy_buf[buf_size];
+#define buf_size (512*1+1)
+char copy_buf[buf_size] = {0};
 static int copy(void)
 {
 	volatile u8 *p = (void *)copy_buf;
-	for(int j=0;j<513;++j)p[j]=0;//clear buf
-	long i = (buf_size-1)/512;
+	for(int j=0;j<buf_size;++j)p[j]=j;//clear buf
+	long i = 1;
+	printf("i=%d\n",i);
 	int rc = 0;
 
 	printf("CMD18");
@@ -188,6 +189,7 @@ static int copy(void)
 		while (sd_dummy() != 0xFE);
 		do {
 			u8 x = sd_dummy();
+			// printf("%lx %d ", p, x);
 			*p++ = x;
 			crc = crc16_round(crc, x);
 		} while (--n > 0);
@@ -211,8 +213,9 @@ static int copy(void)
 	sd_cmd(0x4C, 0, 0x01);
 	sd_cmd_end();
 	//printf("\b ");
-	for(int j=0;j<buf_size;++j)
-	printf("%d__%x\n",j,p[j]);//output buffer content
+	// for(int j=0;j<buf_size;++j)
+		// printf("%d__%x\n",j,(int)copy_buf[j]);//output buffer content
+
 	return rc;
 }
 
