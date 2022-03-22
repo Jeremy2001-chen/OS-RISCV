@@ -126,6 +126,7 @@ static int sd_acmd41(void)
 
 static int sd_cmd58(void)
 {
+	return 0;// TODO
 	int rc;
 	printf("CMD58");
 	rc = (sd_cmd(0x7A, 0, 0xFD) != 0x00);
@@ -161,10 +162,13 @@ static u16 crc16_round(u16 crc, u8 data) {
 
 //static const char spinner[] = { '-', '/', '|', '\\' };
 
+#define buf_size (512*2+1)
+char copy_buf[buf_size];
 static int copy(void)
 {
-	volatile u8 *p = (void *)(PAYLOAD_DEST);
-	long i = PAYLOAD_SIZE;
+	volatile u8 *p = (void *)copy_buf;
+	for(int j=0;j<513;++j)p[j]=0;//clear buf
+	long i = (buf_size-1)/512;
 	int rc = 0;
 
 	printf("CMD18");
@@ -207,6 +211,8 @@ static int copy(void)
 	sd_cmd(0x4C, 0, 0x01);
 	sd_cmd_end();
 	//printf("\b ");
+	for(int j=0;j<buf_size;++j)
+	printf("%d__%x\n",j,p[j]);//output buffer content
 	return rc;
 }
 
