@@ -167,7 +167,6 @@ char copy_buf[buf_size] = {0};
 static int copy(void)
 {
 	volatile u8 *p = (void *)copy_buf;
-	for(int j=0;j<buf_size;++j)p[j]=j;//clear buf
 	long i = 1;
 	printf("i=%d\n",i);
 	int rc = 0;
@@ -213,10 +212,54 @@ static int copy(void)
 	sd_cmd(0x4C, 0, 0x01);
 	sd_cmd_end();
 	//printf("\b ");
-	// for(int j=0;j<buf_size;++j)
-		// printf("%d__%x\n",j,(int)copy_buf[j]);//output buffer content
+	for(int j=0;j<buf_size;++j)
+		printf("%d ", (int)copy_buf[j]);//output buffer content
 
 	return rc;
+}
+
+static int write() {
+	//return 0;
+	// int r = sd_cmd(23 | 0x40, 0, 0);
+	// printf("rrrrrrrr   %d\n", r);
+	// sd_cmd_end();
+	printf("CMD 25\n");
+	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
+	if (sd_cmd(25 | 0x40, 0, 0) != 0) {
+		sd_cmd_end();
+		return 1;
+	}
+	sd_dummy();
+	//sd_dummy();
+	//sd_dummy();
+	//while (sd_dummy() != 0xFE) {
+
+	spi_xfer(0xFC);
+	int n = 512;
+	for (int i = 0; i < buf_size; i++) {
+		copy_buf[i] = i & 255;
+	}
+	u8 *p = (u8*) copy_buf;
+	do {
+		spi_xfer(*p++);
+	} while (--n > 0);
+
+
+	int timeout = 0xfff;
+	while (--timeout) {
+		int x = sd_dummy();
+		if (5 == (x & 0x1f)) {
+			break;
+		}
+	}
+	if (timeout == 0) {
+		panic("aaaaaaaaa");
+	}
+
+	sd_cmd_end();
+	sd_cmd(0x4C, 0, 0x01);
+	sd_cmd_end();
+	return 0;
 }
 
 int sdInit(void)
@@ -230,6 +273,7 @@ int sdInit(void)
 	    sd_acmd41() ||
 	    sd_cmd58() ||
 	    sd_cmd16() ||
+		write() ||
 	    copy()) {
 		printf("ERROR");
 		return 1;
