@@ -21,6 +21,7 @@ void main(u64 hartId) {
         consoleInit();
         printfInit();
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
+        memoryInit();
         sdInit();
         for (int i = 0; i < 1024; i++) {
             binary[i] = i & 254;
@@ -33,11 +34,10 @@ void main(u64 hartId) {
         for (int i = 0; i < 1024; i++) {
             printf("%d ", binary[i]);
         }
-/*
-        //memoryInit();
+
         //trapInit();
         //processInit();
-
+/*
         for (int i = 1; i < 5; ++ i)
             if (i != hartId) {
                 unsigned long mask = 1 << i;

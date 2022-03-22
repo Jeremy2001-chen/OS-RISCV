@@ -2,12 +2,12 @@
 #include <Spi.h>
 #include <Uart.h>
 #include <Driver.h>
+#include <MemoryConfig.h>
 
 //#include "common.h"
 
 
 #define MAX_CORES 8
-#define PAYLOAD_SIZE	(26 << 11)
 
 #define TL_CLK 0x8000000
 #ifndef TL_CLK
@@ -244,8 +244,7 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 	return 0;
 }
 
-int sdInit(void)
-{
+int sdInit(void) {
 	REG32(uart, UART_REG_TXCTRL) = UART_TXEN;
 
 	sd_poweron();
