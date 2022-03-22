@@ -30,7 +30,7 @@ static inline u8 spi_xfer(u8 d)
 		cnt++;
 		r = REG32(spi, SPI_REG_RXFIFO);
 	} while (r < 0);
-	printf("aaa  %d\n", cnt);
+	//printf("aaa  %d\n", cnt);
 	return r;
 }
 
