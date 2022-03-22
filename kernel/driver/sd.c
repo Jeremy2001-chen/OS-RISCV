@@ -1,6 +1,3 @@
-// See LICENSE for license details.
-//#include <stdint.h>
-
 #include <Platform.h>
 #include <Spi.h>
 #include <Uart.h>
@@ -162,20 +159,14 @@ static u16 crc16_round(u16 crc, u8 data) {
 
 //static const char spinner[] = { '-', '/', '|', '\\' };
 
-#define buf_size (512*1+1)
-char copy_buf[buf_size + buf_size] = {0};
-static int copy(void)
-{
-	volatile u8 *p = (void *)copy_buf;
-	long i = 2;
-	printf("i=%d\n",i);
+int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
+	volatile u8 *p = (void *)buf;
 	int rc = 0;
 
 	printf("CMD18");
 	printf("LOADING  ");
 
-	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
-	if (sd_cmd(0x52, 0, 0xE1) != 0x00) {
+	if (sd_cmd(0x52, startSector * 512, 0xE1) != 0x00) {
 		sd_cmd_end();
 		return 1;
 	}
@@ -188,6 +179,7 @@ static int copy(void)
 		while (sd_dummy() != 0xFE);
 		do {
 			u8 x = sd_dummy();
+			//printf("%d ", x);
 			*p++ = x;
 			crc = crc16_round(crc, x);
 		} while (--n > 0);
@@ -201,62 +193,39 @@ static int copy(void)
 			break;
 		}
 
-		if (SPIN_UPDATE(i)) {
+		if (SPIN_UPDATE(sectorNumber)) {
 			//printf("\b");
 			//printf(spinner[SPIN_INDEX(i)]);
 		}
-	} while (--i > 0);
+	} while (--sectorNumber > 0);
 	sd_cmd_end();
 
 	sd_cmd(0x4C, 0, 0x01);
 	sd_cmd_end();
-	//printf("\b ");
-	for(int j=0;j<buf_size + buf_size;++j)
-		printf("%d ", (int)copy_buf[j]);//output buffer content
 
 	return rc;
 }
 
-static int write() {
-	//return 0;
-	// int r = sd_cmd(23 | 0x40, 0, 0);
-	// printf("rrrrrrrr   %d\n", r);
-	// sd_cmd_end();
-	printf("CMD 25\n");
-	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
-	if (sd_cmd(25 | 0x40, 0, 0) != 0) {
+int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
+	//REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
+	if (sd_cmd(25 | 0x40, startSector * 512, 0) != 0) {
 		sd_cmd_end();
 		return 1;
 	}
 	sd_dummy();
-	//sd_dummy();
-	//sd_dummy();
-	//while (sd_dummy() != 0xFE) {
 
-	spi_xfer(0xFC);
-	int n = 512;
-	for (int i = 0; i < buf_size; i++) {
-		copy_buf[i] = 255 & i;
+	u8 *p = buf;
+	while (sectorNumber--) {
+		spi_xfer(0xFC);
+		int n = 512;
+		do {
+			spi_xfer(*p++);
+		} while (--n > 0);
+		sd_dummy();
+		sd_dummy();
+		sd_dummy();
+		sd_dummy();
 	}
-	u8 *p = (u8*) copy_buf;
-	do {
-		spi_xfer(*p++);
-	} while (--n > 0);
-
-	sd_dummy();
-	sd_dummy();
-	sd_dummy();
-	sd_dummy();
-
-	spi_xfer(0xFC);
-	n = 512;
-	p = (u8*) copy_buf;
-	do {
-		spi_xfer(*p++);
-	} while (--n > 0);
-
-	sd_dummy();
-	sd_dummy();
 
 	int timeout = 0xfff;
 	while (--timeout) {
@@ -266,7 +235,7 @@ static int write() {
 		}
 	}
 	if (timeout == 0) {
-		panic("aaaaaaaaa");
+		//panic("");
 	}
 
 	sd_cmd_end();
@@ -285,13 +254,12 @@ int sdInit(void)
 	    sd_cmd8() ||
 	    sd_acmd41() ||
 	    sd_cmd58() ||
-	    sd_cmd16() ||
-		write() ||
-	    copy()) {
+	    sd_cmd16()) {
 		printf("ERROR");
 		return 1;
 	}
 
+	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
 	printf("BOOT");
 
 	__asm__ __volatile__ ("fence.i" : : : "memory");
