@@ -163,11 +163,11 @@ static u16 crc16_round(u16 crc, u8 data) {
 //static const char spinner[] = { '-', '/', '|', '\\' };
 
 #define buf_size (512*1+1)
-char copy_buf[buf_size] = {0};
+char copy_buf[buf_size + buf_size] = {0};
 static int copy(void)
 {
 	volatile u8 *p = (void *)copy_buf;
-	long i = 1;
+	long i = 2;
 	printf("i=%d\n",i);
 	int rc = 0;
 
@@ -188,7 +188,6 @@ static int copy(void)
 		while (sd_dummy() != 0xFE);
 		do {
 			u8 x = sd_dummy();
-			// printf("%lx %d ", p, x);
 			*p++ = x;
 			crc = crc16_round(crc, x);
 		} while (--n > 0);
@@ -212,7 +211,7 @@ static int copy(void)
 	sd_cmd(0x4C, 0, 0x01);
 	sd_cmd_end();
 	//printf("\b ");
-	for(int j=0;j<buf_size;++j)
+	for(int j=0;j<buf_size + buf_size;++j)
 		printf("%d ", (int)copy_buf[j]);//output buffer content
 
 	return rc;
@@ -237,13 +236,27 @@ static int write() {
 	spi_xfer(0xFC);
 	int n = 512;
 	for (int i = 0; i < buf_size; i++) {
-		copy_buf[i] = i & 255;
+		copy_buf[i] = 255 & i;
 	}
 	u8 *p = (u8*) copy_buf;
 	do {
 		spi_xfer(*p++);
 	} while (--n > 0);
 
+	sd_dummy();
+	sd_dummy();
+	sd_dummy();
+	sd_dummy();
+
+	spi_xfer(0xFC);
+	n = 512;
+	p = (u8*) copy_buf;
+	do {
+		spi_xfer(*p++);
+	} while (--n > 0);
+
+	sd_dummy();
+	sd_dummy();
 
 	int timeout = 0xfff;
 	while (--timeout) {
