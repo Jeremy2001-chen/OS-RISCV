@@ -21,11 +21,12 @@ objects	:=	$(boot_dir)/*.o \
 .PHONY: build clean $(modules) run
 
 build: $(modules) fs
+	mkdir -p $(target_dir)
 	$(LD) $(LDFLAGS) -T $(linkscript) -o $(vmlinux_img) $(objects)
 	$(OBJDUMP) -S $(vmlinux_img) > $(vmlinux_asm)
 
 fs:
-	dd if=/dev/zero of=target/disk.img bs=4096 count=512
+	dd if=README.md of=target/disk.img bs=4096 count=512
 
 $(modules):
 	$(MAKE) build --directory=$@

@@ -11,6 +11,7 @@ static inline void initHartId(u64 hartId) {
     asm volatile("mv tp, %0" : : "r" (hartId & 0x7));
 }
 
+u8 binary[1024];
 void main(u64 hartId) {
     initHartId(hartId);
 
@@ -20,12 +21,23 @@ void main(u64 hartId) {
         consoleInit();
         printfInit();
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
+        memoryInit();
         sdInit();
-/*
-        //memoryInit();
+        for (int i = 0; i < 1024; i++) {
+            binary[i] = i & 254;
+        }
+        sdWrite(binary, 1, 2);
+        for (int i = 0; i < 1024; i++) {
+            binary[i] = 0;
+        }
+        sdRead(binary, 1, 2);
+        for (int i = 0; i < 1024; i++) {
+            printf("%d ", binary[i]);
+        }
+
         //trapInit();
         //processInit();
-
+/*
         for (int i = 1; i < 5; ++ i)
             if (i != hartId) {
                 unsigned long mask = 1 << i;

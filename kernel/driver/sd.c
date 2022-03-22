@@ -1,16 +1,13 @@
-// See LICENSE for license details.
-//#include <stdint.h>
-
 #include <Platform.h>
 #include <Spi.h>
 #include <Uart.h>
 #include <Driver.h>
+#include <MemoryConfig.h>
 
 //#include "common.h"
 
 
 #define MAX_CORES 8
-#define PAYLOAD_SIZE	(26 << 11)
 
 #define TL_CLK 0x8000000
 #ifndef TL_CLK
@@ -126,6 +123,7 @@ static int sd_acmd41(void)
 
 static int sd_cmd58(void)
 {
+	return 0;// TODO
 	int rc;
 	printf("CMD58");
 	rc = (sd_cmd(0x7A, 0, 0xFD) != 0x00);
@@ -161,17 +159,14 @@ static u16 crc16_round(u16 crc, u8 data) {
 
 //static const char spinner[] = { '-', '/', '|', '\\' };
 
-static int copy(void)
-{
-	volatile u8 *p = (void *)(PAYLOAD_DEST);
-	long i = PAYLOAD_SIZE;
+int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
+	volatile u8 *p = (void *)buf;
 	int rc = 0;
 
 	printf("CMD18");
 	printf("LOADING  ");
 
-	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
-	if (sd_cmd(0x52, 0, 0xE1) != 0x00) {
+	if (sd_cmd(0x52, startSector * 512, 0xE1) != 0x00) {
 		sd_cmd_end();
 		return 1;
 	}
@@ -184,6 +179,7 @@ static int copy(void)
 		while (sd_dummy() != 0xFE);
 		do {
 			u8 x = sd_dummy();
+			//printf("%d ", x);
 			*p++ = x;
 			crc = crc16_round(crc, x);
 		} while (--n > 0);
@@ -197,21 +193,58 @@ static int copy(void)
 			break;
 		}
 
-		if (SPIN_UPDATE(i)) {
+		if (SPIN_UPDATE(sectorNumber)) {
 			//printf("\b");
 			//printf(spinner[SPIN_INDEX(i)]);
 		}
-	} while (--i > 0);
+	} while (--sectorNumber > 0);
 	sd_cmd_end();
 
 	sd_cmd(0x4C, 0, 0x01);
 	sd_cmd_end();
-	//printf("\b ");
+
 	return rc;
 }
 
-int sdInit(void)
-{
+int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
+	//REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
+	if (sd_cmd(25 | 0x40, startSector * 512, 0) != 0) {
+		sd_cmd_end();
+		return 1;
+	}
+	sd_dummy();
+
+	u8 *p = buf;
+	while (sectorNumber--) {
+		spi_xfer(0xFC);
+		int n = 512;
+		do {
+			spi_xfer(*p++);
+		} while (--n > 0);
+		sd_dummy();
+		sd_dummy();
+		sd_dummy();
+		sd_dummy();
+	}
+
+	int timeout = 0xfff;
+	while (--timeout) {
+		int x = sd_dummy();
+		if (5 == (x & 0x1f)) {
+			break;
+		}
+	}
+	if (timeout == 0) {
+		//panic("");
+	}
+
+	sd_cmd_end();
+	sd_cmd(0x4C, 0, 0x01);
+	sd_cmd_end();
+	return 0;
+}
+
+int sdInit(void) {
 	REG32(uart, UART_REG_TXCTRL) = UART_TXEN;
 
 	sd_poweron();
@@ -220,12 +253,12 @@ int sdInit(void)
 	    sd_cmd8() ||
 	    sd_acmd41() ||
 	    sd_cmd58() ||
-	    sd_cmd16() ||
-	    copy()) {
+	    sd_cmd16()) {
 		printf("ERROR");
 		return 1;
 	}
 
+	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
 	printf("BOOT");
 
 	__asm__ __volatile__ ("fence.i" : : : "memory");

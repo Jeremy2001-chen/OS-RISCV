@@ -2,6 +2,7 @@
 #include <Driver.h>
 #include <MemoryConfig.h>
 #include <Riscv.h>
+#include <Platform.h>
 
 PageList freePages;
 PhysicalPage pages[PHYSICAL_PAGE_NUM];
@@ -25,9 +26,6 @@ static void initFreePages() {
 
 static void virtualMemory() {
     pageInsert(kernelPageDirectory, UART_V, UART, PTE_READ | PTE_WRITE);
-    #ifdef QEMU
-    pageInsert(kernelPageDirectory, VIRTIO0_V, VIRTIO0, PTE_READ | PTE_WRITE);
-    #endif
     u64 va = CLINT_V, pa = CLINT, i;
     for (i = 0; i < 0x10000; i += PAGE_SIZE) {
         pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
@@ -40,10 +38,8 @@ static void virtualMemory() {
     for (i = 0; i < 0x4000; i += PAGE_SIZE) {
         pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
     }
-    #ifndef QEMU
-    // to do
-    #endif
-    
+    pageInsert(kernelPageDirectory, SPI_CTRL_ADDR, SPI_CTRL_ADDR, PTE_READ | PTE_WRITE);
+    pageInsert(kernelPageDirectory, UART_CTRL_ADDR, UART_CTRL_ADDR, PTE_READ | PTE_WRITE);
     extern char textEnd[];
     va = pa = (u64)kernelStart;
     for (i = 0; va + i < (u64)textEnd; i += PAGE_SIZE) {
