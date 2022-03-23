@@ -2,6 +2,7 @@ kernel_dir	:= 	kernel
 linker_dir	:= 	linkscript
 user_dir	:= 	user
 target_dir	:= 	target
+utility_dir :=  utility
 driver_dir	:= 	$(kernel_dir)/driver
 memory_dir	:= 	$(kernel_dir)/memory
 boot_dir	:=	$(kernel_dir)/boot
@@ -10,6 +11,7 @@ trap_dir	:=	$(kernel_dir)/trap
 linkscript	:= 	$(linker_dir)/Qemu.ld
 vmlinux_img	:=	$(target_dir)/vmlinux.img
 vmlinux_asm	:= 	$(target_dir)/vmlinux_asm.txt
+disk_img	:=  $(utility_dir)/disk.img
 
 modules := 	$(kernel_dir) $(user_dir)
 objects	:=	$(boot_dir)/*.o \
@@ -26,7 +28,7 @@ build: $(modules) fs
 	$(OBJDUMP) -S $(vmlinux_img) > $(vmlinux_asm)
 
 fs:
-	dd if=README.md of=target/disk.img bs=4096 count=512
+	dd if=$(disk_img) of=target/disk.img bs=4096 count=512
 
 $(modules):
 	$(MAKE) build --directory=$@
