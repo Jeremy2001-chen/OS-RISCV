@@ -26,41 +26,44 @@ static void initFreePages() {
 }
 
 static void virtualMemory() {
-    pageInsert(kernelPageDirectory, UART_V, UART, PTE_READ | PTE_WRITE);
-    u64 va = CLINT_V, pa = CLINT, i;
-    for (i = 0; i < 0x10000; i += PAGE_SIZE) {
-        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
+    /*for (int i = 0; i < 512; i++) {
+        kernelPageDirectory[i] = 0;
+    }*/
+    u64 va, pa;
+    pageInsert(kernelPageDirectory, UART_V, UART, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
+    va = CLINT_V, pa = CLINT;
+    for (u64 i = 0; i < 0x10000; i += PAGE_SIZE) {
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
     }
     va = PLIC_V; pa = PLIC;
-    for (i = 0; i < 0x4000; i += PAGE_SIZE) {
-        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
+    for (u64 i = 0; i < 0x4000; i += PAGE_SIZE) {
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
     }
     va = PLIC_V + 0x200000; pa = PLIC + 0x200000;
-    for (i = 0; i < 0x4000; i += PAGE_SIZE) {
-        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
+    for (u64 i = 0; i < 0x4000; i += PAGE_SIZE) {
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
     }
-    pageInsert(kernelPageDirectory, SPI_CTRL_ADDR, SPI_CTRL_ADDR, PTE_READ | PTE_WRITE);
-    pageInsert(kernelPageDirectory, UART_CTRL_ADDR, UART_CTRL_ADDR, PTE_READ | PTE_WRITE);
+    pageInsert(kernelPageDirectory, SPI_CTRL_ADDR, SPI_CTRL_ADDR, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
+    pageInsert(kernelPageDirectory, UART_CTRL_ADDR, UART_CTRL_ADDR, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
     extern char textEnd[];
     va = pa = (u64)kernelStart;
-    //va = pa = 0x80200000;
-    for (i = 0; va + i < (u64)textEnd; i += PAGE_SIZE) {
-        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_EXECUTE | PTE_WRITE);
+    for (u64 i = 0; va + i < (u64)textEnd; i += PAGE_SIZE) {
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_EXECUTE | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
     }
     va = pa = (u64)textEnd;
-    for (i = 0; va + i < PHYSICAL_MEMORY_TOP; i += PAGE_SIZE) {
-        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE);
+    for (u64 i = 0; va + i < PHYSICAL_MEMORY_TOP; i += PAGE_SIZE) {
+        pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
     }
     extern char trampoline[];
     pageInsert(kernelPageDirectory, TRAMPOLINE_BASE, (u64)trampoline, 
-        PTE_READ | PTE_WRITE | PTE_EXECUTE);
+        PTE_READ | PTE_WRITE | PTE_EXECUTE | PTE_ACCESSED | PTE_DIRTY);
 }
 
 static void startPage() {
     putchar('#');
     w_satp(MAKE_SATP(kernelPageDirectory));
-    putchar('#');
     sfence_vma();
+    putchar('#');
 }
 
 static void testMemory() {

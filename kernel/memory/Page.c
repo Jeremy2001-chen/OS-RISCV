@@ -81,6 +81,7 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
     u64 *pte;
     va = DOWN_ALIGN(va, PAGE_SIZE);
     pa = DOWN_ALIGN(pa, PAGE_SIZE);
+    perm |= PTE_ACCESSED | PTE_DIRTY;
     int ret = pageWalk(pgdir, va, true, &pte);
     if (ret < 0) {
         return ret;
