@@ -39,14 +39,15 @@ SECTIONS {
     }
 
     . = ALIGN(4096);
-    bssStart = .;
+    PROVIDE(bssStart = .);
     .bss : {
-        *(.bss .bss.*)
+        *(.bss .bss.* .sbss .sbss.*)
         . = ALIGN(4096);
         _pgdir = .;
         *(.pgdir)
         ASSERT(. - _pgdir == 4096, "error: pgdir not one page");
-        bssEnd = .;
+        . = ALIGN(4096);
+        PROVIDE(bssEnd = .);
     }
 
     . = ALIGN(4096);

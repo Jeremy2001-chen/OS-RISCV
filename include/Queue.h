@@ -144,8 +144,9 @@
  * The "field" name is the link element as above.
  */
 #define LIST_INSERT_HEAD(head, elm, field) do {                         \
-                if ((LIST_NEXT((elm), field) = LIST_FIRST((head))) != NULL)     \
-                        LIST_FIRST((head))->field.le_prev = &LIST_NEXT((elm), field);\
+                if ((LIST_NEXT((elm), field) = LIST_FIRST((head))) != NULL) {     \
+                        LIST_FIRST((head))->field.le_prev = &LIST_NEXT((elm), field);   \
+                }                                                               \
                 LIST_FIRST((head)) = (elm);                                     \
                 (elm)->field.le_prev = &LIST_FIRST((head));                     \
         } while (0)

@@ -18,6 +18,7 @@ static void initFreePages() {
     }
 
     n = PA2PPN(PHYSICAL_MEMORY_TOP);
+    LIST_INIT(&freePages);
     for (; i < n; i++) {
         pages[i].ref = 0;
         LIST_INSERT_HEAD(&freePages, &pages[i], link);
@@ -42,6 +43,7 @@ static void virtualMemory() {
     pageInsert(kernelPageDirectory, UART_CTRL_ADDR, UART_CTRL_ADDR, PTE_READ | PTE_WRITE);
     extern char textEnd[];
     va = pa = (u64)kernelStart;
+    //va = pa = 0x80200000;
     for (i = 0; va + i < (u64)textEnd; i += PAGE_SIZE) {
         pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_EXECUTE | PTE_WRITE);
     }
@@ -55,7 +57,9 @@ static void virtualMemory() {
 }
 
 static void startPage() {
+    putchar('#');
     w_satp(MAKE_SATP(kernelPageDirectory));
+    putchar('#');
     sfence_vma();
 }
 
@@ -78,6 +82,7 @@ void memoryInit() {
     printf("Memory init start...\n");
     initFreePages();
     virtualMemory();
+    printf("aaaaaaaaaaaaaa\n");
     startPage();
     printf("Memory init finish!\n");
     printf("Test memory start...\n");

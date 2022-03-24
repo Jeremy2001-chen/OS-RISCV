@@ -5,7 +5,7 @@
 #include <Riscv.h>
 #include <Sd.h>
 
-static int mainCount = 0;
+static int mainCount = 1000;
 
 static inline void initHartId(u64 hartId) {
     asm volatile("mv tp, %0" : : "r" (hartId & 0x7));
@@ -15,7 +15,13 @@ u8 binary[1024];
 void main(u64 hartId) {
     initHartId(hartId);
 
-    if (mainCount == 0) {
+    putchar('0');
+    if (mainCount == 1000) {
+        extern u64 bssStart[];
+        extern u64 bssEnd[];
+        for (u64 *i = bssStart; i < bssEnd; i++) {
+            *i = 0;
+        }
         mainCount = mainCount + 1;
 
         consoleInit();
