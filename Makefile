@@ -27,6 +27,9 @@ build: $(modules) fs
 	$(LD) $(LDFLAGS) -T $(linkscript) -o $(vmlinux_img) $(objects)
 	$(OBJDUMP) -S $(vmlinux_img) > $(vmlinux_asm)
 
+sifive: clean build
+	$(OBJCOPY) -O binary $(vmlinux_img) /srv/tftp/vm.bin
+
 fs:
 	dd if=$(disk_img) of=target/disk.img bs=4096 count=512
 
