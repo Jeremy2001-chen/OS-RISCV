@@ -26,9 +26,6 @@ static void initFreePages() {
 }
 
 static void virtualMemory() {
-    /*for (int i = 0; i < 512; i++) {
-        kernelPageDirectory[i] = 0;
-    }*/
     u64 va, pa;
     pageInsert(kernelPageDirectory, UART_V, UART, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
     va = CLINT_V, pa = CLINT;
@@ -85,7 +82,6 @@ void memoryInit() {
     printf("Memory init start...\n");
     initFreePages();
     virtualMemory();
-    printf("aaaaaaaaaaaaaa\n");
     startPage();
     printf("Memory init finish!\n");
     printf("Test memory start...\n");

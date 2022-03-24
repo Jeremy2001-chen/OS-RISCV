@@ -87,7 +87,6 @@ static int sd_cmd0(void)
 	printf("CMD0");
 	rc = (sd_cmd(0x40, 0, 0x95) != 0x01);
 	sd_cmd_end();
-	printf("\n\n%d\n", rc);
 	return rc;
 }
 
@@ -123,7 +122,7 @@ static int sd_acmd41(void)
 
 static int sd_cmd58(void)
 {
-	return 0;// TODO
+	//return 0;
 	int rc;
 	printf("CMD58");
 	rc = (sd_cmd(0x7A, 0, 0xFD) != 0x00);

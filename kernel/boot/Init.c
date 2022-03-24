@@ -29,7 +29,7 @@ void main(u64 hartId) {
         
         memoryInit();
         sdInit();
-        for (int i = 0; i < 1024; i++) {
+        /*for (int i = 0; i < 1024; i++) {
             binary[i] = i & 254;
         }
         sdWrite(binary, 1, 2);
@@ -52,7 +52,7 @@ void main(u64 hartId) {
         PROCESS_CREATE_PRIORITY(ForkTest, 1);
 
         yield();
-        printf("reach end\n");
+        printf("reach end\n");*/
     } else {
         putchar('a' + hartId);
         while(1);
