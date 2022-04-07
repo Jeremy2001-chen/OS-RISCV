@@ -29,18 +29,18 @@ void main(u64 hartId) {
         
         memoryInit();
         sdInit();
-        for (int j = 0; j < 10000; j++) {
-            for (int i = 0; i < 512; i++) {
-                binary[i] = i & 1;
+        for (int j = 10000; j < 20000; j += 2) {
+            for (int i = 0; i < 1024; i++) {
+                binary[i] = i & 7;
             }
-            sdWrite(binary, j, 1);
-            for (int i = 0; i < 512; i++) {
+            sdWrite(binary, j, 2);
+            for (int i = 0; i < 1024; i++) {
                 binary[i] = 0;
             }
-            sdRead(binary, j, 1);
-            for (int i = 0; i < 512; i++) {
-                if (binary[i] != (i & 1)) {
-                    printf("%d ", j);
+            sdRead(binary, j, 2);
+            for (int i = 0; i < 1024; i++) {
+                if (binary[i] != (i & 7)) {
+                    panic("gg: %d ", j);
                     break;
                 }
             }
