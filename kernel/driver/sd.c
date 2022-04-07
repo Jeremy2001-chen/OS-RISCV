@@ -9,7 +9,7 @@
 
 #define MAX_CORES 8
 
-#define TL_CLK 0x8000000
+#define TL_CLK 1000000000UL
 #ifndef TL_CLK
 #error Must define TL_CLK
 #endif
@@ -27,7 +27,6 @@ static inline u8 spi_xfer(u8 d)
 		cnt++;
 		r = REG32(spi, SPI_REG_RXFIFO);
 	} while (r < 0);
-	//printf("aaa  %d\n", cnt);
 	return r;
 }
 
@@ -69,22 +68,28 @@ static inline void sd_cmd_end(void)
 	REG32(spi, SPI_REG_CSMODE) = SPI_CSMODE_AUTO;
 }
 
-
-static void sd_poweron(void)
+static void sd_poweron(int f)
 {
 	long i;
-	REG32(spi, SPI_REG_SCKDIV) = 3;
+	//volatile int a;
+	//assert(REG32(spi, SPI_REG_FMT) == 0x80000);
+	REG32(spi, SPI_REG_CSDEF) |= 1;
+	REG32(spi, SPI_REG_CSID) = 0;
+	//REG32(uart, UART_REG_DIV) = 33000 * 1000 / 115200;
+	//REG32(spi, SPI_REG_SCKDIV) = 33000 / 400UL;
+	REG32(spi, SPI_REG_SCKDIV) = f;
 	REG32(spi, SPI_REG_CSMODE) = SPI_CSMODE_OFF;
 	for (i = 10; i > 0; i--) {
 		sd_dummy();
 	}
 	REG32(spi, SPI_REG_CSMODE) = SPI_CSMODE_AUTO;
+	//for (a = 0; a < 1000000; a++) a = a;
 }
 
 static int sd_cmd0(void)
 {
 	int rc;
-	printf("CMD0");
+	//printf("CMD0");
 	rc = (sd_cmd(0x40, 0, 0x95) != 0x01);
 	sd_cmd_end();
 	return rc;
@@ -169,13 +174,16 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 		sd_cmd_end();
 		return 1;
 	}
+	printf("%d\n", __LINE__);
 	do {
 		u16 crc, crc_exp;
 		long n;
 
 		crc = 0;
 		n = 512;
+		printf("%d\n", __LINE__);
 		while (sd_dummy() != 0xFE);
+		printf("%d\n", __LINE__);
 		do {
 			u8 x = sd_dummy();
 			//printf("%d ", x);
@@ -197,6 +205,7 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 			//printf(spinner[SPIN_INDEX(i)]);
 		}
 	} while (--sectorNumber > 0);
+	printf("%d\n", __LINE__);
 	sd_cmd_end();
 
 	sd_cmd(0x4C, 0, 0x01);
@@ -222,22 +231,36 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 		} while (--n > 0);
 		sd_dummy();
 		sd_dummy();
-		sd_dummy();
-		sd_dummy();
-	}
-
-	int timeout = 0xfff;
-	while (--timeout) {
-		int x = sd_dummy();
-		if (5 == (x & 0x1f)) {
-			break;
+		int timeout = 0xfff;
+		while (--timeout) {
+			int x = sd_dummy();
+			if (5 == (x & 0x1f)) {
+				break;
+			}
+		}
+		if (timeout == 0) {
+			panic("");
+		}
+		timeout = 0xfff;
+		while (--timeout) {
+			int x = sd_dummy();
+			if (x) {
+				break;
+			}
 		}
 	}
-	if (timeout == 0) {
-		//panic("");
-	}
+
+	spi_xfer(0xFD);
+	int timeout = 0xfff;
+		while (--timeout) {
+			int x = sd_dummy();
+			if (x) {
+				break;
+			}
+		}
 
 	sd_cmd_end();
+
 	sd_cmd(0x4C, 0, 0x01);
 	sd_cmd_end();
 	return 0;
@@ -246,7 +269,17 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 int sdInit(void) {
 	REG32(uart, UART_REG_TXCTRL) = UART_TXEN;
 
-	sd_poweron();
+	//int i = 4094;
+	/*for (i = (1 << 12) - 1; i > 0; i--) {
+		sd_poweron(i);
+		if (sd_cmd0() == 0) {
+			printf("i: %d\n", i);
+			break;
+		}
+	}*/
+	sd_poweron(4094);
+	sd_cmd0();
+	//sd_poweron(4094);
 	printf("INIT\n");
 	if (sd_cmd0() ||
 	    sd_cmd8() ||

@@ -29,18 +29,24 @@ void main(u64 hartId) {
         
         memoryInit();
         sdInit();
-        /*for (int i = 0; i < 1024; i++) {
-            binary[i] = i & 254;
+        for (int j = 0; j < 10000; j++) {
+            for (int i = 0; i < 512; i++) {
+                binary[i] = i & 1;
+            }
+            sdWrite(binary, j, 1);
+            for (int i = 0; i < 512; i++) {
+                binary[i] = 0;
+            }
+            sdRead(binary, j, 1);
+            for (int i = 0; i < 512; i++) {
+                if (binary[i] != (i & 1)) {
+                    printf("%d ", j);
+                    break;
+                }
+            }
+            printf("finish %d\n", j);
         }
-        sdWrite(binary, 1, 2);
-        for (int i = 0; i < 1024; i++) {
-            binary[i] = 0;
-        }
-        sdRead(binary, 1, 2);
-        for (int i = 0; i < 1024; i++) {
-            printf("%d ", binary[i]);
-        }
-        trapInit();
+        /*trapInit();
         processInit();
         for (int i = 1; i < 5; ++ i)
             if (i != hartId) {
