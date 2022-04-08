@@ -15,7 +15,6 @@ u8 binary[1024];
 void main(u64 hartId) {
     initHartId(hartId);
 
-    putchar('0');
     if (mainCount == 1000) {
         extern u64 bssStart[];
         extern u64 bssEnd[];
@@ -27,23 +26,28 @@ void main(u64 hartId) {
         consoleInit();
         printfInit();
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
+        
         memoryInit();
         sdInit();
-        for (int i = 0; i < 1024; i++) {
-            binary[i] = i & 254;
+        for (int j = 10000; j < 20000; j += 2) {
+            for (int i = 0; i < 1024; i++) {
+                binary[i] = i & 7;
+            }
+            sdWrite(binary, j, 2);
+            for (int i = 0; i < 1024; i++) {
+                binary[i] = 0;
+            }
+            sdRead(binary, j, 2);
+            for (int i = 0; i < 1024; i++) {
+                if (binary[i] != (i & 7)) {
+                    panic("gg: %d ", j);
+                    break;
+                }
+            }
+            printf("finish %d\n", j);
         }
-        sdWrite(binary, 1, 2);
-        for (int i = 0; i < 1024; i++) {
-            binary[i] = 0;
-        }
-        sdRead(binary, 1, 2);
-        for (int i = 0; i < 1024; i++) {
-            printf("%d ", binary[i]);
-        }
-
-        //trapInit();
-        //processInit();
-/*
+        /*trapInit();
+        processInit();
         for (int i = 1; i < 5; ++ i)
             if (i != hartId) {
                 unsigned long mask = 1 << i;
@@ -51,11 +55,10 @@ void main(u64 hartId) {
             }
 
         __sync_synchronize();
-//        PROCESS_CREATE_PRIORITY(ForkTest, 1);
-//        PROCESS_CREATE_PRIORITY(ProcessB, 1);
+        PROCESS_CREATE_PRIORITY(ForkTest, 1);
 
-        printf("aaaa\n");
-//        yield();*/
+        yield();
+        printf("reach end\n");*/
     } else {
         putchar('a' + hartId);
         while(1);

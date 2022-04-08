@@ -104,3 +104,9 @@ void _panic_(const char *file, int line, const char *fmt, ...) {
     putchar('\n');
     while (true);
 }
+
+void _assert_(const char* file, int line, int statement) {
+    if (!statement) {
+        _panic_(file, line, "assert failed\n");
+    }
+}

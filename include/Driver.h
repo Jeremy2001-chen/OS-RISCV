@@ -32,7 +32,9 @@ inline int getchar() {
 
 void printf(const char *fmt, ...);
 void _panic_(const char*, int, const char*, ...)__attribute__((noreturn));
+void _assert_(const char*, int, int);
 #define panic(...) _panic_(__FILE__, __LINE__, __VA_ARGS__)
+#define assert(x) _assert_(__FILE__, __LINE__, x)
 
 void consoleInterrupt(int);
 

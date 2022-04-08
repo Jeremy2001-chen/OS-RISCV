@@ -9,7 +9,7 @@
 
 #define MAX_CORES 8
 
-#define TL_CLK 0x8000000
+#define TL_CLK 1000000000UL
 #ifndef TL_CLK
 #error Must define TL_CLK
 #endif
@@ -27,7 +27,6 @@ static inline u8 spi_xfer(u8 d)
 		cnt++;
 		r = REG32(spi, SPI_REG_RXFIFO);
 	} while (r < 0);
-	//printf("aaa  %d\n", cnt);
 	return r;
 }
 
@@ -54,7 +53,7 @@ static u8 sd_cmd(u8 cmd, u32 arg, u8 crc)
 	do {
 		r = sd_dummy();
 		if (!(r & 0x80)) {
-			printf("sd:cmd: %x\r\n", r);
+			//printf("sd:cmd: %x\r\n", r);
 			goto done;
 		}
 	} while (--n > 0);
@@ -69,32 +68,35 @@ static inline void sd_cmd_end(void)
 	REG32(spi, SPI_REG_CSMODE) = SPI_CSMODE_AUTO;
 }
 
-
-static void sd_poweron(void)
+static void sd_poweron(int f)
 {
 	long i;
-	REG32(spi, SPI_REG_SCKDIV) = 3;
+	//volatile int a;
+	//assert(REG32(spi, SPI_REG_FMT) == 0x80000);
+	REG32(spi, SPI_REG_CSDEF) |= 1;
+	REG32(spi, SPI_REG_CSID) = 0;
+	REG32(spi, SPI_REG_SCKDIV) = f;
 	REG32(spi, SPI_REG_CSMODE) = SPI_CSMODE_OFF;
 	for (i = 10; i > 0; i--) {
 		sd_dummy();
 	}
 	REG32(spi, SPI_REG_CSMODE) = SPI_CSMODE_AUTO;
+	//for (a = 0; a < 1000000; a++) a = a;
 }
 
 static int sd_cmd0(void)
 {
 	int rc;
-	printf("CMD0");
+	//printf("CMD0");
 	rc = (sd_cmd(0x40, 0, 0x95) != 0x01);
 	sd_cmd_end();
-	printf("\n\n%d\n", rc);
 	return rc;
 }
 
 static int sd_cmd8(void)
 {
 	int rc;
-	printf("CMD8");
+	//printf("CMD8");
 	rc = (sd_cmd(0x48, 0x000001AA, 0x87) != 0x01);
 	sd_dummy(); /* command version; reserved */
 	sd_dummy(); /* reserved */
@@ -123,7 +125,7 @@ static int sd_acmd41(void)
 
 static int sd_cmd58(void)
 {
-	return 0;// TODO
+	//return 0;
 	int rc;
 	printf("CMD58");
 	rc = (sd_cmd(0x7A, 0, 0xFD) != 0x00);
@@ -138,7 +140,7 @@ static int sd_cmd58(void)
 static int sd_cmd16(void)
 {
 	int rc;
-	printf("CMD16");
+	//printf("CMD16");
 	rc = (sd_cmd(0x50, 0x200, 0x15) != 0x00);
 	sd_cmd_end();
 	return rc;
@@ -163,8 +165,8 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 	volatile u8 *p = (void *)buf;
 	int rc = 0;
 
-	printf("CMD18");
-	printf("LOADING  ");
+	//printf("CMD18");
+	//printf("LOADING  ");
 
 	if (sd_cmd(0x52, startSector * 512, 0xE1) != 0x00) {
 		sd_cmd_end();
@@ -176,10 +178,11 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 
 		crc = 0;
 		n = 512;
+		//printf("%d\n", __LINE__);
 		while (sd_dummy() != 0xFE);
+		//printf("%d\n", __LINE__);
 		do {
 			u8 x = sd_dummy();
-			//printf("%d ", x);
 			*p++ = x;
 			crc = crc16_round(crc, x);
 		} while (--n > 0);
@@ -192,22 +195,26 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 			rc = 1;
 			break;
 		}
-
-		if (SPIN_UPDATE(sectorNumber)) {
-			//printf("\b");
-			//printf(spinner[SPIN_INDEX(i)]);
-		}
 	} while (--sectorNumber > 0);
 	sd_cmd_end();
 
 	sd_cmd(0x4C, 0, 0x01);
+	int timeout = 0xfff;
+	while (timeout--) {
+		int tmp = sd_dummy();
+		if (tmp == 0xFF) {
+			break;
+		}
+	}
+	if (!timeout) {
+		panic("");
+	}
 	sd_cmd_end();
 
 	return rc;
 }
 
 int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
-	//REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
 	if (sd_cmd(25 | 0x40, startSector * 512, 0) != 0) {
 		sd_cmd_end();
 		return 1;
@@ -223,31 +230,44 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 		} while (--n > 0);
 		sd_dummy();
 		sd_dummy();
-		sd_dummy();
-		sd_dummy();
+		int timeout = 0xfff;
+		while (--timeout) {
+			int x = sd_dummy();
+			if (5 == (x & 0x1f)) {
+				break;
+			}
+		}
+		if (timeout == 0) {
+			panic("");
+		}
+		timeout = 0xfff;
+		while (--timeout) {
+			int x = sd_dummy();
+			if (x) {
+				break;
+			}
+		}
 	}
 
+	spi_xfer(0xFD);
 	int timeout = 0xfff;
 	while (--timeout) {
 		int x = sd_dummy();
-		if (5 == (x & 0x1f)) {
+		if (x == 0xFF) {
 			break;
 		}
 	}
-	if (timeout == 0) {
-		//panic("");
-	}
+	sd_cmd_end();
 
-	sd_cmd_end();
-	sd_cmd(0x4C, 0, 0x01);
-	sd_cmd_end();
 	return 0;
 }
 
 int sdInit(void) {
 	REG32(uart, UART_REG_TXCTRL) = UART_TXEN;
 
-	sd_poweron();
+	sd_poweron(4094);
+	sd_cmd0();
+	//sd_poweron(4094);
 	printf("INIT\n");
 	if (sd_cmd0() ||
 	    sd_cmd8() ||
