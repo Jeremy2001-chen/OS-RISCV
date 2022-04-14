@@ -30,6 +30,15 @@ inline int getchar() {
     return a0;
 }
 
+inline void setMode(int hartId) {
+	register u64 a7 asm ("a7") = 0x48534D;
+	register u64 a0 asm ("a0") = hartId;
+	register u64 a1 asm ("a1") = 0x80200000;
+	register u64 a2 asm ("a2") = 19260817; // priv
+	register u64 a6 asm ("a6") = 0; // funcid
+	asm volatile ("ecall" : "+r" (a0) : "r"(a0), "r"(a1), "r"(a2), "r"(a6), "r" (a7) : "memory");
+}
+
 void printf(const char *fmt, ...);
 void _panic_(const char*, int, const char*, ...)__attribute__((noreturn));
 void _assert_(const char*, int, int);
