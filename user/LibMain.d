@@ -1,1 +1,0 @@
-LibMain.o: LibMain.c
