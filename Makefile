@@ -30,6 +30,10 @@ build: $(modules)
 	mkdir -p $(target_dir)
 	$(LD) $(LDFLAGS) -T $(linkscript) -o $(vmlinux_img) $(objects)
 	$(OBJDUMP) -S $(vmlinux_img) > $(vmlinux_asm)
+	for d in $(modules); \
+		do \
+			$(MAKE) --directory=$$d clean; \
+		done; \
 
 sifive: clean build
 	$(OBJCOPY) -O binary $(vmlinux_img) /srv/tftp/vm.bin
@@ -47,7 +51,7 @@ clean:
 		done; \
 	rm -rf *.o *~ $(target_dir)/*
 
-run: clean build
+run: clean build fs
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS)
 
 asm: clean build
