@@ -5,12 +5,13 @@
 #include <Riscv.h>
 #include <Sd.h>
 
-static int mainCount = 1000;
+volatile int mainCount = 1000;
 
 static inline void initHartId(u64 hartId) {
     asm volatile("mv tp, %0" : : "r" (hartId & 0x7));
 }
 
+//void ffff(int);
 u8 binary[1024];
 void main(u64 hartId) {
     initHartId(hartId);
@@ -50,10 +51,16 @@ void main(u64 hartId) {
                 unsigned long mask = 1 << i;
                 setMode(i);
                 sbi_send_ipi(&mask);
+                int sum = 0;
+                for (int j = 0; j < 1e9; j++) {
+                    sum += j * j * j * j;
+                }
+                //printf("%d\n", sum);
             }
         }
-        printf("end\n");
+        //printf("end\n");
         __sync_synchronize();
+        printf("%d\n", mainCount);
         /*trapInit();
         processInit();
         
@@ -63,7 +70,9 @@ void main(u64 hartId) {
         yield();
         printf("reach end\n");*/
     } else {
+        __sync_synchronize();
         putchar('a' + hartId);
+        mainCount++;
         while(1);
     }
 }

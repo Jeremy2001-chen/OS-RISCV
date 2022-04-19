@@ -22,3 +22,4 @@ kernelStack:
     .globl kernelPageDirectory
 kernelPageDirectory:
     .space PAGE_SIZE
+
