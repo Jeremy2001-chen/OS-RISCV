@@ -26,7 +26,7 @@ objects	:=	$(boot_dir)/*.o \
 
 .PHONY: build clean $(modules) run
 
-build: $(modules) fs
+build: $(modules)
 	mkdir -p $(target_dir)
 	$(LD) $(LDFLAGS) -T $(linkscript) -o $(vmlinux_img) $(objects)
 	$(OBJDUMP) -S $(vmlinux_img) > $(vmlinux_asm)
