@@ -22,3 +22,9 @@ kernelStack:
     .globl kernelPageDirectory
 kernelPageDirectory:
     .space PAGE_SIZE
+
+    .section .text
+    .globl ffff
+    .align 2
+ffff:
+    ret
