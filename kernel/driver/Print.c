@@ -1,5 +1,13 @@
 #include <Driver.h>
 #include <Riscv.h>
+#include <Spinlock.h>
+
+struct Spinlock printLock;
+
+inline void printInit(void)
+{
+    initLock(&printLock, "printLock");
+}
 
 static inline void printString(const char* s) {
     while (*s) {
@@ -56,6 +64,9 @@ static void print(const char *fmt, va_list ap) {
             c = fmt[++i];
         }
         switch (c) {
+            case 'c':
+                putchar(va_arg(ap, u32));
+                break;
             case 'd':
                 if (l) {
                     printInt(va_arg(ap, i64), 10, true);
@@ -88,20 +99,23 @@ static void print(const char *fmt, va_list ap) {
 }
 
 void printf(const char *fmt, ...) {
+    acquireLock(&printLock);
     va_list ap;
     va_start(ap, fmt);
     print(fmt, ap);
     va_end(ap);
+    releaseLock(&printLock);
 }
 
 void _panic_(const char *file, int line, const char *fmt, ...) {
-    intr_off();
+    acquireLock(&printLock);
     printf("panic at %s: %d: ", file, line);
     va_list ap;
     va_start(ap, fmt);
     print(fmt, ap);
     va_end(ap);
     putchar('\n');
+    releaseLock(&printLock);
     while (true);
 }
 

@@ -5,10 +5,6 @@ void consoleInit() {
     // todo
 }
 
-void printfInit() {
-    // todo
-}
-
 void consoleInterrupt(int c) {
     // todo
 

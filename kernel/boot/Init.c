@@ -25,8 +25,9 @@ void main(u64 hartId) {
         mainCount = mainCount + 1;
 
         consoleInit();
-        printfInit();
+        printInit();
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
+
         //memoryInit();
         /*sdInit();
         for (int j = 0; j < 10; j += 2) {
@@ -51,10 +52,10 @@ void main(u64 hartId) {
                 unsigned long mask = 1 << i;
                 setMode(i);
                 sbi_send_ipi(&mask);
-                int sum = 0;
+                /*int sum = 0;
                 for (int j = 0; j < 1e9; j++) {
                     sum += j * j * j * j;
-                }
+                }*/
                 //printf("%d\n", sum);
             }
         }
@@ -71,7 +72,7 @@ void main(u64 hartId) {
         printf("reach end\n");*/
     } else {
         __sync_synchronize();
-        putchar('a' + hartId);
+        printf("Hello, risc-v!\nCurrent hartId: %ld \n\n", hartId);
         mainCount++;
         while(1);
     }

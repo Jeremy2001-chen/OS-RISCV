@@ -13,7 +13,7 @@ LD				:= $(CROSS_COMPILE)ld
 LDFLAGS			:= -z max-page-size=4096
 QEMU			:= qemu-system-riscv64
 
-OPENSBI			:=	../opensbi/build/platform/generic/firmware/fw_dynamic.bin
+OPENSBI			:=	./bootloader/dynamic.bin
 
 CPUS := 5
 

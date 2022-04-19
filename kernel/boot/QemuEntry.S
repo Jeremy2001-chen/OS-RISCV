@@ -3,8 +3,9 @@
     .section .boot
     .globl _start
 _start:
+    mv t0, a0
+    slli t0, t0, 16
     la sp, kernelStack
-    li t0, KERNEL_STACK_SIZE
     add sp, sp, t0
     call main
 
@@ -15,7 +16,9 @@ loop:
     .globl kernelStack
     .align 12
 kernelStack:
-    .space KERNEL_STACK_SIZE
+    .space KERNEL_STACK_SIZE * 4
+    .globl kernelStackTop
+kernelStackTop:
     
     .section .pgdir
     .align 12
