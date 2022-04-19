@@ -26,10 +26,9 @@ void main(u64 hartId) {
         consoleInit();
         printfInit();
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
-        
-        memoryInit();
-        sdInit();
-        for (int j = 10000; j < 20000; j += 2) {
+        //memoryInit();
+        /*sdInit();
+        for (int j = 0; j < 10; j += 2) {
             for (int i = 0; i < 1024; i++) {
                 binary[i] = i & 7;
             }
@@ -45,16 +44,20 @@ void main(u64 hartId) {
                 }
             }
             printf("finish %d\n", j);
-        }
-        /*trapInit();
-        processInit();
-        for (int i = 1; i < 5; ++ i)
+        }*/
+        for (int i = 1; i < 5; ++ i) {
             if (i != hartId) {
                 unsigned long mask = 1 << i;
+                setMode(i);
                 sbi_send_ipi(&mask);
             }
-
+        }
+        printf("end\n");
         __sync_synchronize();
+        /*trapInit();
+        processInit();
+        
+
         PROCESS_CREATE_PRIORITY(ForkTest, 1);
 
         yield();
