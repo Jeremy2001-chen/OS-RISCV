@@ -77,7 +77,7 @@ void main(u64 hartId) {
         mainCount++;
         while (hartId != 4 || mainCount != 1005) {};
 
-        PROCESS_CREATE_PRIORITY(ForkTest, 1);
-        yield();
+        //PROCESS_CREATE_PRIORITY(ForkTest, 1);
+        //yield();
     }
 }
