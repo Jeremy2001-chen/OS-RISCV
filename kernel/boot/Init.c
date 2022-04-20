@@ -75,6 +75,9 @@ void main(u64 hartId) {
         __sync_synchronize();
         printf("Hello, risc-v!\nCurrent hartId: %ld \n\n", hartId);
         mainCount++;
-        while(1);
+        while (hartId != 4 || mainCount != 1005) {};
+
+        PROCESS_CREATE_PRIORITY(ForkTest, 1);
+        yield();
     }
 }
