@@ -54,13 +54,13 @@ clean:
 run: clean build fs
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS)
 
-asm: clean build
+asm: clean build fs
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS) -d in_asm
 
-int: clean build
+int: clean build fs
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS) -d int
 
-gdb: clean build
+gdb: clean build fs
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS) -nographic -s -S
 
 include include.mk

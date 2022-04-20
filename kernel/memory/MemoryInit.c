@@ -57,10 +57,8 @@ static void virtualMemory() {
 }
 
 static void startPage() {
-    putchar('#');
     w_satp(MAKE_SATP(kernelPageDirectory));
     sfence_vma();
-    putchar('#');
 }
 
 static void testMemory() {

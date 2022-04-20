@@ -5,7 +5,7 @@
 #include <assembly/Scause.h>
 
 void consoleInit(void);
-void printInit(void);
+void printLockInit(void);
 
 #define SBI_SET_TIMER 0
 #define SBI_CONSOLE_PUTCHAR 1

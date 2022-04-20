@@ -4,8 +4,7 @@
 
 struct Spinlock printLock;
 
-inline void printInit(void)
-{
+inline void printLockInit(void) {
     initLock(&printLock, "printLock");
 }
 

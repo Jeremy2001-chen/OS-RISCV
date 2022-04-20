@@ -2,16 +2,26 @@
 #include <Driver.h>
 #include <Error.h>
 #include <Riscv.h>
+#include <Spinlock.h>
 
 extern PageList freePages;
+struct Spinlock pageListLock;
+
+inline void pageLockInit(void) {
+    initLock(&pageListLock, "pageListLock");
+}
+
 int pageAlloc(PhysicalPage **pp) {
+    acquireLock(&pageListLock);
     PhysicalPage *page;
     if ((page = LIST_FIRST(&freePages)) != NULL) {
+        releaseLock(&pageListLock);
         *pp = page;
         LIST_REMOVE(page, link);
         bzero((void*)page2pa(page), PAGE_SIZE);
         return 0;
     }
+    releaseLock(&pageListLock);
     printf("there's no physical page left!\n");
     *pp = NULL;
     return -NO_FREE_MEMORY;
@@ -59,7 +69,9 @@ void pageFree(PhysicalPage *page) {
         return;
     }
     if (page->ref == 0) {
+        acquireLock(&pageListLock);
         LIST_INSERT_HEAD(&freePages, page, link);
+        releaseLock(&pageListLock);
     }
 }
 

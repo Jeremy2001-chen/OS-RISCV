@@ -25,10 +25,10 @@ void main(u64 hartId) {
         mainCount = mainCount + 1;
 
         consoleInit();
-        printInit();
+        printLockInit();
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
 
-        //memoryInit();
+        memoryInit();
         /*sdInit();
         for (int j = 0; j < 10; j += 2) {
             for (int i = 0; i < 1024; i++) {
@@ -62,14 +62,15 @@ void main(u64 hartId) {
         //printf("end\n");
         __sync_synchronize();
         printf("%d\n", mainCount);
-        /*trapInit();
+        trapInit();
         processInit();
-        
 
         PROCESS_CREATE_PRIORITY(ForkTest, 1);
 
         yield();
-        printf("reach end\n");*/
+
+        /*printf("reach end\n");*/
+        mainCount++;
     } else {
         __sync_synchronize();
         printf("Hello, risc-v!\nCurrent hartId: %ld \n\n", hartId);
