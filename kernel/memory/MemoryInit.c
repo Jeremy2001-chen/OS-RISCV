@@ -56,7 +56,7 @@ static void virtualMemory() {
         PTE_READ | PTE_WRITE | PTE_EXECUTE | PTE_ACCESSED | PTE_DIRTY);
 }
 
-static void startPage() {
+void startPage() {
     w_satp(MAKE_SATP(kernelPageDirectory));
     sfence_vma();
 }

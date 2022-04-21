@@ -3,7 +3,7 @@
 
 #include <Type.h>
 
-#define HART_TOTAL_NUMBER 4
+#define HART_TOTAL_NUMBER 5
 
 // which hart (core) is this?
 static inline u64 r_hartid() {

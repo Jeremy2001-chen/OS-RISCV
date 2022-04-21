@@ -8,7 +8,7 @@
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
 struct ProcessList scheduleList[2];
-Process *currentProcess[HART_TOTAL_NUMBER] = {0};
+Process *currentProcess[HART_TOTAL_NUMBER] = {0, 0, 0, 0, 0};
 
 extern Trapframe trapframe[];
 void processInit() {

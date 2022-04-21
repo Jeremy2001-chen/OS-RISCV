@@ -53,7 +53,7 @@ int trapDevice() {
 }
 
 void kernelTrap() {
-    printf("kernel trap\n");
+    //printf("kernel trap\n");
     u64 sepc = r_sepc();
     u64 sstatus = r_sstatus();
 
@@ -123,11 +123,12 @@ void userTrap() {
 void userTrapReturn() {
     extern char trampoline[];
     w_stvec(TRAMPOLINE_BASE + ((u64)userVector - (u64)trampoline));
+    int hartId = r_hartid();
 
     extern Process *currentProcess[HART_TOTAL_NUMBER];
     extern char kernelStack[];
     extern Trapframe trapframe[];
-    int hartId = r_hartid();
+
     trapframe->kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE;
     trapframe->trapHandler = (u64)userTrap;
     trapframe->kernelHartId = r_tp();

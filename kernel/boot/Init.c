@@ -26,6 +26,7 @@ void main(u64 hartId) {
 
         consoleInit();
         printLockInit();
+        pageLockInit();
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
 
         memoryInit();
@@ -65,9 +66,9 @@ void main(u64 hartId) {
         trapInit();
         processInit();
 
-        PROCESS_CREATE_PRIORITY(ForkTest, 1);
+        //PROCESS_CREATE_PRIORITY(ForkTest, 1);
 
-        yield();
+        //yield();
 
         /*printf("reach end\n");*/
         mainCount++;
@@ -77,7 +78,10 @@ void main(u64 hartId) {
         mainCount++;
         while (hartId != 4 || mainCount != 1005) {};
 
-        //PROCESS_CREATE_PRIORITY(ForkTest, 1);
-        //yield();
+        startPage();
+        trapInit();
+
+        PROCESS_CREATE_PRIORITY(ForkTest, 1);
+        yield();
     }
 }
