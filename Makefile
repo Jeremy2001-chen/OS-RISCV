@@ -9,12 +9,13 @@ boot_dir	:=	$(kernel_dir)/boot
 trap_dir	:=	$(kernel_dir)/trap
 lock_dir    :=  $(kernel_dir)/lock
 system_dir  :=  $(kernel_dir)/system
+utility_dir	:=	$(kernel_dir)/utility
 
 linkscript	:= 	$(linker_dir)/Qemu.ld
 vmlinux_img	:=	$(target_dir)/vmlinux.img
 vmlinux_bin :=  os.bin
 vmlinux_asm	:= 	$(target_dir)/vmlinux_asm.txt
-disk_img	:=  $(utility_dir)/disk.img
+disk_img	:=  $(utility_dir)/$(disk_img)
 
 modules := 	$(kernel_dir) $(user_dir)
 objects	:=	$(boot_dir)/*.o \
@@ -23,6 +24,7 @@ objects	:=	$(boot_dir)/*.o \
 			$(trap_dir)/*.o \
 			$(lock_dir)/*.o \
 			$(system_dir)/*.o \
+			$(utility_dir)/*.o \
 			$(user_dir)/*.x
 
 .PHONY: build clean $(modules) run
@@ -42,9 +44,29 @@ build: $(modules)
 sifive: clean build
 	$(OBJCOPY) -O binary $(vmlinux_img) /srv/tftp/vm.bin
 
-fs:
-	dd if=$(disk_img) of=target/disk.img bs=4096 count=512
 
+dst=/mnt
+fs_img=fs.img
+fs:
+	if [ ! -f "$(fs_img)" ]; then \
+		echo "making fs image..."; \
+		dd if=/dev/zero of=$(fs_img) bs=512k count=512; fi
+	mkfs.vfat -F 32 $(fs_img); 
+	@sudo mount $(fs_img) $(dst)
+	# @if [ ! -d "$(dst)/bin" ]; then sudo mkdir $(dst)/bin; fi
+	# @sudo cp README $(dst)/README
+	@sudo cp -r user/* $(dst)/
+	# @for file in $$( ls user/_* ); do \
+	# 	sudo cp $$file $(dst)/$${file#$U/_};\
+	# 	sudo cp $$file $(dst)/bin/$${file#$U/_}; done
+	@sudo umount $(dst)
+
+umount:
+	sudo umount $(dst)
+
+mount:
+	sudo mount $(fs_img) $(dst)
+	
 $(modules):
 	$(MAKE) build --directory=$@
 
