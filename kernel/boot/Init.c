@@ -48,6 +48,7 @@ void main(u64 hartId) {
             }
             printf("finish %d\n", j);
         }*/
+
         for (int i = 1; i < 5; ++ i) {
             if (i != hartId) {
                 unsigned long mask = 1 << i;
@@ -62,16 +63,17 @@ void main(u64 hartId) {
         }
         //printf("end\n");
         __sync_synchronize();
-        printf("%d\n", mainCount);
-        trapInit();
-        processInit();
-
+        //printf("%d\n", mainCount);
         //PROCESS_CREATE_PRIORITY(ForkTest, 1);
 
         //yield();
 
         /*printf("reach end\n");*/
         mainCount++;
+        
+        trapInit();
+        processInit();
+
     } else {
         __sync_synchronize();
         printf("Hello, risc-v!\nCurrent hartId: %ld \n\n", hartId);

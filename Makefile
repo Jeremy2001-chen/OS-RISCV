@@ -12,6 +12,7 @@ system_dir  :=  $(kernel_dir)/system
 
 linkscript	:= 	$(linker_dir)/Qemu.ld
 vmlinux_img	:=	$(target_dir)/vmlinux.img
+vmlinux_bin :=  os.bin
 vmlinux_asm	:= 	$(target_dir)/vmlinux_asm.txt
 disk_img	:=  $(utility_dir)/disk.img
 
@@ -26,10 +27,13 @@ objects	:=	$(boot_dir)/*.o \
 
 .PHONY: build clean $(modules) run
 
+all : build
+
 build: $(modules)
 	mkdir -p $(target_dir)
 	$(LD) $(LDFLAGS) -T $(linkscript) -o $(vmlinux_img) $(objects)
 	$(OBJDUMP) -S $(vmlinux_img) > $(vmlinux_asm)
+	$(OBJCOPY) -O binary $(vmlinux_img) $(vmlinux_bin)
 	for d in $(modules); \
 		do \
 			$(MAKE) --directory=$$d clean; \
