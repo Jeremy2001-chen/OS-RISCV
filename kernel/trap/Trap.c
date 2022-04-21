@@ -15,6 +15,12 @@ void trapInit() {
     printf("Trap init finish!\n");
 }
 
+Trapframe* getHartTrapFrame() {
+    int hartId = r_hartid();
+    extern Trapframe trapframe[];
+    return (Trapframe*)((u64)trapframe + hartId * sizeof(Trapframe)); 
+}
+
 int trapDevice() {
     u64 scause = r_scause();
     #ifdef QEMU
@@ -53,7 +59,7 @@ int trapDevice() {
 }
 
 void kernelTrap() {
-    printf("kernel trap\n");
+    //printf("kernel trap\n");
     u64 sepc = r_sepc();
     u64 sstatus = r_sstatus();
 
@@ -88,7 +94,7 @@ void userTrap() {
     int hartId = r_hartid();
 
     u64 scause = r_scause();
-    extern Trapframe trapframe[];
+    Trapframe* trapframe = getHartTrapFrame();
     if (scause & SCAUSE_INTERRUPT) {
         trapDevice();
         yield();
@@ -127,9 +133,9 @@ void userTrapReturn() {
 
     extern Process *currentProcess[HART_TOTAL_NUMBER];
     extern char kernelStack[];
-    extern Trapframe trapframe[];
+    Trapframe* trapframe = getHartTrapFrame();
 
-    trapframe->kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE;
+    trapframe->kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE * r_hartid();
     trapframe->trapHandler = (u64)userTrap;
     trapframe->kernelHartId = r_tp();
 

@@ -29,7 +29,7 @@ void main(u64 hartId) {
         pageLockInit();
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
 
-        memoryInit();
+        memoryInit(hartId);
         /*sdInit();
         for (int j = 0; j < 10; j += 2) {
             for (int i = 0; i < 1024; i++) {
@@ -54,25 +54,21 @@ void main(u64 hartId) {
                 unsigned long mask = 1 << i;
                 setMode(i);
                 sbi_send_ipi(&mask);
-                /*int sum = 0;
-                for (int j = 0; j < 1e9; j++) {
-                    sum += j * j * j * j;
-                }*/
-                //printf("%d\n", sum);
             }
         }
         //printf("end\n");
         __sync_synchronize();
-        //printf("%d\n", mainCount);
-        //PROCESS_CREATE_PRIORITY(ForkTest, 1);
-
-        //yield();
-
         /*printf("reach end\n");*/
         mainCount++;
         
         trapInit();
         processInit();
+
+        //PROCESS_CREATE_PRIORITY(ForkTest, 1);
+        PROCESS_CREATE_PRIORITY(ProcessB, 3);
+
+         yield();
+
 
     } else {
         __sync_synchronize();
@@ -80,10 +76,14 @@ void main(u64 hartId) {
         mainCount++;
         while (hartId != 4 || mainCount != 1005) {};
 
-        startPage();
+        startPage(hartId);
         trapInit();
 
-        PROCESS_CREATE_PRIORITY(ForkTest, 1);
+        //PROCESS_CREATE_PRIORITY(ForkTest, 1);
+
+        PROCESS_CREATE_PRIORITY(ProcessA, 2);
+        //PROCESS_CREATE_PRIORITY(ProcessB, 3);
+
         yield();
     }
 }

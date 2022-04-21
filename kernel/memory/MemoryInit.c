@@ -3,6 +3,7 @@
 #include <MemoryConfig.h>
 #include <Riscv.h>
 #include <Platform.h>
+#include <Process.h>
 
 PageList freePages;
 PhysicalPage pages[PHYSICAL_PAGE_NUM];
@@ -56,7 +57,7 @@ static void virtualMemory() {
         PTE_READ | PTE_WRITE | PTE_EXECUTE | PTE_ACCESSED | PTE_DIRTY);
 }
 
-void startPage() {
+void startPage(int hartId) {
     w_satp(MAKE_SATP(kernelPageDirectory));
     sfence_vma();
 }
@@ -76,11 +77,11 @@ static void testMemory() {
     printf("value1 of %lx:  %d\n", 1ll << 35, *((u32*)(1ll<<35)));
 }
 
-void memoryInit() {
+void memoryInit(int hartId) {
     printf("Memory init start...\n");
     initFreePages();
     virtualMemory();
-    startPage();
+    startPage(hartId);
     printf("Memory init finish!\n");
     printf("Test memory start...\n");
     testMemory();

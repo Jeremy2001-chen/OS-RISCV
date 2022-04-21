@@ -3,12 +3,14 @@
 
 #include <MemoryConfig.h>
 #include <Riscv.h>
+#include <Process.h>
 
 void trapInit();
 void kernelVector();
 void userVector();
 void userReturn();
 void userTrapReturn();
+Trapframe* getHartTrapFrame();
 
 inline static u32 interruptServed() {
     int hart = r_tp();
