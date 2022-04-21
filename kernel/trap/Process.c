@@ -153,6 +153,7 @@ void processRun(Process *p) {
         bcopy(trapframe, &(currentProcess[hartId]->trapframe), sizeof(Trapframe));
     }
     currentProcess[hartId] = p;
+    p->state = RUNNING;
     bcopy(&(currentProcess[hartId]->trapframe), trapframe, sizeof(Trapframe));
     userTrapReturn();
 }
@@ -166,6 +167,9 @@ void yield() {
     static int point = 0;
     int hartId = r_hartid();
     Process* next_env = currentProcess[hartId];
+    if (next_env && next_env->state == RUNNING) {
+        next_env->state = RUNNABLE;
+    }
     while ((count == 0) || (next_env == NULL) || (next_env->state != RUNNABLE)) {
         if (next_env != NULL) {
             LIST_INSERT_TAIL(&scheduleList[point ^ 1], next_env, scheduleLink);
