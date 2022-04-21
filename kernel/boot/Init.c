@@ -48,8 +48,6 @@ void main(u64 hartId) {
             }
             printf("finish %d\n", j);
         }*/
-        trapInit();
-        processInit();
 
         for (int i = 1; i < 5; ++ i) {
             if (i != hartId) {
@@ -71,12 +69,16 @@ void main(u64 hartId) {
         //yield();
 
         /*printf("reach end\n");*/
-        //mainCount++;
+        mainCount++;
+        
+        trapInit();
+        processInit();
+
     } else {
         __sync_synchronize();
         printf("Hello, risc-v!\nCurrent hartId: %ld \n\n", hartId);
         mainCount++;
-        while (hartId != 4) {};
+        while (hartId != 4 || mainCount != 1005) {};
 
         startPage();
         trapInit();
