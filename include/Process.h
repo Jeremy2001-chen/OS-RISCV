@@ -3,6 +3,7 @@
 
 #include <Type.h>
 #include <Queue.h>
+#include <Spinlock.h>
 
 #define LOG_PROCESS_NUM 10
 #define PROCESS_TOTAL_NUMBER (1 << LOG_PROCESS_NUM)
@@ -69,13 +70,16 @@ typedef struct Process {
     LIST_ENTRY(Process) scheduleLink;
     u32 priority;
     enum ProcessState state;
+    struct Spinlock lock;
 } Process;
 
 LIST_HEAD(ProcessList, Process);
 
+Process* myproc();
 void processInit();
-void processCreatePriority(u8 *binary, u32 size, u32 priority);
-void wakeup(void *channel);
+void processCreatePriority(u8* binary, u32 size, u32 priority);
+void sleep(void* chan, struct Spinlock* lk);
+void wakeup(void* channel);
 void yield();
 void processFork();
 

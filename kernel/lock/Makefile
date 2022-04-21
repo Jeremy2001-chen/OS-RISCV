@@ -1,6 +1,6 @@
 INCLUDES := -I../../include
 
-target = Interrput.o Spinlock.o
+target = Interrput.o Spinlock.o Sleeplock.o
 
 .PHONY: build clean
 

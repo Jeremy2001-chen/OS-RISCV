@@ -10,6 +10,13 @@ static struct ProcessList freeProcesses;
 struct ProcessList scheduleList[2];
 Process *currentProcess[HART_TOTAL_NUMBER] = {0, 0, 0, 0, 0};
 
+Process* myproc() {
+    int hartId = r_hartid();
+    if (currentProcess[hartId] == NULL)
+        panic("get current process error");
+    return currentProcess[hartId];
+}
+
 extern Trapframe trapframe[];
 void processInit() {
     printf("Process init start...\n");
@@ -155,6 +162,38 @@ void processRun(Process *p) {
     currentProcess[hartId] = p;
     bcopy(&(currentProcess[hartId]->trapframe), trapframe, sizeof(Trapframe));
     userTrapReturn();
+}
+
+
+//因为与xv6的调度架构不同，所以目前不保证这个实现是正确且无死锁的
+// Atomically release lock and sleep on chan.
+// Reacquires lock when awakened.
+void sleep(void* chan, struct Spinlock* lk) {
+    struct Process* p = myproc();
+
+    // Must acquire p->lock in order to
+    // change p->state and then call sched.
+    // Once we hold p->lock, we can be
+    // guaranteed that we won't miss any wakeup
+    // (wakeup locks p->lock),
+    // so it's okay to release lk.
+
+    acquireLock(&p->lock);  // DOC: sleeplock1
+    releaseLock(lk);
+
+    //这里不将state改成SLEEPING，所以进程会被不停地调度,进程状态始终是RUNNABLE
+    // Go to sleep.
+    // p->chan = chan;
+    // p->state = SLEEPING;
+
+    yield();
+
+    // Tidy up.
+    // p->chan = 0;
+
+    // Reacquire original lock.
+    releaseLock(&p->lock);
+    acquireLock(lk);
 }
 
 void wakeup(void *channel) {
