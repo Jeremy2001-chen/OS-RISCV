@@ -1,6 +1,6 @@
 INCLUDES := -I../../include
 
-target = QemuEntry.o Init.o
+target = Entry.o Init.o
 
 .PHONY: build clean
 
