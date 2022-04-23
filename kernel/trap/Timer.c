@@ -11,6 +11,5 @@ void setNextTimeout() {
 
 void timerTick() {
     ticks++;
-    wakeup(&ticks);
     setNextTimeout();
 }
