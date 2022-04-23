@@ -10,13 +10,17 @@
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
     [SYSCALL_GET_PROCESS_ID]    syscallGetProcessId,
-    [SYSCALL_YIELD]             syscallYield,
+    [SYS_SCHED_YIELD]           syscallYield,
     [SYSCALL_PROCESS_DESTORY]   syscallProcessDestory,
     [SYSCALL_FORK]              syscallFork,
     [SYSCALL_PUT_STRING]        syscallPutString,
+    [SYS_GET_PID]               syscallGetProcessId,
+    [SYS_GET_PARENT_PID]        syscallGetParentProcessId,
+
 };
 
 extern struct Spinlock printLock;
+extern Process *currentProcess[HART_TOTAL_NUMBER];
 
 void syscallPutchar() {
     Trapframe* trapframe = getHartTrapFrame();
@@ -26,7 +30,13 @@ void syscallPutchar() {
 }
 
 void syscallGetProcessId() {
+    Trapframe* trapframe = getHartTrapFrame();
+    trapframe->a0 = currentProcess[r_hartid()]->id;
+}
 
+void syscallGetParentProcessId() {
+    Trapframe* trapframe = getHartTrapFrame();
+    trapframe->a0 = currentProcess[r_hartid()]->parentId;
 }
 
 void syscallProcessDestory() {

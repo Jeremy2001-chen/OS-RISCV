@@ -3,8 +3,8 @@
 
 void userMain() {
     for (int i = 1; i <= 10; ++ i) {
-        uPrintf("This is process B\n");
+        printf("This is process B\n");
         //syscallPutchar('b');
     }   
-    uPrintf("process finish\n");
+    printf("process finish\n");
 }

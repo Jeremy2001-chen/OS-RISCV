@@ -34,6 +34,7 @@ static void uPrint(const char *fmt, va_list ap) {
                 } else {
                     uPrintInt((u64) va_arg(ap, u32), 16, false);
                 }
+                break;
             case 's':
                 if ((s = va_arg(ap, char*)) == 0) {
                     s = "(null)";
@@ -48,10 +49,11 @@ static void uPrint(const char *fmt, va_list ap) {
                 addCharToBuffer(c);
                 break;
         }
+
     }
 }
 
-void uPrintf(const char *fmt, ...) {
+void printf(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
     uPrint(fmt, ap);
@@ -60,7 +62,7 @@ void uPrintf(const char *fmt, ...) {
 }
 
 void _uPanic_(const char *file, int line, const char *fmt, ...) {
-    uPrintf("user panic at %s: %d: ", file, line);
+    printf("user panic at %s: %d: ", file, line);
     va_list ap;
     va_start(ap, fmt);
     uPrint(fmt, ap);

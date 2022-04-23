@@ -58,7 +58,7 @@ static inline void uPrintInt(i64 xx, int base, bool sign) {
     }
 }
 
-void uPrintf(const char *fmt, ...);
+void printf(const char *fmt, ...);
 void _uPanic_(const char *file, int line, const char *fmt, ...);
 #define uPanic(...) _uPanic_(__FILE__, __LINE__, __VA_ARGS__)
 

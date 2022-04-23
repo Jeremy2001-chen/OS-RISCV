@@ -35,6 +35,8 @@ void main(u64 hartId) {
         PROCESS_CREATE_PRIORITY(ProcessA, 2);
         PROCESS_CREATE_PRIORITY(ProcessB, 3);
         //PROCESS_CREATE_PRIORITY(ForkTest, 5);
+        PROCESS_CREATE_PRIORITY(ProcessIdTest, 4);
+
 
         for (int i = 1; i < 5; ++ i) {
             if (i != hartId) {

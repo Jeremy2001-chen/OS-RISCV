@@ -3,7 +3,7 @@
 #include <Printf.h>
 
 void userMain(void) {
-    uPrintf("start fork test....\n");
+    printf("start fork test....\n");
     int a = 0;
     int id = 0;
     if ((id = fork()) == 0) {
@@ -12,20 +12,20 @@ void userMain(void) {
             if ((id = fork()) == 0) {
                 a += 4;
                 for (;;) {
-                    uPrintf("   this is child3 :a:%d\n", a);
+                    printf("   this is child3 :a:%d\n", a);
                 }
             }
             for (;;) {
-                uPrintf("  this is child2 :a:%d\n", a);
+                printf("  this is child2 :a:%d\n", a);
             }
         }
         a += 2;
         for (;;) {
-            uPrintf(" this is child :a:%d\n", a);
+            printf(" this is child :a:%d\n", a);
         }
     }
     a++;
     for (;;) {
-        uPrintf("this is father: a:%d\n", a);
+        printf("this is father: a:%d\n", a);
     }
 }

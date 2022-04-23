@@ -9,6 +9,8 @@ void syscallYield();
 void syscallProcessDestory();
 void syscallFork();
 void syscallPutString();
+void syscallGetProcessId();
+void syscallGetParentProcessId();
 
 extern void (*syscallVector[])(void);
 
