@@ -4,6 +4,7 @@
 #include <Type.h>
 #include <Queue.h>
 #include <Spinlock.h>
+#include <fat.h>
 
 #define LOG_PROCESS_NUM 10
 #define PROCESS_TOTAL_NUMBER (1 << LOG_PROCESS_NUM)
@@ -71,6 +72,7 @@ typedef struct Process {
     u32 priority;
     enum ProcessState state;
     struct Spinlock lock;
+    struct dirent *cwd;           // Current directory
 } Process;
 
 LIST_HEAD(ProcessList, Process);
@@ -82,5 +84,6 @@ void sleep(void* chan, struct Spinlock* lk);
 void wakeup(void* channel);
 void yield();
 void processFork();
-
+int either_copyout(int user_dst, u64 dst, void* src, u64 len);
+int either_copyin(void* dst, int user_src, u64 src, u64 len);
 #endif

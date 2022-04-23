@@ -4,6 +4,7 @@
 #include <Elf.h>
 #include <Riscv.h>
 #include <Trap.h>
+#include <string.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
@@ -198,6 +199,32 @@ void sleep(void* chan, struct Spinlock* lk) {
 
 void wakeup(void *channel) {
     // todo
+}
+
+// Copy to either a user address, or kernel address,
+// depending on usr_dst.
+// Returns 0 on success, -1 on error.
+int either_copyout(int user_dst, u64 dst, void* src, u64 len) {
+    struct Process* p = myproc();
+    if (user_dst) {
+        return copyout(p->pgdir, dst, src, len);
+    } else {
+        memmove((char*)dst, src, len);
+        return 0;
+    }
+}
+
+// Copy from either a user address, or kernel address,
+// depending on usr_src.
+// Returns 0 on success, -1 on error.
+int either_copyin(void* dst, int user_src, u64 src, u64 len) {
+    struct Process* p = myproc();
+    if (user_src) {
+        return copyin(p->pgdir, dst, src, len);
+    } else {
+        memmove(dst, (char*)src, len);
+        return 0;
+    }
 }
 
 void yield() {
