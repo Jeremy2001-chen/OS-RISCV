@@ -10,6 +10,7 @@ trap_dir	:=	$(kernel_dir)/trap
 lock_dir    :=  $(kernel_dir)/lock
 system_dir  :=  $(kernel_dir)/system
 utility_dir	:=	$(kernel_dir)/utility
+fs_dir 		:=	$(kernel_dir)/fs
 
 linkscript	:= 	$(linker_dir)/Qemu.ld
 vmlinux_img	:=	$(target_dir)/vmlinux.img
@@ -25,6 +26,7 @@ objects	:=	$(boot_dir)/*.o \
 			$(lock_dir)/*.o \
 			$(system_dir)/*.o \
 			$(utility_dir)/*.o \
+			$(fs_dir)/*.o \
 			$(user_dir)/*.x
 
 .PHONY: build clean $(modules) run
@@ -44,10 +46,11 @@ build: $(modules)
 sifive: clean build
 	$(OBJCOPY) -O binary $(vmlinux_img) /srv/tftp/vm.bin
 
-
+fs:
+	
 dst=/mnt
 fs_img=fs.img
-fs:
+fat:
 	if [ ! -f "$(fs_img)" ]; then \
 		echo "making fs image..."; \
 		dd if=/dev/zero of=$(fs_img) bs=512k count=512; fi
