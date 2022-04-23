@@ -220,8 +220,8 @@ void wakeup(void *channel) {
 // depending on usr_dst.
 // Returns 0 on success, -1 on error.
 int either_copyout(int user_dst, u64 dst, void* src, u64 len) {
-    struct Process* p = myproc();
     if (user_dst) {
+        struct Process* p = myproc();//because only this branch uses p->pgdir, so it need call myproc
         return copyout(p->pgdir, dst, src, len);
     } else {
         memmove((char*)dst, src, len);
@@ -233,8 +233,8 @@ int either_copyout(int user_dst, u64 dst, void* src, u64 len) {
 // depending on usr_src.
 // Returns 0 on success, -1 on error.
 int either_copyin(void* dst, int user_src, u64 src, u64 len) {
-    struct Process* p = myproc();
     if (user_src) {
+        struct Process* p = myproc();//because only this branch uses p->pgdir, so it need call myproc
         return copyin(p->pgdir, dst, src, len);
     } else {
         memmove(dst, (char*)src, len);

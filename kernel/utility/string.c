@@ -88,3 +88,20 @@ int strlen(const char* s) {
         ;
     return n;
 }
+
+char* strchr(const char* s, char c) {
+    for (; *s; s++)
+        if (*s == c)
+            return (char*)s;
+    return 0;
+}
+
+// convert wide char string into uchar string
+void snstr(char* dst, wchar const* src, int len) {
+    while (len-- && *src) {
+        *dst++ = (uchar)(*src & 0xff);
+        src++;
+    }
+    while (len-- > 0)
+        *dst++ = 0;
+}

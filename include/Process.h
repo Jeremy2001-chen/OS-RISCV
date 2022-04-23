@@ -5,7 +5,9 @@
 #include <Queue.h>
 #include <Spinlock.h>
 #include <fat.h>
+#include <file.h>
 
+#define NOFILE 16  //Number of fds that a process can open
 #define LOG_PROCESS_NUM 10
 #define PROCESS_TOTAL_NUMBER (1 << LOG_PROCESS_NUM)
 
@@ -73,6 +75,7 @@ typedef struct Process {
     enum ProcessState state;
     struct Spinlock lock;
     struct dirent *cwd;           // Current directory
+    struct file *ofile[NOFILE];
 } Process;
 
 LIST_HEAD(ProcessList, Process);
