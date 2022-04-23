@@ -11,6 +11,16 @@ inline void pageLockInit(void) {
     initLock(&pageListLock, "pageListLock");
 }
 
+int countFreePages() {
+    struct PhysicalPage* page;
+    int count = 0;
+    acquireLock(&pageListLock);
+    LIST_FOREACH(page, &freePages, link)
+        count++;
+    releaseLock(&pageListLock);
+    return count;
+}
+
 int pageAlloc(PhysicalPage **pp) {
     acquireLock(&pageListLock);
     PhysicalPage *page;
@@ -73,6 +83,43 @@ void pageFree(PhysicalPage *page) {
         LIST_INSERT_HEAD(&freePages, page, link);
         releaseLock(&pageListLock);
     }
+}
+
+static void paDecreaseRef(u64 pa) {
+    PhysicalPage *page = pa2page(pa);
+    page->ref--;
+    if (page->ref == 0) {
+        acquireLock(&pageListLock);
+        LIST_INSERT_HEAD(&freePages, page, link);
+        releaseLock(&pageListLock);
+    }
+}
+
+void pgdirFree(u64* pgdir) {
+    u64 i, j, k;
+    u64* pageTable;
+    for (i = 0; i < PTE2PT; i++) {
+        if (!(pgdir[i] & PTE_VALID))
+            continue;
+        pageTable = pgdir + i;
+        u64* pa = (u64*) PTE2PA(*pageTable);
+        for (j = 0; j < PTE2PT; j++) {
+            if (!(pa[j] & PTE_VALID)) 
+                continue;
+            pageTable = (u64*) pa + j;
+            u64* pa2 = (u64*) PTE2PA(*pageTable);
+            for (k = 0; k < PTE2PT; k++) {
+                if (!(pa2[k] & PTE_VALID)) 
+                    continue;
+                u64 addr = (i << 30) | (j << 21) | (k << 12);
+                pageRemove(pgdir, addr);
+            }
+            pa2[j] = 0;
+            paDecreaseRef((u64) pa2);
+        }
+        paDecreaseRef((u64) pa);
+    }
+    paDecreaseRef((u64) pgdir);
 }
 
 void pageRemove(u64 *pgdir, u64 va) {

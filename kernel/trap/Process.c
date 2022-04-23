@@ -51,30 +51,8 @@ void processDestory(Process *p) {
 
 void processFree(Process *p) {
     printf("[%lx] free env %lx\n", currentProcess[r_hartid()] ? currentProcess[r_hartid()]->id : 0, p->id);
-    u64 i, j, k;
-    u64* pageTable;
-    for (i = 0; i < PTE2PT; i++) {
-        if (!(p->pgdir[i] & PTE_VALID))
-            continue;
-        pageTable = p->pgdir + i;
-        u64* pa = (u64*) PTE2PA(*pageTable);
-        for (j = 0; j < PTE2PT; j++) {
-            if (!(pa[j] & PTE_VALID)) 
-                continue;
-            pageTable = (u64*) pa + j;
-            u64* pa2 = (u64*) PTE2PA(*pageTable);
-            for (k = 0; k < PTE2PT; k++) {
-                if (!(pa2[k] & PTE_VALID)) 
-                    continue;
-                u64 addr = (i << 30) | (j << 21) | (k << 12);
-                pageRemove(p->pgdir, addr);
-            }
-            pa2[j] = 0;
-            pageRemove(p->pgdir, (u64) pa2);
-        }
-        pageRemove(p->pgdir, (u64) pa);
-    }
-    sfence_vma();
+    pgdirFree(p->pgdir);
+    printf("Free page count: %d\n", countFreePages());
     return;
 }
 
@@ -244,6 +222,7 @@ void wakeup(void *channel) {
 void yield() {
     int r = r_hartid();
     printf("hartid in yield: %d\n", r);
+    printf("Free page count: %d\n", countFreePages());
     static int count = 0;
     static int point = 0;
     int hartId = r_hartid();

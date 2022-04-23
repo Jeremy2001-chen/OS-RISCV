@@ -71,9 +71,11 @@ inline PhysicalPage* pte2page(u64 *pte) {
     return pa2page(PTE2PA(*pte));
 }
 
+int countFreePages();
 int pageAlloc(PhysicalPage **page);
 int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm);
 void pageRemove(u64 *pgdir, u64 va);
+void pgdirFree(u64* pgdir);
 u64 pageLookup(u64 *pgdir, u64 va, u64 **pte);
 int allocPgdir(PhysicalPage **page);
 void pageout(u64 *pgdir, u64 badAddr);

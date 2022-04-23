@@ -26,6 +26,13 @@ static void initFreePages() {
     }
 }
 
+static void resetRef() {
+    u32 i = PA2PPN(kernelEnd), n = PA2PPN(PHYSICAL_MEMORY_TOP);
+    for (; i < n; i++) {
+        pages[i].ref = 0;
+    }
+}
+
 static void virtualMemory() {
     u64 va, pa;
     pageInsert(kernelPageDirectory, UART_V, UART, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
@@ -55,6 +62,7 @@ static void virtualMemory() {
     extern char trampoline[];
     pageInsert(kernelPageDirectory, TRAMPOLINE_BASE, (u64)trampoline, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE | PTE_ACCESSED | PTE_DIRTY);
+    
 }
 
 void startPage() {
@@ -81,6 +89,7 @@ void memoryInit() {
     printf("Memory init start...\n");
     initFreePages();
     virtualMemory();
+    resetRef();
     startPage();
     printf("Memory init finish!\n");
     printf("Test memory start...\n");

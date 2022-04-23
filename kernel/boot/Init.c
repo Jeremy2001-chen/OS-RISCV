@@ -5,7 +5,7 @@
 #include <Riscv.h>
 #include <Sd.h>
 
-// #define SINGLE_CORE
+#define SINGLE_CORE
 
 volatile int mainCount = 1000;
 volatile int initFinish = 0;
@@ -32,8 +32,11 @@ void main(u64 hartId) {
 
         memoryInit();
         processInit();
+        printf("Free page count: %d\n", countFreePages());
         PROCESS_CREATE_PRIORITY(ProcessA, 2);
+        printf("Free page count: %d\n", countFreePages());
         PROCESS_CREATE_PRIORITY(ProcessB, 3);
+        printf("Free page count: %d\n", countFreePages());
         //PROCESS_CREATE_PRIORITY(ForkTest, 5);
 
         for (int i = 1; i < 5; ++ i) {
