@@ -5,7 +5,7 @@
 #include <Riscv.h>
 #include <Sd.h>
 
-// #define SINGLE_CORE
+#define SINGLE_CORE
 
 volatile int mainCount = 1000;
 volatile int initFinish = 0;

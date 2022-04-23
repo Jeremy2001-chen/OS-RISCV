@@ -1,6 +1,7 @@
 #include <Driver.h>
 #include <Riscv.h>
 #include <Spinlock.h>
+#include <Timer.h>
 
 struct Spinlock printLock;
 
@@ -122,6 +123,8 @@ void _panic_(const char *file, int line, const char *fmt, ...) {
     va_end(ap);
     putchar('\n');
     releaseLock(&printLock);
+    //timerTick();
+    //w_sstatus(r_sstatus() | SSTATUS_SIE);
     while (true);
 }
 

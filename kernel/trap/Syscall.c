@@ -13,7 +13,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_YIELD]             syscallYield,
     [SYSCALL_PROCESS_DESTORY]   syscallProcessDestory,
     [SYSCALL_FORK]              syscallFork,
-    [SYSCALL_PUT_STRING]        syscallPutString
+    [SYSCALL_PUT_STRING]        syscallPutString,
 };
 
 extern struct Spinlock printLock;
@@ -46,7 +46,7 @@ void syscallProcessDestory() {
 }
 
 void syscallYield() {
-
+	yield();
 }
 
 void syscallFork() {
