@@ -24,4 +24,10 @@ inline void syscallPutString(char* buffer, u64 len) {
     asm volatile ("ecall": "+r"(a0), "+r"(a1): "r"(a7));
 }
 
+inline void syscallProcessDestory(u32 processId) {
+    register long a0 asm ("a0") = (long) processId;
+    register long a7 asm ("a7") = SYSCALL_PROCESS_DESTORY;
+    asm volatile ("ecall": "+r"(a0): "r"(a7):);
+}
+
 #endif

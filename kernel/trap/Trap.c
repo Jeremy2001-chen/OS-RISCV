@@ -59,8 +59,9 @@ void kernelTrap() {
     u64 sepc = r_sepc();
     u64 sstatus = r_sstatus();
     u64 scause = r_scause();
+    u64 r = r_hartid();
 
-    printf("status is %lx, spec is %lx, cause is %lx\n", sstatus, sepc, scause);
+    printf("hartId is %lx, status is %lx, spec is %lx, cause is %lx\n", r, sstatus, sepc, scause);
     if (!(sstatus & SSTATUS_SPP)) {
         panic("kernel trap not from supervisor mode");
     }
@@ -72,10 +73,7 @@ void kernelTrap() {
     if (device == UNKNOWN_DEVICE) {
         panic("kernel trap");
     }
-    extern Process *currentProcess[HART_TOTAL_NUMBER];
-    int hartId = r_hartid();
-    if (device == TIMER_INTERRUPT && currentProcess[hartId] != NULL &&
-        currentProcess[hartId]->state == RUNNING) {
+    if (device == TIMER_INTERRUPT) {
         yield();
     }
     w_sepc(sepc);

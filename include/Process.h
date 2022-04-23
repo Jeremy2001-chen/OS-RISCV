@@ -6,6 +6,7 @@
 
 #define LOG_PROCESS_NUM 10
 #define PROCESS_TOTAL_NUMBER (1 << LOG_PROCESS_NUM)
+#define PROCESS_OFFSET(processId) ((processId) & (PROCESS_TOTAL_NUMBER - 1))
 
 #define PROCESS_CREATE_PRIORITY(x, y) { \
     extern u8 binary##x##Start[]; \
@@ -78,5 +79,8 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority);
 void wakeup(void *channel);
 void yield();
 void processFork();
+void processDestory(Process* p);
+void processFree(Process* p);
+int pid2Process(u32 processId, struct Process **process, int checkPerm);
 
 #endif

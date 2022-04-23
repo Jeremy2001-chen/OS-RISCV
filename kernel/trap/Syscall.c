@@ -11,6 +11,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
     [SYSCALL_GET_PROCESS_ID]    syscallGetProcessId,
     [SYSCALL_YIELD]             syscallYield,
+    [SYSCALL_PROCESS_DESTORY]   syscallProcessDestory,
     [SYSCALL_FORK]              syscallFork,
     [SYSCALL_PUT_STRING]        syscallPutString
 };
@@ -26,6 +27,22 @@ void syscallPutchar() {
 
 void syscallGetProcessId() {
 
+}
+
+void syscallProcessDestory() {
+    Trapframe* trapframe = getHartTrapFrame();
+    u32 processId = trapframe->a0;
+    struct Process* process;
+    int ret;
+
+    if ((ret = pid2Process(processId, &process, 1)) < 0) {
+        trapframe->a0 = ret;
+        return;
+    }    
+
+    processDestory(process);
+    trapframe->a0 = 0;
+    return;
 }
 
 void syscallYield() {

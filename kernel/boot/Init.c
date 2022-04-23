@@ -5,6 +5,8 @@
 #include <Riscv.h>
 #include <Sd.h>
 
+// #define SINGLE_CORE
+
 volatile int mainCount = 1000;
 volatile int initFinish = 0;
 
@@ -32,9 +34,9 @@ void main(u64 hartId) {
         processInit();
         PROCESS_CREATE_PRIORITY(ProcessA, 2);
         PROCESS_CREATE_PRIORITY(ProcessB, 3);
-        PROCESS_CREATE_PRIORITY(ForkTest, 5);
+        //PROCESS_CREATE_PRIORITY(ForkTest, 5);
 
-        for (int i = 3; i < 5; ++ i) {
+        for (int i = 1; i < 5; ++ i) {
             if (i != hartId) {
                 unsigned long mask = 1 << i;
                 setMode(i);
@@ -46,7 +48,11 @@ void main(u64 hartId) {
 
         __sync_synchronize();     
 
+#ifdef SINGLE_CORE
+        initFinish = 0;
+#else
         initFinish = 1;
+#endif
 
         //PROCESS_CREATE_PRIORITY(ForkTest, 1);
 

@@ -6,7 +6,7 @@
 void syscallPutchar();
 void syscallGetProcessId();
 void syscallYield();
-void syscallProcessDestroy();
+void syscallProcessDestory();
 void syscallFork();
 void syscallPutString();
 
