@@ -17,7 +17,7 @@ SECTIONS {
         _trampoline = .;
         *(.trampoline)
         . = ALIGN(4096);
-        ASSERT(. - _trampoline == 4096, "error: trampoline larger than one page");
+        ASSERT(. - _trampoline == 8192, "error: trampoline not have two page");
         PROVIDE(textEnd = .);
     }
 

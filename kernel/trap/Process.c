@@ -5,6 +5,7 @@
 #include <Riscv.h>
 #include <Trap.h>
 #include <string.h>
+#include <Spinlock.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
@@ -19,8 +20,15 @@ Process* myproc() {
 }
 
 extern Trapframe trapframe[];
+struct Spinlock freeProcessesLock, scheduleListLock;
+
+
 void processInit() {
     printf("Process init start...\n");
+    
+    initLock(&freeProcessesLock, "freeProcess");
+    initLock(&scheduleListLock, "scheduleList");
+    
     LIST_INIT(&freeProcesses);
     LIST_INIT(&scheduleList[0]);
     LIST_INIT(&scheduleList[1]);
@@ -31,7 +39,7 @@ void processInit() {
         processes[i].trapframe.kernelSatp = MAKE_SATP(kernelPageDirectory);
         LIST_INSERT_HEAD(&freeProcesses, &processes[i], link);
     }
-    w_sscratch((u64) trapframe);
+    w_sscratch((u64)getHartTrapFrame());
     printf("Process init finish!\n");
 }
 
@@ -56,18 +64,23 @@ static int setup(Process *p) {
     extern char trampoline[];
     pageInsert(p->pgdir, TRAMPOLINE_BASE, (u64)trampoline, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE);
+    pageInsert(p->pgdir, TRAMPOLINE_BASE + PAGE_SIZE, ((u64)trampoline) + PAGE_SIZE, 
+        PTE_READ | PTE_WRITE | PTE_EXECUTE);
     return 0;
 }
 
 int processAlloc(Process **new, u64 parentId) {
     int r;
     Process *p;
+    acquireLock(&freeProcessesLock);
     if (LIST_EMPTY(&freeProcesses)) {
+        releaseLock(&freeProcessesLock);
         *new = NULL;
         return -NO_FREE_PROCESS;
     }
     p = LIST_FIRST(&freeProcesses);
     LIST_REMOVE(p, link);
+    releaseLock(&freeProcessesLock);
     if ((r = setup(p)) < 0) {
         return r;
     }
@@ -75,8 +88,7 @@ int processAlloc(Process **new, u64 parentId) {
     p->id = generateProcessId(p);
     p->state = RUNNABLE;
     p->parentId = parentId;
-    extern char kernelStack[];
-    p->trapframe.kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE;
+    p->trapframe.kernelSp = getHartKernelTopSp();
     p->trapframe.sp = USER_STACK_TOP;
 
     *new = p;
@@ -140,7 +152,6 @@ int codeMapper(u64 va, u32 segmentSize, u8 *binary, u32 binSize, void *userData)
 
 void processCreatePriority(u8 *binary, u32 size, u32 priority) {
     Process *p;
-
     int r = processAlloc(&p, 0);
     if (r < 0) {
         return;
@@ -152,15 +163,19 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
     }
     p->trapframe.epc = entryPoint;
 
+    acquireLock(&scheduleListLock);
     LIST_INSERT_TAIL(&scheduleList[0], p, scheduleLink);
+    releaseLock(&scheduleListLock);
 }
 
 void processRun(Process *p) {
     int hartId = r_hartid();
+    Trapframe* trapframe = getHartTrapFrame();
     if (currentProcess[hartId]) {
         bcopy(trapframe, &(currentProcess[hartId]->trapframe), sizeof(Trapframe));
     }
     currentProcess[hartId] = p;
+    p->state = RUNNING;
     bcopy(&(currentProcess[hartId]->trapframe), trapframe, sizeof(Trapframe));
     userTrapReturn();
 }
@@ -228,10 +243,16 @@ int either_copyin(void* dst, int user_src, u64 src, u64 len) {
 }
 
 void yield() {
+    int r = r_hartid();
+    printf("hartid in yield: %d\n", r);
     static int count = 0;
     static int point = 0;
     int hartId = r_hartid();
+    acquireLock(&scheduleListLock);
     Process* next_env = currentProcess[hartId];
+    if (next_env && next_env->state == RUNNING) {
+        next_env->state = RUNNABLE;
+    }
     while ((count == 0) || (next_env == NULL) || (next_env->state != RUNNABLE)) {
         if (next_env != NULL) {
             LIST_INSERT_TAIL(&scheduleList[point ^ 1], next_env, scheduleLink);
@@ -240,14 +261,16 @@ void yield() {
             point = 1 - point;
         }
         if (LIST_EMPTY(&scheduleList[point])) {
+            releaseLock(&scheduleListLock);
             panic("No Env is RUNNABLE\n");
         }
         next_env = LIST_FIRST(&scheduleList[point]);
         LIST_REMOVE(next_env, scheduleLink);
         count = next_env->priority;
     }
+    releaseLock(&scheduleListLock);
     count--;
-    printf("\nyield %d\n", next_env->id);
+    printf("hartID %d yield process %d\n", hartId, next_env->id);
     processRun(next_env);
 }
 
@@ -261,11 +284,15 @@ void processFork() {
         return;
     }
     process->priority = currentProcess[hartId]->priority;
+    Trapframe* trapframe = getHartTrapFrame();
     bcopy(trapframe, &process->trapframe, sizeof(Trapframe));
     process->trapframe.a0 = 0;
+    
+    acquireLock(&scheduleListLock);
     LIST_INSERT_TAIL(&scheduleList[0], process, scheduleLink);
-    trapframe->a0 = process->id;
+    releaseLock(&scheduleListLock);
 
+    trapframe->a0 = process->id;
     u64 i, j, k;
     for (i = 0; i < 512; i++) {
         if (!(currentProcess[hartId]->pgdir[i] & PTE_VALID)) {
@@ -282,9 +309,12 @@ void processFork() {
                     continue;
                 }
                 u64 va = (i << 30) + (j << 21) + (k << 12);
-                if (va == TRAMPOLINE_BASE) {
+                if (va == TRAMPOLINE_BASE || va == TRAMPOLINE_BASE + PAGE_SIZE) {
                     continue;
                 }
+                // if (va == TRAMPOLINE_BASE) {
+                //     continue;
+                // }
                 if (pa2[k] & PTE_WRITE) {
                     pa2[k] |= PTE_COW;
                     pa2[k] &= ~PTE_WRITE;

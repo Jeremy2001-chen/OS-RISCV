@@ -1,18 +1,18 @@
 #include "Spinlock.h"
-#include "Cpu.h"
+#include "Hart.h"
 #include "Interrupt.h"
 #include "Driver.h"
 
 void initLock(struct Spinlock* lock, char* name) {
     lock->name = name;
     lock->locked = 0;
-    lock->cpu = 0;
+    lock->hart = 0;
 }
 
 void acquireLock(struct Spinlock* lock) {
     interruptPush();
     if (holding(lock)) {
-        panic("You have acquire the lock!\n");
+        panic("You have acquire the lock! The lock is %s\n", lock->name);
     }
 
     // On RISC-V, sync_lock_test_and_set turns into an atomic swap:
@@ -27,15 +27,15 @@ void acquireLock(struct Spinlock* lock) {
     // On RISC-V, this emits a fence instruction.
     __sync_synchronize();
 
-    lock->cpu = myCpu();
+    lock->hart = myHart();
 }
 
 void releaseLock(struct Spinlock* lock) {
     if (!holding(lock)) {
-        panic("You have release the lock!\n");
+        panic("You have release the lock! The lock is %s\n", lock->name);
     }
 
-    lock->cpu = 0;
+    lock->hart = 0;
 
     __sync_synchronize();
 
@@ -47,12 +47,11 @@ void releaseLock(struct Spinlock* lock) {
     //   s1 = &lk->locked
     //   amoswap.w zero, zero, (s1)
     __sync_lock_release(&lock->locked);
-
     interruptPop();
 }
 
 int holding(struct Spinlock* lock) {
     int r;
-    r = (lock->locked && lock->cpu == myCpu());
+    r = (lock->locked && lock->hart == myHart());
     return r;
 }

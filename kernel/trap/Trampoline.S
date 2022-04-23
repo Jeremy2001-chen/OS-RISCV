@@ -11,6 +11,7 @@
         #
 	.section .trampoline
     .globl trampoline
+    .align 12
 trampoline:
     .align 4
     .globl userVector
@@ -140,5 +141,6 @@ userReturn:
     sret
 
     .globl trapframe
+    .align 12
 trapframe:
-    .space 1200
+    .space 4096

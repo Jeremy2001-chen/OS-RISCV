@@ -6,13 +6,12 @@
 #include <Sd.h>
 
 volatile int mainCount = 1000;
+volatile int initFinish = 0;
 
 static inline void initHartId(u64 hartId) {
     asm volatile("mv tp, %0" : : "r" (hartId & 0x7));
 }
 
-//void ffff(int);
-u8 binary[1024];
 void main(u64 hartId) {
     initHartId(hartId);
 
@@ -30,60 +29,40 @@ void main(u64 hartId) {
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
 
         memoryInit();
-        /*sdInit();
-        for (int j = 0; j < 10; j += 2) {
-            for (int i = 0; i < 1024; i++) {
-                binary[i] = i & 7;
-            }
-            sdWrite(binary, j, 2);
-            for (int i = 0; i < 1024; i++) {
-                binary[i] = 0;
-            }
-            sdRead(binary, j, 2);
-            for (int i = 0; i < 1024; i++) {
-                if (binary[i] != (i & 7)) {
-                    panic("gg: %d ", j);
-                    break;
-                }
-            }
-            printf("finish %d\n", j);
-        }*/
+        processInit();
+        PROCESS_CREATE_PRIORITY(ProcessA, 2);
+        PROCESS_CREATE_PRIORITY(ProcessB, 3);
+        PROCESS_CREATE_PRIORITY(ForkTest, 5);
 
-        for (int i = 1; i < 5; ++ i) {
+        for (int i = 3; i < 5; ++ i) {
             if (i != hartId) {
                 unsigned long mask = 1 << i;
                 setMode(i);
                 sbi_send_ipi(&mask);
-                /*int sum = 0;
-                for (int j = 0; j < 1e9; j++) {
-                    sum += j * j * j * j;
-                }*/
-                //printf("%d\n", sum);
             }
         }
-        //printf("end\n");
-        __sync_synchronize();
-        //printf("%d\n", mainCount);
+
+        trapInit();
+
+        __sync_synchronize();     
+
+        initFinish = 1;
+
         //PROCESS_CREATE_PRIORITY(ForkTest, 1);
 
-        //yield();
-
-        /*printf("reach end\n");*/
-        mainCount++;
-        
-        trapInit();
-        processInit();
-
     } else {
+        while (initFinish == 0);
         __sync_synchronize();
+
         printf("Hello, risc-v!\nCurrent hartId: %ld \n\n", hartId);
-        mainCount++;
-        while (hartId != 4 || mainCount != 1005) {};
 
         startPage();
         trapInit();
 
-        PROCESS_CREATE_PRIORITY(ForkTest, 1);
-        yield();
+        //PROCESS_CREATE_PRIORITY(ForkTest, 1);
+        //PROCESS_CREATE_PRIORITY(ProcessB, 3);
+        //printf("Reach this place\n");
     }
+
+    yield();
 }

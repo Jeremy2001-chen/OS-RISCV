@@ -3,6 +3,7 @@
 #include <MemoryConfig.h>
 #include <Riscv.h>
 #include <Platform.h>
+#include <Process.h>
 
 PageList freePages;
 PhysicalPage pages[PHYSICAL_PAGE_NUM];

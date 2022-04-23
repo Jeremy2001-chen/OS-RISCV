@@ -1,6 +1,6 @@
 INCLUDES := -I../../include
 
-target = Cpu.o
+target = Hart.o
 
 .PHONY: build clean
 

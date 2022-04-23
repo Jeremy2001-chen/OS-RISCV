@@ -3,6 +3,7 @@
 
 #include <MemoryConfig.h>
 #include <Riscv.h>
+#include <Process.h>
 
 void trapInit();
 void kernelVector();

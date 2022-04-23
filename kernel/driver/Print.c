@@ -106,9 +106,16 @@ void printf(const char *fmt, ...) {
     releaseLock(&printLock);
 }
 
+void panicPrintf(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    print(fmt, ap);
+    va_end(ap);
+}
+
 void _panic_(const char *file, int line, const char *fmt, ...) {
     acquireLock(&printLock);
-    printf("panic at %s: %d: ", file, line);
+    panicPrintf("hartId %d panic at %s: %d: ", r_hartid(), file, line);
     va_list ap;
     va_start(ap, fmt);
     print(fmt, ap);

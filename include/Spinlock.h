@@ -1,6 +1,6 @@
 #ifndef __SPINLOCK_H
 #define __SPINLOCK_H
-#include "Cpu.h"
+#include "Hart.h"
 #include "Type.h"
 
 // Mutual exclusion lock.
@@ -9,7 +9,7 @@ struct Spinlock {
 
     // For debugging:
     char *name;        // Name of lock.
-    struct Cpu* cpu;   // The cpu holding the lock.
+    struct Hart* hart;   // The cpu holding the lock.
 };
 
 // Initialize a spinlock

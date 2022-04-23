@@ -50,8 +50,8 @@ inline PhysicalPage* pa2page(u64 pa) {
 
 void bcopy(void *src, void *dst, u32 len);
 void bzero(void *start, u32 len);
-void memoryInit(void);
-void startPage(void);
+void memoryInit();
+void startPage();
 
 #define PA2PPN(va) ((((u64)(va)) & 0x0fffffff) >> PAGE_SHIFT)
 #define PPN2PA(ppn) (((u64)(ppn)) << PAGE_SHIFT)

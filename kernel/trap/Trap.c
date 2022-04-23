@@ -5,13 +5,15 @@
 #include <Process.h>
 #include <Page.h>
 #include <Syscall.h>
+#include <Hart.h>
 
 void trapInit() {
     printf("Trap init start...\n");
     w_stvec((u64)kernelVector);
     w_sstatus(r_sstatus() | SSTATUS_SIE | SSTATUS_SPIE);
-    w_sie(r_sie() | SIE_SEIE | SIE_SSIE | SIE_STIE);
     setNextTimeout();
+    w_sip(0); //todo
+    w_sie(r_sie() | SIE_SEIE | SIE_SSIE | SIE_STIE);
     printf("Trap init finish!\n");
 }
 
@@ -56,7 +58,9 @@ void kernelTrap() {
     printf("kernel trap\n");
     u64 sepc = r_sepc();
     u64 sstatus = r_sstatus();
+    u64 scause = r_scause();
 
+    printf("status is %lx, spec is %lx, cause is %lx\n", sstatus, sepc, scause);
     if (!(sstatus & SSTATUS_SPP)) {
         panic("kernel trap not from supervisor mode");
     }
@@ -88,7 +92,7 @@ void userTrap() {
     int hartId = r_hartid();
 
     u64 scause = r_scause();
-    extern Trapframe trapframe[];
+    Trapframe* trapframe = getHartTrapFrame();
     if (scause & SCAUSE_INTERRUPT) {
         trapDevice();
         yield();
@@ -126,10 +130,9 @@ void userTrapReturn() {
     int hartId = r_hartid();
 
     extern Process *currentProcess[HART_TOTAL_NUMBER];
-    extern char kernelStack[];
-    extern Trapframe trapframe[];
+    Trapframe* trapframe = getHartTrapFrame();
 
-    trapframe->kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE;
+    trapframe->kernelSp = getHartKernelTopSp();
     trapframe->trapHandler = (u64)userTrap;
     trapframe->kernelHartId = r_tp();
 
