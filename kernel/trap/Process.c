@@ -170,7 +170,7 @@ void processRun(Process *p) {
 // Atomically release lock and sleep on chan.
 // Reacquires lock when awakened.
 void sleep(void* chan, struct Spinlock* lk) {
-    struct Process* p = myproc();
+    // struct Process* p = myproc();
 
     // Must acquire p->lock in order to
     // change p->state and then call sched.
@@ -179,7 +179,7 @@ void sleep(void* chan, struct Spinlock* lk) {
     // (wakeup locks p->lock),
     // so it's okay to release lk.
 
-    acquireLock(&p->lock);  // DOC: sleeplock1
+    // acquireLock(&p->lock);  // DOC: sleeplock1
     releaseLock(lk);
 
     //这里不将state改成SLEEPING，所以进程会被不停地调度,进程状态始终是RUNNABLE
@@ -193,7 +193,7 @@ void sleep(void* chan, struct Spinlock* lk) {
     // p->chan = 0;
 
     // Reacquire original lock.
-    releaseLock(&p->lock);
+    // releaseLock(&p->lock);
     acquireLock(lk);
 }
 
