@@ -5,6 +5,7 @@
 #include <Process.h>
 #include <Page.h>
 #include <Syscall.h>
+#include <Hart.h>
 
 void trapInit() {
     printf("Trap init start...\n");
@@ -13,12 +14,6 @@ void trapInit() {
     w_sie(r_sie() | SIE_SEIE | SIE_SSIE | SIE_STIE);
     setNextTimeout();
     printf("Trap init finish!\n");
-}
-
-Trapframe* getHartTrapFrame() {
-    int hartId = r_hartid();
-    extern Trapframe trapframe[];
-    return (Trapframe*)((u64)trapframe + hartId * sizeof(Trapframe)); 
 }
 
 int trapDevice() {
@@ -59,7 +54,7 @@ int trapDevice() {
 }
 
 void kernelTrap() {
-    //printf("kernel trap\n");
+    printf("kernel trap\n");
     u64 sepc = r_sepc();
     u64 sstatus = r_sstatus();
 
@@ -132,10 +127,9 @@ void userTrapReturn() {
     int hartId = r_hartid();
 
     extern Process *currentProcess[HART_TOTAL_NUMBER];
-    extern char kernelStack[];
     Trapframe* trapframe = getHartTrapFrame();
 
-    trapframe->kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE * r_hartid();
+    trapframe->kernelSp = getHartKernelTopSp();
     trapframe->trapHandler = (u64)userTrap;
     trapframe->kernelHartId = r_tp();
 

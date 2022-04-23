@@ -57,7 +57,7 @@ static void virtualMemory() {
         PTE_READ | PTE_WRITE | PTE_EXECUTE | PTE_ACCESSED | PTE_DIRTY);
 }
 
-void startPage(int hartId) {
+void startPage() {
     w_satp(MAKE_SATP(kernelPageDirectory));
     sfence_vma();
 }
@@ -77,11 +77,11 @@ static void testMemory() {
     printf("value1 of %lx:  %d\n", 1ll << 35, *((u32*)(1ll<<35)));
 }
 
-void memoryInit(int hartId) {
+void memoryInit() {
     printf("Memory init start...\n");
     initFreePages();
     virtualMemory();
-    startPage(hartId);
+    startPage();
     printf("Memory init finish!\n");
     printf("Test memory start...\n");
     testMemory();

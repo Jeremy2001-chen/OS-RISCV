@@ -10,7 +10,6 @@ void kernelVector();
 void userVector();
 void userReturn();
 void userTrapReturn();
-Trapframe* getHartTrapFrame();
 
 inline static u32 interruptServed() {
     int hart = r_tp();

@@ -79,9 +79,7 @@ int processAlloc(Process **new, u64 parentId) {
     p->id = generateProcessId(p);
     p->state = RUNNABLE;
     p->parentId = parentId;
-    extern char kernelStack[];
-
-    p->trapframe.kernelSp = (u64)kernelStack + KERNEL_STACK_SIZE * r_hartid();
+    p->trapframe.kernelSp = getHartKernelTopSp();
     p->trapframe.sp = USER_STACK_TOP;
 
     *new = p;
@@ -179,7 +177,7 @@ void wakeup(void *channel) {
 
 void yield() {
     int r = r_hartid();
-    printf("hartid is: %d\n", r);
+    printf("hartid in yield: %d\n", r);
     static int count = 0;
     static int point = 0;
     int hartId = r_hartid();
@@ -205,7 +203,7 @@ void yield() {
     }
     releaseLock(&scheduleListLock);
     count--;
-    printf("\nyield %d\n", next_env->id);
+    printf("hartID %d yield process %d\n", hartId, next_env->id);
     processRun(next_env);
 }
 

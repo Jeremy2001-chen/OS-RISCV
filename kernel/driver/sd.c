@@ -284,3 +284,26 @@ int sdInit(void) {
 	__asm__ __volatile__ ("fence.i" : : : "memory");
 	return 0;
 }
+
+u8 binary[1024];
+int sdTest(void) {
+	sdInit();
+    for (int j = 0; j < 10; j += 2) {
+        for (int i = 0; i < 1024; i++) {
+            binary[i] = i & 7;
+        }
+        sdWrite(binary, j, 2);
+        for (int i = 0; i < 1024; i++) {
+            binary[i] = 0;
+        }
+        sdRead(binary, j, 2);
+        for (int i = 0; i < 1024; i++) {
+            if (binary[i] != (i & 7)) {
+                panic("gg: %d ", j);
+                break;
+            }
+        }
+        printf("finish %d\n", j);
+    }
+	return 0;
+}
