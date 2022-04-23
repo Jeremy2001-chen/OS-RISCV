@@ -29,8 +29,12 @@ void main(u64 hartId) {
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
 
         memoryInit();
+        processInit();
+        PROCESS_CREATE_PRIORITY(ProcessA, 2);
+        PROCESS_CREATE_PRIORITY(ProcessB, 3);
+        PROCESS_CREATE_PRIORITY(ForkTest, 5);
 
-        for (int i = 1; i < 5; ++ i) {
+        for (int i = 3; i < 5; ++ i) {
             if (i != hartId) {
                 unsigned long mask = 1 << i;
                 setMode(i);
@@ -39,16 +43,10 @@ void main(u64 hartId) {
         }
 
         trapInit();
-        processInit();
-
-        PROCESS_CREATE_PRIORITY(ProcessA, 2);
-        PROCESS_CREATE_PRIORITY(ProcessB, 3);
-        PROCESS_CREATE_PRIORITY(ProcessA, 5);
-
 
         __sync_synchronize();     
 
-        initFinish = true;
+        initFinish = 1;
 
         //PROCESS_CREATE_PRIORITY(ForkTest, 1);
 

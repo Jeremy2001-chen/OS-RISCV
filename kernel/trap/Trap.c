@@ -11,8 +11,9 @@ void trapInit() {
     printf("Trap init start...\n");
     w_stvec((u64)kernelVector);
     w_sstatus(r_sstatus() | SSTATUS_SIE | SSTATUS_SPIE);
-    w_sie(r_sie() | SIE_SEIE | SIE_SSIE | SIE_STIE);
     setNextTimeout();
+    w_sip(0); //todo
+    w_sie(r_sie() | SIE_SEIE | SIE_SSIE | SIE_STIE);
     printf("Trap init finish!\n");
 }
 
@@ -57,7 +58,9 @@ void kernelTrap() {
     printf("kernel trap\n");
     u64 sepc = r_sepc();
     u64 sstatus = r_sstatus();
+    u64 scause = r_scause();
 
+    printf("status is %lx, spec is %lx, cause is %lx\n", sstatus, sepc, scause);
     if (!(sstatus & SSTATUS_SPP)) {
         panic("kernel trap not from supervisor mode");
     }
