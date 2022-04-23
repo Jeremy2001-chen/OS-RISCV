@@ -52,7 +52,9 @@ void processDestory(Process *p) {
 void processFree(Process *p) {
     printf("[%lx] free env %lx\n", currentProcess[r_hartid()] ? currentProcess[r_hartid()]->id : 0, p->id);
     pgdirFree(p->pgdir);
-    printf("Free page count: %d\n", countFreePages());
+    acquireLock(&freeProcessesLock);
+    LIST_INSERT_HEAD(&freeProcesses, p, link);
+    releaseLock(&freeProcessesLock);
     return;
 }
 
@@ -222,7 +224,6 @@ void wakeup(void *channel) {
 void yield() {
     int r = r_hartid();
     printf("hartid in yield: %d\n", r);
-    printf("Free page count: %d\n", countFreePages());
     static int count = 0;
     static int point = 0;
     int hartId = r_hartid();
