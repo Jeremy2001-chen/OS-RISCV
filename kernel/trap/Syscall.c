@@ -10,12 +10,12 @@
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
     [SYSCALL_GET_PROCESS_ID]    syscallGetProcessId,
-    [SYS_SCHED_YIELD]           syscallYield,
+    [SYSCALL_SCHED_YIELD]           syscallYield,
     [SYSCALL_PROCESS_DESTORY]   syscallProcessDestory,
     [SYSCALL_FORK]              syscallFork,
     [SYSCALL_PUT_STRING]        syscallPutString,
-    [SYS_GET_PID]               syscallGetProcessId,
-    [SYS_GET_PARENT_PID]        syscallGetParentProcessId,
+    [SYSCALL_GET_PID]               syscallGetProcessId,
+    [SYSCALL_GET_PARENT_PID]        syscallGetParentProcessId,
 
 };
 

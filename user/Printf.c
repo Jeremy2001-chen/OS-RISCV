@@ -1,6 +1,6 @@
-#include <Printf.h>
-#include <Syscall.h>
+#include "./include/SyscallLib.h"
 #include "../include/Type.h"
+#include "Printf.h"
 
 static void uPrint(const char *fmt, va_list ap) {
     int i, c;
@@ -67,6 +67,6 @@ void _uPanic_(const char *file, int line, const char *fmt, ...) {
     va_start(ap, fmt);
     uPrint(fmt, ap);
     va_end(ap);
-    syscallPutchar('\n');
+    putchar('\n');
     while (true);
 }
