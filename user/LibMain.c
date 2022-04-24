@@ -1,8 +1,9 @@
 #include "LibMain.h"
-#include "Syscall.h"
+#include "./include/SyscallLib.h"
+#include "./include/Syscall.h"
 
 void exit(void) {
-    syscallProcessDestory(0);
+    processDestory(0);
 }
 
 void libMain() {

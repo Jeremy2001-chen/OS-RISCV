@@ -1,7 +1,7 @@
 #ifndef _USER_PRINTF_H_
 #define _USER_PRINTF_H_
 
-#include <Syscall.h>
+#include "SyscallLib.h"
 #include "../../include/Type.h"
 
 #define 	BUFFER_MAX_LEN 128
@@ -11,7 +11,7 @@ static int bufferLen = 0;
 
 static inline void clearBuffer() {
     if (bufferLen > 0) {
-        syscallPutString(printfBuffer, bufferLen);
+        putString(printfBuffer, bufferLen);
         bufferLen = 0;
     }
 }
