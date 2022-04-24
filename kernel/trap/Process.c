@@ -227,37 +227,34 @@ void wakeup(void *channel) {
 static int processTimeCount[HART_TOTAL_NUMBER] = {0, 0, 0, 0, 0};
 static int processBelongList[HART_TOTAL_NUMBER] = {0, 0, 0, 0, 0};
 void yield() {
-    int r = r_hartid();
-    printf("hartid in yield: %d\n", r);
     int hartId = r_hartid();
     int count = processTimeCount[hartId];
     int point = processBelongList[hartId];
     acquireLock(&scheduleListLock);
-    Process* next_env = currentProcess[hartId];
-    if (next_env && next_env->state == RUNNING) {
-        next_env->state = RUNNABLE;
+    Process* process = currentProcess[hartId];
+    if (process && process->state == RUNNING) {
+        process->state = RUNNABLE;
     }
-    while ((count == 0) || (next_env == NULL) || (next_env->state != RUNNABLE)) {
-        if (next_env != NULL) {
-            LIST_INSERT_TAIL(&scheduleList[point ^ 1], next_env, scheduleLink);
-        }
-        if (LIST_EMPTY(&scheduleList[point])) {
-            point = 1 - point;
-        }
+    while ((count == 0) || (process == NULL) || (process->state != RUNNABLE)) {
+        if (process != NULL)
+            LIST_INSERT_TAIL(&scheduleList[point ^ 1], process, scheduleLink);
+        if (LIST_EMPTY(&scheduleList[point]))
+            point ^= 1;
         if (LIST_EMPTY(&scheduleList[point])) {
             releaseLock(&scheduleListLock);
-            panic("No Env is RUNNABLE\n");
+            acquireLock(&scheduleListLock);
+        } else {
+            process = LIST_FIRST(&scheduleList[point]);
+            LIST_REMOVE(process, scheduleLink);
+            count = process->priority;
         }
-        next_env = LIST_FIRST(&scheduleList[point]);
-        LIST_REMOVE(next_env, scheduleLink);
-        count = next_env->priority;
     }
     releaseLock(&scheduleListLock);
     count--;
     processTimeCount[hartId] = count;
     processBelongList[hartId] = point;
-    printf("hartID %d yield process %d\n", hartId, next_env->id);
-    processRun(next_env);
+    printf("hartID %d yield process %lx\n", hartId, process->id);
+    processRun(process);
 }
 
 void processFork() {
