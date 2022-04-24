@@ -6,8 +6,8 @@
 
 #define 	BUFFER_MAX_LEN 128
 
-static char printfBuffer[BUFFER_MAX_LEN];
-static int bufferLen = 0;
+extern char printfBuffer[BUFFER_MAX_LEN];
+extern int bufferLen;
 
 static inline void clearBuffer() {
     if (bufferLen > 0) {

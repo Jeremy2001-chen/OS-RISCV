@@ -5,6 +5,9 @@
 #include "../../include/Type.h"
 #include "./include/Syscall.h"
 
+extern char printfBuffer[];
+extern int bufferLen;
+
 static inline void putchar(char c) {
     msyscall(SYSCALL_PUTCHAR, c, 0, 0, 0, 0, 0);
 }
@@ -18,6 +21,10 @@ static inline void processDestory(u32 processId) {
 }
 
 static inline u32 fork() {
+    if (bufferLen > 0) {
+        putString(printfBuffer, bufferLen);
+        bufferLen = 0;
+    }
     return msyscall(SYSCALL_FORK, 0, 0, 0, 0, 0, 0);
 }
 

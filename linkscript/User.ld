@@ -29,5 +29,13 @@ SECTIONS {
 	}
 
   	. = ALIGN(4096);  	
+
+	. = 0x01000000;		/* Buffer place */
+	.buffer : {
+		*(.buffer)
+		. = ALIGN(4096);
+	}
+	
+	. = ALIGN(4096);
   	end = . ;
 }
