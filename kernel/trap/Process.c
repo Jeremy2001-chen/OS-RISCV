@@ -269,10 +269,12 @@ void processFork() {
     process->priority = currentProcess[hartId]->priority;
     Trapframe* trapframe = getHartTrapFrame();
     bcopy(trapframe, &process->trapframe, sizeof(Trapframe));
+    extern struct Spinlock memoryLock;
     process->trapframe.a0 = 0;
     
     trapframe->a0 = process->id;
     u64 i, j, k;
+    acquireLock(&memoryLock);
     for (i = 0; i < 512; i++) {
         if (!(currentProcess[hartId]->pgdir[i] & PTE_VALID)) {
             continue;
@@ -307,6 +309,8 @@ void processFork() {
             }
         }
     }
+
+    releaseLock(&memoryLock);
 
     acquireLock(&scheduleListLock);
     LIST_INSERT_TAIL(&scheduleList[0], process, scheduleLink);

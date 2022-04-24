@@ -5,8 +5,6 @@ SECTIONS {
 	_text = .;			/* Text and read-only data */
 	.text : {
 		*(.text)
-		*(.fixup)
-		*(.gnu.warning)
 	}
 
 	. = ALIGN(4096);	
