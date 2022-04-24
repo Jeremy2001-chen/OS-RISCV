@@ -190,7 +190,7 @@ void cowHandler(u64 *pgdir, u64 badAddr) {
     PhysicalPage *page;
     int r = pageAlloc(&page);
     if (r < 0) {
-        panic("");
+        panic("cow handler error");
         return;
     }
     pageInsert(pgdir, badAddr, page2pa(page), (PTE2PERM(*pte) | PTE_WRITE) & ~PTE_COW);

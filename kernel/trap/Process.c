@@ -295,14 +295,19 @@ void processFork() {
                 if (va == TRAMPOLINE_BASE || va == TRAMPOLINE_BASE + PAGE_SIZE) {
                     continue;
                 }
-                // if (va == TRAMPOLINE_BASE) {
-                //     continue;
-                // }
-                if (pa2[k] & PTE_WRITE) {
-                    pa2[k] |= PTE_COW;
-                    pa2[k] &= ~PTE_WRITE;
+                if (va == USER_BUFFER_BASE) {
+                    PhysicalPage *p;
+                    if (pageAlloc(&p) < 0) {
+                        panic("Fork alloc page error!\n");
+                    }
+                    pageInsert(process->pgdir, va, page2pa(p), PTE_USER | PTE_READ | PTE_WRITE);
+                } else {
+                    if (pa2[k] & PTE_WRITE) {
+                        pa2[k] |= PTE_COW;
+                        pa2[k] &= ~PTE_WRITE;
+                    }
+                    pageInsert(process->pgdir, va, PTE2PA(pa2[k]), PTE2PERM(pa2[k]));
                 }
-                pageInsert(process->pgdir, va, PTE2PA(pa2[k]), PTE2PERM(pa2[k]));
             }
         }
     }
