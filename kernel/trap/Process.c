@@ -11,7 +11,7 @@ static struct ProcessList freeProcesses;
 struct ProcessList scheduleList[2];
 Process *currentProcess[HART_TOTAL_NUMBER] = {0, 0, 0, 0, 0};
 
-struct Spinlock freeProcessesLock, scheduleListLock;
+struct Spinlock freeProcessesLock, scheduleListLock, processIdLock;
 
 
 void processInit() {
@@ -19,6 +19,7 @@ void processInit() {
     
     initLock(&freeProcessesLock, "freeProcess");
     initLock(&scheduleListLock, "scheduleList");
+    initLock(&processIdLock, "processId");
     
     LIST_INIT(&freeProcesses);
     LIST_INIT(&scheduleList[0]);
@@ -35,9 +36,11 @@ void processInit() {
 }
 
 u32 generateProcessId(Process *p) {
+    acquireLock(&processIdLock);
     static u32 nextId = 0;
-    u32 idx = p - processes;
-    return (++nextId << (1 + LOG_PROCESS_NUM)) | idx;
+    u32 processId = (++nextId << (1 + LOG_PROCESS_NUM)) | (u32)(p - processes);
+    releaseLock(&processIdLock);
+    return processId;
 }
 
 void processDestory(Process *p) {
@@ -221,12 +224,14 @@ void wakeup(void *channel) {
     // todo
 }
 
+static int processTimeCount[HART_TOTAL_NUMBER] = {0, 0, 0, 0, 0};
+static int processBelongList[HART_TOTAL_NUMBER] = {0, 0, 0, 0, 0};
 void yield() {
     int r = r_hartid();
     printf("hartid in yield: %d\n", r);
-    static int count = 0;
-    static int point = 0;
     int hartId = r_hartid();
+    int count = processTimeCount[hartId];
+    int point = processBelongList[hartId];
     acquireLock(&scheduleListLock);
     Process* next_env = currentProcess[hartId];
     if (next_env && next_env->state == RUNNING) {
@@ -249,6 +254,8 @@ void yield() {
     }
     releaseLock(&scheduleListLock);
     count--;
+    processTimeCount[hartId] = count;
+    processBelongList[hartId] = point;
     printf("hartID %d yield process %d\n", hartId, next_env->id);
     processRun(next_env);
 }

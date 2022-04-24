@@ -70,7 +70,7 @@ void syscallPutString() {
     extern Process *currentProcess[HART_TOTAL_NUMBER];
     int hartId = r_hartid();
     u64* pte;
-    u64 pa = pageLookup(currentProcess[hartId]->pgdir, va, &pte);
+    u64 pa = pageLookup(currentProcess[hartId]->pgdir, va, &pte) + (va & 0xfff);
     if (pa == 0) {
         panic("Syscall put string address error!\nThe virtual address is %x, the length is %x\n", va, len);
     }
