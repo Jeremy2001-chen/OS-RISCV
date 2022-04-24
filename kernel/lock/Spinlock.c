@@ -7,12 +7,15 @@ void initLock(struct Spinlock* lock, char* name) {
     lock->name = name;
     lock->locked = 0;
     lock->hart = 0;
+    lock->times = 0;
 }
 
 void acquireLock(struct Spinlock* lock) {
     interruptPush();
     if (holding(lock)) {
-        panic("You have acquire the lock! The lock is %s\n", lock->name);
+        lock->times++;
+        return;
+        //panic("You have acquire the lock! The lock is %s\n", lock->name);
     }
 
     // On RISC-V, sync_lock_test_and_set turns into an atomic swap:
@@ -28,13 +31,17 @@ void acquireLock(struct Spinlock* lock) {
     __sync_synchronize();
 
     lock->hart = myHart();
+    lock->times++;
 }
 
 void releaseLock(struct Spinlock* lock) {
     if (!holding(lock)) {
-        panic("You have release the lock! The lock is %s\n", lock->name);
+        //panic("You have release the lock! The lock is %s\n", lock->name);
     }
 
+    lock->times--;
+    if (lock->times > 0)
+        return;
     lock->hart = 0;
 
     __sync_synchronize();

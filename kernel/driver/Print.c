@@ -100,6 +100,9 @@ static void print(const char *fmt, va_list ap) {
 
 void printf(const char *fmt, ...) {
     acquireLock(&printLock);
+    // printString("[hart is : ");
+    // printInt(r_hartid(), 10, 0);
+    // printString("]");
     va_list ap;
     va_start(ap, fmt);
     print(fmt, ap);

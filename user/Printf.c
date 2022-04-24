@@ -55,7 +55,7 @@ static void uPrint(const char *fmt, va_list ap) {
 
 void printf(const char *fmt, ...) {
     va_list ap;
-    va_start(ap, fmt);
+    va_start(ap, fmt);    
     uPrint(fmt, ap);
     va_end(ap);
     clearBuffer();

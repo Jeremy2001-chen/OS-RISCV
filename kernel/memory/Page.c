@@ -5,10 +5,25 @@
 #include <Spinlock.h>
 
 extern PageList freePages;
-struct Spinlock pageListLock;
+struct Spinlock pageListLock, memoryLock;
 
 inline void pageLockInit(void) {
     initLock(&pageListLock, "pageListLock");
+    initLock(&memoryLock, "memoryLock");
+}
+
+static void pageRemove(u64 *pgdir, u64 va) {
+    u64 *pte;
+    u64 pa = pageLookup(pgdir, va, &pte);
+
+    // tlb flush
+    if (pa < PHYSICAL_ADDRESS_BASE || pa >= PHYSICAL_MEMORY_TOP) {
+        return;
+    }
+    PhysicalPage *page = pa2page(pa);
+    page->ref--;
+    pageFree(page);
+    *pte = 0;
 }
 
 int countFreePages() {
@@ -62,15 +77,18 @@ static int pageWalk(u64 *pgdir, u64 va, bool create, u64 **pte) {
 }
 
 u64 pageLookup(u64 *pgdir, u64 va, u64 **pte) {
+    acquireLock(&memoryLock);
+
     u64 *entry;
     pageWalk(pgdir, va, false, &entry);
-
     if (entry == NULL || !(*entry & PTE_VALID)) {
+        releaseLock(&memoryLock);
         return 0;
     }
     if (pte) {
         *pte = entry;
     }
+    releaseLock(&memoryLock);
     return PTE2PA(*entry);
 }
 
@@ -96,6 +114,7 @@ static void paDecreaseRef(u64 pa) {
 }
 
 void pgdirFree(u64* pgdir) {
+    acquireLock(&memoryLock);
     u64 i, j, k;
     u64* pageTable;
     for (i = 0; i < PTE2PT; i++) {
@@ -120,29 +139,18 @@ void pgdirFree(u64* pgdir) {
         paDecreaseRef((u64) pa);
     }
     paDecreaseRef((u64) pgdir);
-}
-
-void pageRemove(u64 *pgdir, u64 va) {
-    u64 *pte;
-    u64 pa = pageLookup(pgdir, va, &pte);
-
-    // tlb flush
-    if (pa < PHYSICAL_ADDRESS_BASE || pa >= PHYSICAL_MEMORY_TOP) {
-        return;
-    }
-    PhysicalPage *page = pa2page(pa);
-    page->ref--;
-    pageFree(page);
-    *pte = 0;
+    releaseLock(&memoryLock);
 }
 
 int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
+    acquireLock(&memoryLock);
     u64 *pte;
     va = DOWN_ALIGN(va, PAGE_SIZE);
     pa = DOWN_ALIGN(pa, PAGE_SIZE);
     perm |= PTE_ACCESSED | PTE_DIRTY;
     int ret = pageWalk(pgdir, va, true, &pte);
     if (ret < 0) {
+        releaseLock(&memoryLock);
         return ret;
     }
     if (pte != NULL && (*pte & PTE_VALID)) {
@@ -153,6 +161,7 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
     }
     *pte = PA2PTE(pa) | perm | PTE_VALID;
     sfence_vma();
+    releaseLock(&memoryLock);
     return 0;
 }
 

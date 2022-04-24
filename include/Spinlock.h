@@ -7,6 +7,7 @@
 struct Spinlock {
     u8 locked;       // Is the lock held?
 
+    int times;
     // For debugging:
     char *name;        // Name of lock.
     struct Hart* hart;   // The cpu holding the lock.

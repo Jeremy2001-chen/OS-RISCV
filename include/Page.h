@@ -74,12 +74,12 @@ inline PhysicalPage* pte2page(u64 *pte) {
 int countFreePages();
 int pageAlloc(PhysicalPage **page);
 int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm);
-void pageRemove(u64 *pgdir, u64 va);
 void pgdirFree(u64* pgdir);
 u64 pageLookup(u64 *pgdir, u64 va, u64 **pte);
 int allocPgdir(PhysicalPage **page);
 void pageout(u64 *pgdir, u64 badAddr);
 void cowHandler(u64 *pgdir, u64 badAddr);
+void pageFree(PhysicalPage *page);
 
 #define IS_RAM(pa) (pa >= PHYSICAL_ADDRESS_BASE && pa < PHYSICAL_MEMORY_TOP)
 
