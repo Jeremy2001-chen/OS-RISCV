@@ -1,8 +1,19 @@
 // Sleeping locks
 
 #include "Sleeplock.h"
-#include "Spinlock.h"
 #include "Process.h"
+#include "Spinlock.h"
+
+#define SINGLE_PROCESS
+
+#ifdef SINGLE_PROCESS //
+void initsleeplock(struct Sleeplock* lk, char* name) {}
+void acquiresleep(struct Sleeplock* lk) {}
+void releasesleep(struct Sleeplock* lk) {}
+int holdingsleep(struct Sleeplock* lk) {
+    return 1;
+}
+#else
 
 void initsleeplock(struct Sleeplock* lk, char* name) {
     initLock(&lk->lk, "sleep lock");
@@ -37,3 +48,4 @@ int holdingsleep(struct Sleeplock* lk) {
     releaseLock(&lk->lk);
     return r;
 }
+#endif
