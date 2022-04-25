@@ -11,8 +11,7 @@ inline struct Hart* myHart() {
 }
 
 Trapframe* getHartTrapFrame() {
-    extern Trapframe trapframe[];
-    return (Trapframe*)((u64)trapframe + r_hartid() * sizeof(Trapframe)); 
+    return (Trapframe*)(TRAMPOLINE_BASE + PAGE_SIZE + r_hartid() * sizeof(Trapframe)); 
 }
 
 u64 getHartKernelTopSp() {

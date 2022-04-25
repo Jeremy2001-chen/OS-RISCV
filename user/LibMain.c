@@ -1,6 +1,7 @@
 #include "LibMain.h"
 #include "./include/SyscallLib.h"
 #include "./include/Syscall.h"
+#include "./include/Printf.h"
 
 void exit(void) {
     processDestory(0);
@@ -8,5 +9,6 @@ void exit(void) {
 
 void libMain() {
     userMain();
+    printf("Destory\n");
     exit();
 }

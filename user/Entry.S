@@ -2,6 +2,8 @@
     .globl _userStart
 _userStart:
     call libMain
+_userLoop:
+    call _userLoop
 
     .section .buffer
     .align 12

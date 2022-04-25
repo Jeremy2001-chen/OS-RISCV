@@ -5,11 +5,12 @@
 #include <Spinlock.h>
 
 extern PageList freePages;
-struct Spinlock pageListLock, memoryLock;
+struct Spinlock pageListLock, memoryLock, cowBufferLock;
 
 inline void pageLockInit(void) {
     initLock(&pageListLock, "pageListLock");
     initLock(&memoryLock, "memoryLock");
+    initLock(&cowBufferLock, "cowBufferLock");
 }
 
 static void pageRemove(u64 *pgdir, u64 va) {
@@ -23,7 +24,9 @@ static void pageRemove(u64 *pgdir, u64 va) {
     PhysicalPage *page = pa2page(pa);
     page->ref--;
     pageFree(page);
+    acquireLock(&memoryLock);
     *pte = 0;
+    releaseLock(&memoryLock);
 }
 
 int countFreePages() {
@@ -148,7 +151,7 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
     va = DOWN_ALIGN(va, PAGE_SIZE);
     pa = DOWN_ALIGN(pa, PAGE_SIZE);
     perm |= PTE_ACCESSED | PTE_DIRTY;
-    int ret = pageWalk(pgdir, va, true, &pte);
+    int ret = pageWalk(pgdir, va, false, &pte);
     if (ret < 0) {
         releaseLock(&memoryLock);
         return ret;
@@ -156,10 +159,14 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
     if (pte != NULL && (*pte & PTE_VALID)) {
         pageRemove(pgdir, va);
     }
-    if (pa >= PHYSICAL_ADDRESS_BASE && pa < PHYSICAL_MEMORY_TOP) {
-        pa2page(pa)->ref++;
+    ret = pageWalk(pgdir, va, true, &pte);
+    if (ret < 0) {
+        releaseLock(&memoryLock);
+        return ret;
     }
     *pte = PA2PTE(pa) | perm | PTE_VALID;
+    if (pa >= PHYSICAL_ADDRESS_BASE && pa < PHYSICAL_MEMORY_TOP)
+        pa2page(pa)->ref++;
     sfence_vma();
     releaseLock(&memoryLock);
     return 0;
@@ -178,7 +185,7 @@ void pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
-    printf("pageout at %lx\n", badAddr);
+    printf("[Page out]pageout at %lx\n", badAddr);
     PhysicalPage *page;
     if (pageAlloc(&page) < 0) {
         panic("");
@@ -189,9 +196,11 @@ void pageout(u64 *pgdir, u64 badAddr) {
     }
 }
 
+u8 cowBuffer[PAGE_SIZE];
 void cowHandler(u64 *pgdir, u64 badAddr) {
     u64 *pte;
     u64 pa = pageLookup(pgdir, badAddr, &pte);
+    // printf("[COW]to cow %lx %lx\n", badAddr, pa);
     if (!(*pte & PTE_COW)) {
         printf("access denied");
         return;
@@ -202,6 +211,11 @@ void cowHandler(u64 *pgdir, u64 badAddr) {
         panic("cow handler error");
         return;
     }
+    acquireLock(&cowBufferLock);
+    pa = pageLookup(pgdir, badAddr, &pte);
+    bcopy((void *)pa, (void*)cowBuffer, PAGE_SIZE);
     pageInsert(pgdir, badAddr, page2pa(page), (PTE2PERM(*pte) | PTE_WRITE) & ~PTE_COW);
-    bcopy((void*) pa, (void*) page2pa(page), PAGE_SIZE);
+    bcopy((void*) cowBuffer, (void*) page2pa(page), PAGE_SIZE);
+    releaseLock(&cowBufferLock);
+    // pa = pageLookup(currentProcess[hartId]->pgdir, USER_STACK_TOP - PAGE_SIZE, &pte);
 }

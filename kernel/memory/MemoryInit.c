@@ -4,6 +4,7 @@
 #include <Riscv.h>
 #include <Platform.h>
 #include <Process.h>
+#include "Spinlock.h"
 
 PageList freePages;
 PhysicalPage pages[PHYSICAL_PAGE_NUM];
@@ -62,7 +63,8 @@ static void virtualMemory() {
     extern char trampoline[];
     pageInsert(kernelPageDirectory, TRAMPOLINE_BASE, (u64)trampoline, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE | PTE_ACCESSED | PTE_DIRTY);
-    
+    pageInsert(kernelPageDirectory, TRAMPOLINE_BASE + PAGE_SIZE, (u64)trampoline + PAGE_SIZE, 
+        PTE_READ | PTE_WRITE | PTE_EXECUTE | PTE_ACCESSED | PTE_DIRTY);
 }
 
 void startPage() {
@@ -98,6 +100,9 @@ void memoryInit() {
 }
 
 void bcopy(void *src, void *dst, u32 len) {
+    extern struct Spinlock memoryLock;
+    acquireLock(&memoryLock);
+
     void *finish = src + len;
 
     if (len <= 7) {
@@ -122,7 +127,9 @@ void bcopy(void *src, void *dst, u32 len) {
         *(u8*)dst = *(u8*)src;
         src++;
         dst++;
+        
     }
+    releaseLock(&memoryLock);
 }
 
 void bzero(void *start, u32 len) {

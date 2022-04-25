@@ -65,10 +65,11 @@ void syscallFork() {
 
 void syscallPutString() {
     Trapframe* trapframe = getHartTrapFrame();
+    int hartId = r_hartid();
+    //printf("hart %d, env %lx printf string:\n", hartId, currentProcess[hartId]->id);
     u64 va = trapframe->a0;
     int len = trapframe->a1;
     extern Process *currentProcess[HART_TOTAL_NUMBER];
-    int hartId = r_hartid();
     u64* pte;
     u64 pa = pageLookup(currentProcess[hartId]->pgdir, va, &pte) + (va & 0xfff);
     if (pa == 0) {

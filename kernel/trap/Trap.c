@@ -59,8 +59,12 @@ void kernelTrap() {
     u64 sstatus = r_sstatus();
     u64 scause = r_scause();
     u64 hartId = r_hartid();
+    extern Process *currentProcess[HART_TOTAL_NUMBER];
 
-    printf("[Kernel Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx\n", hartId, sstatus, sepc, scause);
+    printf("[Kernel Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
+    Trapframe* trapframe = getHartTrapFrame();
+
+    trapframeDump(trapframe);
     if (!(sstatus & SSTATUS_SPP)) {
         panic("kernel trap not from supervisor mode");
     }
@@ -70,6 +74,9 @@ void kernelTrap() {
     
     int device = trapDevice();
     if (device == UNKNOWN_DEVICE) {
+        u64* pte;
+        int pa = pageLookup(currentProcess[hartId]->pgdir, r_stval(), &pte);
+        panic("unhandled error %d,  %lx, %lx\n", scause, r_stval(), pa);
         panic("kernel trap");
     }
     if (device == TIMER_INTERRUPT) {
@@ -84,8 +91,7 @@ void userTrap() {
     u64 sstatus = r_sstatus();
     u64 scause = r_scause();
     u64 hartId = r_hartid();
-    printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx\n", hartId, sstatus, sepc, scause);
-    printf("%lx\n", sepc);
+    printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
     if (sstatus & SSTATUS_SPP) {
         panic("usertrap: not from user mode\n");
     }
@@ -146,47 +152,53 @@ void userTrapReturn() {
     w_sstatus(sstatus);
     u64 satp = MAKE_SATP(currentProcess[hartId]->pgdir);
     u64 fn = TRAMPOLINE_BASE + ((u64)userReturn - (u64)trampoline);
-    ((void(*)(u64, u64))fn)(TRAMPOLINE_BASE + (u64)trapframe - (u64)trampoline, satp);
+    u64* pte;
+    u64 pa = pageLookup(currentProcess[hartId]->pgdir, USER_STACK_TOP - PAGE_SIZE, &pte);
+    if (pa > 0) {
+        long* tem = (long*)(pa + 4072);
+        printf("[OUT]hart: %d, RA: %lx\n", hartId, *tem);
+    }
+    ((void(*)(u64, u64))fn)((u64)trapframe, satp);
 }
 
 void trapframeDump(Trapframe *tf)
 {
-    printf("a0: %lx\n \
-            a1: %lx\n \
-            a2: %lx\n \
-            a3: %lx\n \
-            a4: %lx\n \
-            a5: %lx\n \
-            a6: %lx\n \
-            a7: %lx\n \
-            t0: %lx\n \
-            t1: %lx\n \
-            t2: %lx\n \
-            t3: %lx\n \
-            t4: %lx\n \
-            t5: %lx\n \
-            t6: %lx\n \
-            s0: %lx\n \
-            s1: %lx\n \
-            s2: %lx\n \
-            s3: %lx\n \
-            s4: %lx\n \
-            s5: %lx\n \
-            s6: %lx\n \
-            s7: %lx\n \
-            s8: %lx\n \
-            s9: %lx\n \
-            s10: %lx\n \
-            s11: %lx\n \
-            ra: %lx\n \
-            sp: %lx\n \
-            gp: %lx\n \
-            tp: %lx\n \
-            epc: %lx\n \
-            kernelSp: %lx\n \
-            kernelSatp: %lx\n \
-            trapHandler: %lx\n \
-            kernelHartId: %lx",
+    printf(" a0: %lx\n \
+a1: %lx\n \
+a2: %lx\n \
+a3: %lx\n \
+a4: %lx\n \
+a5: %lx\n \
+a6: %lx\n \
+a7: %lx\n \
+t0: %lx\n \
+t1: %lx\n \
+t2: %lx\n \
+t3: %lx\n \
+t4: %lx\n \
+t5: %lx\n \
+t6: %lx\n \
+s0: %lx\n \
+s1: %lx\n \
+s2: %lx\n \
+s3: %lx\n \
+s4: %lx\n \
+s5: %lx\n \
+s6: %lx\n \
+s7: %lx\n \
+s8: %lx\n \
+s9: %lx\n \
+s10: %lx\n \
+s11: %lx\n \
+ra: %lx\n \
+sp: %lx\n \
+gp: %lx\n \
+tp: %lx\n \
+epc: %lx\n \
+kernelSp: %lx\n \
+kernelSatp: %lx\n \
+trapHandler: %lx\n \
+kernelHartId: %lx\n",
             tf->a0, tf->a1, tf->a2, tf->a3, tf->a4,
             tf->a5, tf->a6, tf->a7, tf->t0, tf->t1,
             tf->t2, tf->t3, tf->t4, tf->t5, tf->t6,

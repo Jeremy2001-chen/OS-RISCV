@@ -8,8 +8,14 @@ void userMain() {
     for (int i = 1; i <= 10; i ++ ) {
         int r = fork();
         if (r > 0) {
-            printf("[ProcessTest] Process %lx fork a child process %lx\n", getpid(), r);
+            printf("GG\n");
+            //printf("[ProcessTest] Process %lx fork a child process %lx\n", getpid(), r);
         }
-        printf("[ProcessTest] this pid is %lx, parent pid is %lx\n", getpid(), getppid());
+
+        printf("KK\n");
+        printf("%d\n", i);
+
+        //printf("[ProcessTest] this pid is %lx, parent pid is %lx\n", getpid(), getppid());
     }
+    printf("hi\n");
 }
