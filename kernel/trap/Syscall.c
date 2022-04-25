@@ -6,6 +6,8 @@
 #include <Riscv.h>
 #include <Trap.h>
 #include <Spinlock.h>
+#include <sysfile.h>
+
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
@@ -42,8 +44,7 @@ void syscallPutString() {
     int len = trapframe->a1;
     extern Process *currentProcess[HART_TOTAL_NUMBER];
     int hartId = r_hartid();
-    u64* pte;
-    u64 pa = pageLookup(currentProcess[hartId]->pgdir, va, &pte);
+    u64 pa = vir2phy(currentProcess[hartId]->pgdir, va);
     if (pa == 0) {
         panic("Syscall put string address error!\nThe virtual address is %x, the length is %x\n", va, len);
     }

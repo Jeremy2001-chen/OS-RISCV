@@ -7,5 +7,9 @@
 #define SYSCALL_PROCESS_DESTORY 3
 #define SYSCALL_FORK 4
 #define SYSCALL_PUT_STRING 5
+#define SYSCALL_OPEN 6
+#define SYSCALL_READ 7
+#define SYSCALL_WRITE 8
+#define SYSCALL_CLOSE 9
 
 #endif
