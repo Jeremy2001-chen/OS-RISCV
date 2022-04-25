@@ -280,7 +280,7 @@ int sdInit(void) {
 	}
 
 	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
-	printf("BOOT");
+	printf("BOOT\n");
 
 	__asm__ __volatile__ ("fence.i" : : : "memory");
 	return 0;

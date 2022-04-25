@@ -86,6 +86,7 @@ int allocPgdir(PhysicalPage **page);
 void pageout(u64 *pgdir, u64 badAddr);
 void cowHandler(u64 *pgdir, u64 badAddr);
 
+u64 vir2phy(u64* pagetable, u64 va);
 int copyin(u64* pagetable, char* dst, u64 srcva, u64 len);
 int copyout(u64* pagetable, u64 dstva, char* src, u64 len);
 

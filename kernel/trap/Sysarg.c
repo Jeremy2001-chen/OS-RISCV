@@ -11,7 +11,6 @@
 int fetchstr(u64 addr, char* buf, int max) {
     struct Process* p = myproc();
     int err = copyinstr(p->pgdir, buf, addr, max);
-    printf("err=%d\n",err);
     if (err < 0)
         return err;
     return strlen(buf);
@@ -60,7 +59,6 @@ int argstr(int n, char* buf, int max) {
     u64 addr;
     if (argaddr(n, &addr) < 0)
         return -1;
-    printf("[argstr] addr=%x\n",addr);
     return fetchstr(addr, buf, max);
 }
 
@@ -72,7 +70,6 @@ int copyinstr(u64* pagetable, char* dst, u64 srcva, u64 max) {
     u64 n, va0, pa0;
     int got_null = 0;
 
-    printf("[copyinstr] va=%x\n", srcva);
     while (got_null == 0 && max > 0) {
         va0 = DOWN_ALIGN(srcva, PGSIZE);
         pa0 = vir2phy(pagetable, va0);

@@ -104,11 +104,6 @@ struct buf* bread(uint dev, uint blockno) {
 
 // Write b's contents to disk.  Must be locked.
 void bwrite(struct buf* b) {
-#ifdef DEBUG
-    printf("[bwrite] before bwrite!\n");
-    for(int i=0;i<10;++i)printf("%c",b->data[i]);
-    printf("\n");
-#endif   
     if (!holdingsleep(&b->lock))
         panic("bwrite");
     sdWrite(b->data, b->blockno, 1);

@@ -171,7 +171,7 @@ u64 vir2phy(u64* pagetable, u64 va) {
         return NULL;
     if ((*pte & PTE_USER) == 0)
         return NULL;
-    pa = PTE2PA(*pte);
+    pa = PTE2PA(*pte) + (va&0xfff);
     return pa;
 }
 
@@ -220,3 +220,4 @@ int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
     }
     return 0;
 }
+
