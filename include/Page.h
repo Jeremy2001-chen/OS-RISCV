@@ -11,10 +11,18 @@ void pageLockInit(void);
 #define DOWN_ALIGN(x, y) (((u64)(x)) & (~((u64)((y) - 1))))
 #define UP_ALIGN(x, y) (DOWN_ALIGN((x) - 1, (y)) + (y))
 
+#define PGSIZE (4096)
+
 struct PhysicalPage;
 LIST_HEAD(PageList, PhysicalPage);
 typedef struct PageList PageList;
 typedef LIST_ENTRY(PhysicalPage) PageListEntry;
+
+// one beyond the highest possible virtual address.
+// MAXVA is actually one bit less than the max allowed by
+// Sv39, to avoid having to sign-extend virtual addresses
+// that have the high bit set.
+#define MAXVA (1L << (9 + 9 + 9 + 12 - 1))
 
 typedef struct PhysicalPage {
     PageListEntry link;
@@ -80,6 +88,10 @@ int allocPgdir(PhysicalPage **page);
 void pageout(u64 *pgdir, u64 badAddr);
 void cowHandler(u64 *pgdir, u64 badAddr);
 void pageFree(PhysicalPage *page);
+
+u64 vir2phy(u64* pagetable, u64 va);
+int copyin(u64* pagetable, char* dst, u64 srcva, u64 len);
+int copyout(u64* pagetable, u64 dstva, char* src, u64 len);
 
 #define IS_RAM(pa) (pa >= PHYSICAL_ADDRESS_BASE && pa < PHYSICAL_MEMORY_TOP)
 

@@ -6,6 +6,8 @@
 #include <Riscv.h>
 #include <Trap.h>
 #include <Spinlock.h>
+#include <sysfile.h>
+
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,

@@ -3,6 +3,7 @@
 #include <Error.h>
 #include <Riscv.h>
 #include <Spinlock.h>
+#include <string.h>
 
 extern PageList freePages;
 struct Spinlock pageListLock, memoryLock, cowBufferLock;
@@ -219,3 +220,74 @@ void cowHandler(u64 *pgdir, u64 badAddr) {
     releaseLock(&cowBufferLock);
     // pa = pageLookup(currentProcess[hartId]->pgdir, USER_STACK_TOP - PAGE_SIZE, &pte);
 }
+
+// Look up a virtual address, return the physical address,
+// or 0 if not mapped.
+// Can only be used to look up user pages.
+u64 vir2phy(u64* pagetable, u64 va) {
+    u64* pte;
+    u64 pa;
+
+    if (va >= MAXVA)
+        return NULL;
+
+    int ret = pageWalk(pagetable, va, 0, &pte);
+    if (ret < 0) {
+        panic("pageWalk error in vir2phy function!");
+    }
+    if (pte == 0)
+        return NULL;
+    if ((*pte & PTE_VALID) == 0)
+        return NULL;
+    if ((*pte & PTE_USER) == 0)
+        return NULL;
+    pa = PTE2PA(*pte) + (va&0xfff);
+    return pa;
+}
+
+// Copy from user to kernel.
+// Copy len bytes to dst from virtual address srcva in a given page table.
+// Return 0 on success, -1 on error.
+int copyin(u64* pagetable, char* dst, u64 srcva, u64 len) {
+    u64 n, va0, pa0;
+
+    while (len > 0) {
+        va0 = DOWN_ALIGN(srcva, PGSIZE);
+        pa0 = vir2phy(pagetable, va0);
+        if (pa0 == NULL)
+            return -1;
+        n = PGSIZE - (srcva - va0);
+        if (n > len)
+            n = len;
+        memmove(dst, (void*)(pa0 + (srcva - va0)), n);
+
+        len -= n;
+        dst += n;
+        srcva = va0 + PGSIZE;
+    }
+    return 0;
+}
+
+// Copy from kernel to user.
+// Copy len bytes from src to virtual address dstva in a given page table.
+// Return 0 on success, -1 on error.
+int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
+    u64 n, va0, pa0;
+
+    while (len > 0) {
+        va0 = DOWN_ALIGN(dstva, PGSIZE);
+        pa0 = vir2phy(pagetable, va0);
+        if (pa0 == NULL)
+            return -1;
+        n = PGSIZE - (dstva - va0);
+        if (n > len)
+            n = len;
+        memmove((void*)(pa0 + (dstva - va0)), src, n);
+
+        len -= n;
+        src += n;
+        dstva = va0 + PGSIZE;
+    }
+    return 0;
+}
+

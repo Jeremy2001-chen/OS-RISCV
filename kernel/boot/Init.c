@@ -4,6 +4,10 @@
 #include <Process.h>
 #include <Riscv.h>
 #include <Sd.h>
+#include <fat.h>
+#include <bio.h>
+#include <file.h>
+#include <sysfile.h>
 
 //#define SINGLE_CORE
 
@@ -13,6 +17,8 @@ volatile int initFinish = 0;
 static inline void initHartId(u64 hartId) {
     asm volatile("mv tp, %0" : : "r" (hartId & 0x7));
 }
+
+extern struct superblock *fat;
 
 void main(u64 hartId) {
     initHartId(hartId);
@@ -32,11 +38,14 @@ void main(u64 hartId) {
 
         memoryInit();
         processInit();
-        //PROCESS_CREATE_PRIORITY(ProcessA, 2);
-        //PROCESS_CREATE_PRIORITY(ProcessB, 3);
-        //PROCESS_CREATE_PRIORITY(ForkTest, 5);
-        PROCESS_CREATE_PRIORITY(ProcessIdTest, 4);
 
+
+        sdInit();
+        binit();
+        fat32_init();
+        fileinit();
+        void testfat();
+        testfat();
 
         for (int i = 1; i < 5; ++ i) {
             if (i != hartId) {
@@ -56,7 +65,11 @@ void main(u64 hartId) {
         initFinish = 1;
 #endif
 
-        //PROCESS_CREATE_PRIORITY(ForkTest, 1);
+        // PROCESS_CREATE_PRIORITY(ProcessA, 2);
+        // PROCESS_CREATE_PRIORITY(ProcessB, 3);
+        // PROCESS_CREATE_PRIORITY(ForkTest, 5);
+        PROCESS_CREATE_PRIORITY(ProcessIdTest, 4);
+        // PROCESS_CREATE_PRIORITY(SysfileTest, 1);
 
     } else {
         while (initFinish == 0);

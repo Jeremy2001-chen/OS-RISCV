@@ -6,6 +6,8 @@
 #include <Page.h>
 #include <Syscall.h>
 #include <Hart.h>
+#include <sysfile.h>
+#include <debug.h>
 
 void trapInit() {
     printf("Trap init start...\n");
@@ -102,14 +104,26 @@ void userTrap() {
     if (scause & SCAUSE_INTERRUPT) {
         trapDevice();
         yield();
-    } else {
+    } else {    
         u64 *pte = NULL;
         u64 pa = -1;
         switch (scause & SCAUSE_EXCEPTION_CODE)
         {
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
-            syscallVector[trapframe->a7]();
+            
+            //because some func have return value, while other func haven't return value.
+            //so I use if-else to discriminate them.
+            if(trapframe->a7==SYSCALL_OPEN)
+                trapframe->a0 = sys_open();
+            else if(trapframe->a7==SYSCALL_READ)
+                trapframe->a0 = sys_read();
+            else if(trapframe->a7==SYSCALL_WRITE)
+                trapframe->a0 = sys_write();
+            else if(trapframe->a7==SYSCALL_CLOSE)
+                trapframe->a0 = sys_close();
+            else
+                syscallVector[trapframe->a7]();
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
         case SCAUSE_STORE_PAGE_FAULT:

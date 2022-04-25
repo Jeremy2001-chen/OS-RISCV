@@ -4,8 +4,9 @@ boot_dir	:= boot
 trap_dir	:= trap
 lock_dir    := lock
 system_dir  := system
-
-modules		:= 	$(driver_dir) $(memory_dir) $(boot_dir) $(trap_dir) $(lock_dir) $(system_dir)
+utility_dir	:= utility
+fs_dir		:= fs
+modules		:= 	$(driver_dir) $(memory_dir) $(boot_dir) $(trap_dir) $(lock_dir) $(system_dir) $(utility_dir) $(fs_dir)
 
 .PHONY:	build clean $(modules)
 

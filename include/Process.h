@@ -3,7 +3,11 @@
 
 #include <Type.h>
 #include <Queue.h>
+#include <Spinlock.h>
+#include <fat.h>
+#include <file.h>
 
+#define NOFILE 16  //Number of fds that a process can open
 #define LOG_PROCESS_NUM 10
 #define PROCESS_TOTAL_NUMBER (1 << LOG_PROCESS_NUM)
 #define PROCESS_OFFSET(processId) ((processId) & (PROCESS_TOTAL_NUMBER - 1))
@@ -70,17 +74,23 @@ typedef struct Process {
     LIST_ENTRY(Process) scheduleLink;
     u32 priority;
     enum ProcessState state;
+    struct Spinlock lock;
+    struct dirent *cwd;           // Current directory
+    struct file *ofile[NOFILE];
 } Process;
 
 LIST_HEAD(ProcessList, Process);
 
+Process* myproc();
 void processInit();
-void processCreatePriority(u8 *binary, u32 size, u32 priority);
-void wakeup(void *channel);
+void processCreatePriority(u8* binary, u32 size, u32 priority);
+void sleep(void* chan, struct Spinlock* lk);
+void wakeup(void* channel);
 void yield();
 void processFork();
 void processDestory(Process* p);
 void processFree(Process* p);
 int pid2Process(u32 processId, struct Process **process, int checkPerm);
-
+int either_copyout(int user_dst, u64 dst, void* src, u64 len);
+int either_copyin(void* dst, int user_src, u64 src, u64 len);
 #endif

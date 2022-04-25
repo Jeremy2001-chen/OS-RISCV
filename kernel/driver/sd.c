@@ -162,6 +162,7 @@ static u16 crc16_round(u16 crc, u8 data) {
 //static const char spinner[] = { '-', '/', '|', '\\' };
 
 int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
+	printf("[sdRead] reading sdcard sec=%x\n", startSector);
 	volatile u8 *p = (void *)buf;
 	int rc = 0;
 
@@ -279,7 +280,7 @@ int sdInit(void) {
 	}
 
 	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
-	printf("BOOT");
+	printf("BOOT\n");
 
 	__asm__ __volatile__ ("fence.i" : : : "memory");
 	return 0;

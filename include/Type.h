@@ -19,11 +19,20 @@ typedef __builtin_va_list va_list;
 #define va_end(ap) __builtin_va_end(ap)
 #define va_arg(ap, type) __builtin_va_arg(ap, type)
 
-#define MIN(_a, _b) \
-    ({  \
-        typeof(_a) __a = (_a); \
-        typeof(_b) __b = (_b); \
+#define MIN(_a, _b)             \
+    ({                          \
+        typeof(_a) __a = (_a);  \
+        typeof(_b) __b = (_b);  \
         __a <= __b ? __a : __b; \
     })
+
+typedef unsigned char uchar;
+typedef unsigned short wchar;
+
+typedef unsigned int uint;
+typedef unsigned char uint8;
+typedef unsigned short uint16;
+typedef unsigned int uint32;
+#define NELEM(x) (sizeof(x)/sizeof((x)[0]))
 
 #endif
