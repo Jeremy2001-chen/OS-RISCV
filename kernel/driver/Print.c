@@ -113,9 +113,9 @@ void panicPrintf(const char *fmt, ...) {
     va_end(ap);
 }
 
-void _panic_(const char *file, int line, const char *fmt, ...) {
+void _panic_(const char *file, int line, const char *func,const char *fmt, ...) {
     acquireLock(&printLock);
-    panicPrintf("hartId %d panic at %s: %d: ", r_hartid(), file, line);
+    panicPrintf("hartId %d panic at %s: %d in %s(): ", r_hartid(), file, line, func);
     va_list ap;
     va_start(ap, fmt);
     print(fmt, ap);
@@ -125,8 +125,8 @@ void _panic_(const char *file, int line, const char *fmt, ...) {
     while (true);
 }
 
-void _assert_(const char* file, int line, int statement) {
+void _assert_(const char* file, int line, const char *func, int statement) {
     if (!statement) {
-        _panic_(file, line, "assert failed\n");
+        _panic_(file, line, func, "assert failed\n");
     }
 }
