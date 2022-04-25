@@ -245,7 +245,6 @@ struct dirent* create(char* path, short type, int mode) {
         return NULL;
     }
 
-    printf("[create] after ealloc\n");
     if ((type == T_DIR && !(ep->attribute & ATTR_DIRECTORY)) ||
         (type == T_FILE && (ep->attribute & ATTR_DIRECTORY))) {
         eunlock(dp);
@@ -591,7 +590,6 @@ void emake(struct dirent* dp, struct dirent* ep, uint off) {
  * Allocate an entry on disk. Caller must hold dp->lock.
  */
 struct dirent* ealloc(struct dirent* dp, char* name, int attr) {
-    printf("[ealloc begin]\n");
     if (!(dp->attribute & ATTR_DIRECTORY)) {
         panic("ealloc not dir");
     }
@@ -604,7 +602,8 @@ struct dirent* ealloc(struct dirent* dp, char* name, int attr) {
     if ((ep = dirlookup(dp, name, &off)) != 0) {  // entry exists
         return ep;
     }
-    printf("[ealloc]\n");
+    
+    
     ep = eget(dp, name);
     elock(ep);
     ep->attribute = attr;
