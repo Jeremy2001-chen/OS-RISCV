@@ -2,7 +2,7 @@
 
 How to run:
 
-first:
+在第一次运行时，需要先执行这条命令
 
 ```shell
 make fat
@@ -14,10 +14,16 @@ make fat
 
 我们建议只有在必须的时候才执行`make fat`操作，因为磁盘的写入会比较慢。
 
-second:
+之后运行时，只需执行这条指令
 
 ```shell
 make run
 ```
 
-即可运行qemu模拟器
+即可运行qemu模拟器。
+
+
+
+另：
+
+文件系统现在仅支持**单进程**访问，因为Sleeplock未完全实现。
