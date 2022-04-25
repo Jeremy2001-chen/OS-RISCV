@@ -2,6 +2,7 @@
 #define _USER_SYSCALL_H_
 
 #include "../../include/Type.h"
+#include "../../include/SyscallId.h"
 
 inline u64 inline msyscall(long n, u64 _a0, u64 _a1, u64 _a2, u64
 		_a3, u64 _a4, u64 _a5) {
