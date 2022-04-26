@@ -3,6 +3,7 @@
 
 #include "../../include/Type.h"
 #include "../../include/SyscallId.h"
+#include <userfile.h>
 
 inline u64 inline msyscall(long n, u64 _a0, u64 _a1, u64 _a2, u64
 		_a3, u64 _a4, u64 _a5) {
@@ -63,6 +64,22 @@ inline int syscallClose(int fd) {
     register long a0 asm("a0") = (long)fd;
     register long a7 asm("a7") = SYSCALL_CLOSE;
     asm volatile("ecall" : "+r"(a0) : "r"(a7), "r"(a0));
+    return a0;
+}
+
+inline int syscallReaddir(int fd, struct stat *stat) {
+    register long a0 asm("a0") = (long)fd;
+    register long a1 asm("a1") = (long)stat;
+    register long a7 asm("a7") = SYSCALL_READDIR;
+    asm volatile("ecall" : "+r"(a0) : "r"(a7), "r"(a0), "r"(a1));
+    return a0;
+}
+
+inline int syscallFstat(int fd, struct stat *stat) {
+    register long a0 asm("a0") = (long)fd;
+    register long a1 asm("a1") = (long)stat;
+    register long a7 asm("a7") = SYSCALL_FSTAT;
+    asm volatile("ecall" : "+r"(a0) : "r"(a7), "r"(a0), "r"(a1));
     return a0;
 }
 

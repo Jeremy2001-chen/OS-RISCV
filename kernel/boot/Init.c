@@ -9,7 +9,7 @@
 #include <file.h>
 #include <sysfile.h>
 
-//#define SINGLE_CORE
+// #define SINGLE_CORE
 
 volatile int mainCount = 1000;
 volatile int initFinish = 0;
@@ -42,10 +42,8 @@ void main(u64 hartId) {
 
         sdInit();
         binit();
-        fat32_init();
         fileinit();
-        void testfat();
-        testfat();
+        
 
         for (int i = 1; i < 5; ++ i) {
             if (i != hartId) {
@@ -68,7 +66,8 @@ void main(u64 hartId) {
         // PROCESS_CREATE_PRIORITY(ProcessA, 2);
         // PROCESS_CREATE_PRIORITY(ProcessB, 3);
         // PROCESS_CREATE_PRIORITY(ForkTest, 5);
-        PROCESS_CREATE_PRIORITY(ProcessIdTest, 4);
+        // PROCESS_CREATE_PRIORITY(ProcessIdTest, 4);
+        PROCESS_CREATE_PRIORITY(ls, 1);
         // PROCESS_CREATE_PRIORITY(SysfileTest, 1);
 
     } else {

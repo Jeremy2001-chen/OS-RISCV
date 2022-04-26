@@ -88,13 +88,7 @@ static struct buf* bget(uint dev, uint blockno) {
 // Return a locked buf with the contents of the indicated block.
 struct buf* bread(uint dev, uint blockno) {
     struct buf* b;
-#ifdef DEBUG
-    printf("[bread] before bread!\n");
-#endif   
     b = bget(dev, blockno);
-#ifdef DEBUG
-    printf("[bread] after bread!\n");
-#endif    
     if (!b->valid) {
         sdRead(b->data, b->blockno, 1);
         b->valid = 1;

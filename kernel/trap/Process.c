@@ -6,7 +6,7 @@
 #include <Trap.h>
 #include <string.h>
 #include <Spinlock.h>
-
+#include <Interrupt.h>
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
 struct ProcessList scheduleList[2];
@@ -14,10 +14,13 @@ Process *currentProcess[HART_TOTAL_NUMBER] = {0, 0, 0, 0, 0};
 
 struct Spinlock freeProcessesLock, scheduleListLock, processIdLock;
 Process* myproc() {
+    interruptPush();
     int hartId = r_hartid();
     if (currentProcess[hartId] == NULL)
         panic("get current process error");
-    return currentProcess[hartId];
+    Process *ret = currentProcess[hartId];
+    interruptPop();
+    return ret;
 }
 
 extern Trapframe trapframe[];
@@ -218,18 +221,30 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
     releaseLock(&scheduleListLock);
 }
 
-void processRun(Process *p) {
+void processRun(Process* p) {
+    static volatile int first = 0;
     int hartId = r_hartid();
     Trapframe* trapframe = getHartTrapFrame();
     if (currentProcess[hartId]) {
-        bcopy(trapframe, &(currentProcess[hartId]->trapframe), sizeof(Trapframe));
+        bcopy(trapframe, &(currentProcess[hartId]->trapframe),
+              sizeof(Trapframe));
     }
     currentProcess[hartId] = p;
+
+    if (first == 0) {
+        // File system initialization must be run in the context of a
+        // regular process (e.g., because it calls sleep), and thus cannot
+        // be run from main().
+        first = 1;
+        fat32_init();
+        void testfat();
+        testfat();
+    }
+
     p->state = RUNNING;
     bcopy(&(currentProcess[hartId]->trapframe), trapframe, sizeof(Trapframe));
     userTrapReturn();
 }
-
 
 //因为与xv6的调度架构不同，所以目前不保证这个实现是正确且无死锁的
 // Atomically release lock and sleep on chan.
@@ -252,7 +267,7 @@ void sleep(void* chan, struct Spinlock* lk) {
     // p->chan = chan;
     // p->state = SLEEPING;
 
-    yield();
+    // yield();
 
     // Tidy up.
     // p->chan = 0;

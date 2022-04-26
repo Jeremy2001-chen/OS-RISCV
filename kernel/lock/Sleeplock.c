@@ -3,8 +3,9 @@
 #include "Sleeplock.h"
 #include "Process.h"
 #include "Spinlock.h"
-
-#define SINGLE_PROCESS
+#include "Driver.h"
+#include <debug.h>
+// #define SINGLE_PROCESS
 
 #ifdef SINGLE_PROCESS //
 void initsleeplock(struct Sleeplock* lk, char* name) {}
@@ -25,6 +26,7 @@ void initsleeplock(struct Sleeplock* lk, char* name) {
 void acquiresleep(struct Sleeplock* lk) {
     acquireLock(&lk->lk);
     while (lk->locked) {
+        // MSG_PRINT("in while");
         sleep(lk, &lk->lk);
     }
     lk->locked = 1;

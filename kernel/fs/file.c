@@ -7,7 +7,7 @@
 #include <Page.h>
 #include <string.h>
 #include <Spinlock.h>
-
+#include <defs.h>
 
 struct devsw devsw[NDEV];
 struct {
@@ -21,7 +21,7 @@ void fileinit(void) {
     for (f = ftable.file; f < ftable.file + NFILE; f++) {
         memset(f, 0, sizeof(struct file));
     }
-#ifdef DEBUG
+#ifdef ZZY_DEBUG
     printf("fileinit\n");
 #endif
 }
