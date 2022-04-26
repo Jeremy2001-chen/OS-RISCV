@@ -16,7 +16,8 @@ linkscript	:= 	$(linker_dir)/Qemu.ld
 vmlinux_img	:=	$(target_dir)/vmlinux.img
 vmlinux_bin :=  os.bin
 vmlinux_asm	:= 	$(target_dir)/vmlinux_asm.txt
-disk_img	:=  $(utility_dir)/$(disk_img)
+dst			:= /mnt
+fs_img		:= fs.img
 
 modules := 	$(kernel_dir) $(user_dir)
 objects	:=	$(boot_dir)/*.o \
@@ -48,8 +49,6 @@ sifive: clean build
 
 fs:
 	
-dst=/mnt
-fs_img=fs.img
 fat:
 	if [ ! -f "$(fs_img)" ]; then \
 		echo "making fs image..."; \
