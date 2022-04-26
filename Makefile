@@ -79,16 +79,16 @@ clean:
 		done; \
 	rm -rf *.o *~ $(target_dir)/*
 
-run: clean build fs
+run: clean build
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS)
 
-asm: clean build fs
+asm: clean build
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS) -d in_asm
 
-int: clean build fs
+int: clean build
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS) -d int
 
-gdb: clean build fs
+gdb: clean build
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS) -nographic -s -S
 
 include include.mk
