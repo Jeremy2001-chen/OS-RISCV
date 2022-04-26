@@ -291,7 +291,7 @@ int sdInit(void) {
 u8 binary[1024];
 int sdTest(void) {
 	sdInit();
-    for (int j = 0; j < 10; j += 2) {
+    for (int j = 0; j < 100000; j += 2) {
         for (int i = 0; i < 1024; i++) {
             binary[i] = i & 7;
         }

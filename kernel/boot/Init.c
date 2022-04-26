@@ -40,7 +40,9 @@ void main(u64 hartId) {
         processInit();
 
 
-        sdInit();
+        sdTest();
+        panic("error");
+        //sdInit();
         binit();
         fileinit();
         
