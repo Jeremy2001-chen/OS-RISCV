@@ -3,6 +3,7 @@
 #include <Uart.h>
 #include <Driver.h>
 #include <MemoryConfig.h>
+#include <debug.h>
 
 //#include "common.h"
 
@@ -162,7 +163,8 @@ static u16 crc16_round(u16 crc, u8 data) {
 //static const char spinner[] = { '-', '/', '|', '\\' };
 
 int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
-	printf("[sdRead] reading sdcard sec=%x\n", startSector);
+	DEC_PRINT(sectorNumber);
+
 	volatile u8 *p = (void *)buf;
 	int rc = 0;
 
@@ -269,7 +271,7 @@ int sdInit(void) {
 	sd_poweron(4094);
 	sd_cmd0();
 	//sd_poweron(4094);
-	printf("INIT\n");
+	printf("SD card init\n");
 	if (sd_cmd0() ||
 	    sd_cmd8() ||
 	    sd_acmd41() ||

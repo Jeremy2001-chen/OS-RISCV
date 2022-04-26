@@ -8,6 +8,7 @@
 #include <Hart.h>
 #include <sysfile.h>
 #include <debug.h>
+#include <defs.h>
 
 void trapInit() {
     printf("Trap init start...\n");
@@ -63,7 +64,10 @@ void kernelTrap() {
     u64 hartId = r_hartid();
     extern Process *currentProcess[HART_TOTAL_NUMBER];
 
+#ifdef CJY_DEBUG
     printf("[Kernel Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
+#endif
+
     Trapframe* trapframe = getHartTrapFrame();
 
     trapframeDump(trapframe);
@@ -93,7 +97,12 @@ void userTrap() {
     u64 sstatus = r_sstatus();
     u64 scause = r_scause();
     u64 hartId = r_hartid();
-    //printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
+
+#ifdef CJY_DEBUG
+    printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
+#else
+    use((void *)sepc);
+#endif
     if (sstatus & SSTATUS_SPP) {
         panic("usertrap: not from user mode\n");
     }
@@ -122,6 +131,10 @@ void userTrap() {
                 trapframe->a0 = sys_write();
             else if(trapframe->a7==SYSCALL_CLOSE)
                 trapframe->a0 = sys_close();
+            else if(trapframe->a7==SYSCALL_READDIR)
+                trapframe->a0 = sys_readdir();
+            else if(trapframe->a7==SYSCALL_FSTAT)
+                trapframe->a0 = sys_fstat();
             else
                 syscallVector[trapframe->a7]();
             break;
@@ -166,6 +179,17 @@ void userTrapReturn() {
     w_sstatus(sstatus);
     u64 satp = MAKE_SATP(currentProcess[hartId]->pgdir);
     u64 fn = TRAMPOLINE_BASE + ((u64)userReturn - (u64)trampoline);
+    u64* pte;
+    u64 pa = pageLookup(currentProcess[hartId]->pgdir, USER_STACK_TOP - PAGE_SIZE, &pte);
+    if (pa > 0) {
+        long* tem = (long*)(pa + 4072);
+#ifdef CJY_DEBUG
+        printf("[OUT]hart: %d, RA: %lx\n", hartId, *tem);
+#else
+        //We must use 'tem', otherwise we will get compile error.
+        use(tem);
+#endif
+    }
     ((void(*)(u64, u64))fn)((u64)trapframe, satp);
 }
 

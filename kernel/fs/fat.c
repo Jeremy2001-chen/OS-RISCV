@@ -8,6 +8,7 @@
 #include "string.h"
 #include "Driver.h"
 #include "Process.h"
+#include <debug.h>
 /* fields that start with "_" are something we don't use */
 
 typedef struct short_name_entry {
@@ -56,11 +57,11 @@ static struct dirent root;
  *          -1      if fail
  */
 int fat32_init() {
-#ifdef DEBUG
+#ifdef ZZY_DEBUG
     printf("[fat32_init] enter!\n");
 #endif
     struct buf* b = bread(0, 0);
-#ifdef DEBUG
+#ifdef ZZY_DEBUG
     printf("[fat32_init] bread finish!\n");
 #endif
     if (strncmp((char const*)(b->data + 82), "FAT32", 5))
@@ -82,7 +83,7 @@ int fat32_init() {
     fat.byts_per_clus = fat.bpb.sec_per_clus * fat.bpb.byts_per_sec;
     brelse(b);
 
-#ifdef DEBUG
+#ifdef ZZY_DEBUG
     printf("[FAT32 init]byts_per_sec: %d\n", fat.bpb.byts_per_sec);
     printf("[FAT32 init]root_clus: %d\n", fat.bpb.root_clus);
     printf("[FAT32 init]sec_per_clus: %d\n", fat.bpb.sec_per_clus);
@@ -707,10 +708,12 @@ void eunlock(struct dirent* entry) {
 
 void eput(struct dirent* entry) {
     acquireLock(&ecache.lock);
+    MSG_PRINT("acquireLock finish");
     if (entry != &root && entry->valid != 0 && entry->ref == 1) {
         // ref == 1 means no other process can have entry locked,
         // so this acquiresleep() won't block (or deadlock).
         acquiresleep(&entry->lock);
+        MSG_PRINT("acquireSleep finish");
         entry->next->prev = entry->prev;
         entry->prev->next = entry->next;
         entry->next = root.next;
@@ -739,6 +742,7 @@ void eput(struct dirent* entry) {
         }
         return;
     }
+    MSG_PRINT("end of eput");
     entry->ref--;
     releaseLock(&ecache.lock);
 }
