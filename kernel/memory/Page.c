@@ -5,11 +5,10 @@
 #include <Spinlock.h>
 
 extern PageList freePages;
-struct Spinlock pageListLock, memoryLock, cowBufferLock;
+struct Spinlock pageListLock, cowBufferLock;
 
 inline void pageLockInit(void) {
     initLock(&pageListLock, "pageListLock");
-    initLock(&memoryLock, "memoryLock");
     initLock(&cowBufferLock, "cowBufferLock");
 }
 
@@ -24,9 +23,7 @@ static void pageRemove(u64 *pgdir, u64 va) {
     PhysicalPage *page = pa2page(pa);
     page->ref--;
     pageFree(page);
-    acquireLock(&memoryLock);
     *pte = 0;
-    releaseLock(&memoryLock);
 }
 
 int countFreePages() {
@@ -43,9 +40,10 @@ int pageAlloc(PhysicalPage **pp) {
     acquireLock(&pageListLock);
     PhysicalPage *page;
     if ((page = LIST_FIRST(&freePages)) != NULL) {
-        releaseLock(&pageListLock);
         *pp = page;
+        page->hartId = r_hartid();
         LIST_REMOVE(page, link);
+        releaseLock(&pageListLock);
         bzero((void*)page2pa(page), PAGE_SIZE);
         return 0;
     }
@@ -80,18 +78,14 @@ static int pageWalk(u64 *pgdir, u64 va, bool create, u64 **pte) {
 }
 
 u64 pageLookup(u64 *pgdir, u64 va, u64 **pte) {
-    acquireLock(&memoryLock);
-
     u64 *entry;
     pageWalk(pgdir, va, false, &entry);
     if (entry == NULL || !(*entry & PTE_VALID)) {
-        releaseLock(&memoryLock);
         return 0;
     }
     if (pte) {
         *pte = entry;
     }
-    releaseLock(&memoryLock);
     return PTE2PA(*entry);
 }
 
@@ -109,6 +103,7 @@ void pageFree(PhysicalPage *page) {
 static void paDecreaseRef(u64 pa) {
     PhysicalPage *page = pa2page(pa);
     page->ref--;
+    assert(page->ref==0);
     if (page->ref == 0) {
         acquireLock(&pageListLock);
         LIST_INSERT_HEAD(&freePages, page, link);
@@ -117,7 +112,6 @@ static void paDecreaseRef(u64 pa) {
 }
 
 void pgdirFree(u64* pgdir) {
-    acquireLock(&memoryLock);
     u64 i, j, k;
     u64* pageTable;
     for (i = 0; i < PTE2PT; i++) {
@@ -142,18 +136,15 @@ void pgdirFree(u64* pgdir) {
         paDecreaseRef((u64) pa);
     }
     paDecreaseRef((u64) pgdir);
-    releaseLock(&memoryLock);
 }
 
 int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
-    acquireLock(&memoryLock);
     u64 *pte;
     va = DOWN_ALIGN(va, PAGE_SIZE);
     pa = DOWN_ALIGN(pa, PAGE_SIZE);
     perm |= PTE_ACCESSED | PTE_DIRTY;
     int ret = pageWalk(pgdir, va, false, &pte);
     if (ret < 0) {
-        releaseLock(&memoryLock);
         return ret;
     }
     if (pte != NULL && (*pte & PTE_VALID)) {
@@ -161,14 +152,12 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
     }
     ret = pageWalk(pgdir, va, true, &pte);
     if (ret < 0) {
-        releaseLock(&memoryLock);
         return ret;
     }
     *pte = PA2PTE(pa) | perm | PTE_VALID;
     if (pa >= PHYSICAL_ADDRESS_BASE && pa < PHYSICAL_MEMORY_TOP)
         pa2page(pa)->ref++;
     sfence_vma();
-    releaseLock(&memoryLock);
     return 0;
 }
 

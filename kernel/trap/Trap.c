@@ -87,11 +87,11 @@ void kernelTrap() {
 }
 
 void userTrap() {
-    u64 sepc = r_sepc();
+    //u64 sepc = r_sepc();
     u64 sstatus = r_sstatus();
     u64 scause = r_scause();
     u64 hartId = r_hartid();
-    printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
+    //printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
     if (sstatus & SSTATUS_SPP) {
         panic("usertrap: not from user mode\n");
     }
@@ -152,12 +152,6 @@ void userTrapReturn() {
     w_sstatus(sstatus);
     u64 satp = MAKE_SATP(currentProcess[hartId]->pgdir);
     u64 fn = TRAMPOLINE_BASE + ((u64)userReturn - (u64)trampoline);
-    u64* pte;
-    u64 pa = pageLookup(currentProcess[hartId]->pgdir, USER_STACK_TOP - PAGE_SIZE, &pte);
-    if (pa > 0) {
-        long* tem = (long*)(pa + 4072);
-        printf("[OUT]hart: %d, RA: %lx\n", hartId, *tem);
-    }
     ((void(*)(u64, u64))fn)((u64)trapframe, satp);
 }
 

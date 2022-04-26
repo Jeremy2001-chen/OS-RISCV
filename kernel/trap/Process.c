@@ -269,12 +269,10 @@ void processFork() {
     process->priority = currentProcess[hartId]->priority;
     Trapframe* trapframe = getHartTrapFrame();
     bcopy(trapframe, &process->trapframe, sizeof(Trapframe));
-    extern struct Spinlock memoryLock;
     process->trapframe.a0 = 0;
     
     trapframe->a0 = process->id;
     u64 i, j, k;
-    acquireLock(&memoryLock);
     for (i = 0; i < 512; i++) {
         if (!(currentProcess[hartId]->pgdir[i] & PTE_VALID)) {
             continue;
@@ -298,14 +296,12 @@ void processFork() {
                     if (pageAlloc(&p) < 0) {
                         panic("Fork alloc page error!\n");
                     }
-                    printf("[FORK]ht%dfk%lx %lx\n", r_hartid(), va, page2pa(p));
                     pageInsert(process->pgdir, va, page2pa(p), PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE);
                 } else {
                     if (pa2[k] & PTE_WRITE) {
                         pa2[k] |= PTE_COW;
                         pa2[k] &= ~PTE_WRITE;
                     } 
-                    printf("[FORK]ht%dfk%lx %lx\n", r_hartid(), va, PTE2PA(pa2[k]));
                     pageInsert(process->pgdir, va, PTE2PA(pa2[k]), PTE2PERM(pa2[k]));
                 }
             }
@@ -313,8 +309,6 @@ void processFork() {
     }
 
     sfence_vma();
-
-    releaseLock(&memoryLock);
 
     acquireLock(&scheduleListLock);
     LIST_INSERT_TAIL(&scheduleList[0], process, scheduleLink);

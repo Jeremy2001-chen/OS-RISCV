@@ -9,6 +9,5 @@ void exit(void) {
 
 void libMain() {
     userMain();
-    printf("Destory\n");
     exit();
 }
