@@ -100,9 +100,6 @@ void memoryInit() {
 }
 
 void bcopy(void *src, void *dst, u32 len) {
-    extern struct Spinlock memoryLock;
-    acquireLock(&memoryLock);
-
     void *finish = src + len;
 
     if (len <= 7) {
@@ -129,7 +126,6 @@ void bcopy(void *src, void *dst, u32 len) {
         dst++;
         
     }
-    releaseLock(&memoryLock);
 }
 
 void bzero(void *start, u32 len) {

@@ -27,6 +27,7 @@ typedef LIST_ENTRY(PhysicalPage) PageListEntry;
 typedef struct PhysicalPage {
     PageListEntry link;
     u32 ref;
+    int hartId;
 } PhysicalPage;
 
 inline u32 page2PPN(PhysicalPage *page) {
