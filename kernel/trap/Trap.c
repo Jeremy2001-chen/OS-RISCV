@@ -93,7 +93,7 @@ void kernelTrap() {
 }
 
 void userTrap() {
-    //u64 sepc = r_sepc();
+    u64 sepc = r_sepc();
     u64 sstatus = r_sstatus();
     u64 scause = r_scause();
     u64 hartId = r_hartid();
