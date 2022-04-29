@@ -240,6 +240,7 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 		int timeout = 0xfff;
 		while (--timeout) {
 			int x = sd_dummy();
+			printf("%x ", x);
 			if (5 == (x & 0x1f)) {
 				break;
 			}
@@ -250,7 +251,7 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 		timeout = 0xfff;
 		while (--timeout) {
 			int x = sd_dummy();
-			if (x) {
+			if (x == 0xFF) {
 				break;
 			}
 		}
