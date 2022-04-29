@@ -274,13 +274,12 @@ start: ;
 		do {
 			spi_xfer(*p++);
 		} while (--n > 0);
-		sd_dummy();
-		sd_dummy();
+		// sd_dummy();
+		// sd_dummy();
 
 		timeout = MAX_TIMES;
 		while (timeout--) {
 			x = sd_dummy();
-			printf("%x ", (x & 0x1F));
 			if (5 == (x & 0x1f)) {
 				break;
 			}
