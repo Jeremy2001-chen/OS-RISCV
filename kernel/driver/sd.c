@@ -251,6 +251,7 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 	// printf("[SD Write]Write: %x\n", startSector);
 	int writeTimes = 0;
 	int timeout;
+	u8 x;
 
 start: ;
 	#ifdef QEMU
@@ -278,8 +279,8 @@ start: ;
 
 		timeout = MAX_TIMES;
 		while (timeout--) {
-			u8 x = sd_dummy();
-			printf("%x ", x);
+			x = sd_dummy();
+			printf("%x ", (x & 0x1F));
 			if (5 == (x & 0x1f)) {
 				break;
 			}
@@ -291,7 +292,7 @@ start: ;
 
 		timeout = MAX_TIMES;
 		while (--timeout) {
-			int x = sd_dummy();
+			x = sd_dummy();
 			if (x == 0xFF) {
 				break;
 			}
@@ -305,7 +306,7 @@ start: ;
 	spi_xfer(0xFD);
 	timeout = MAX_TIMES;
 	while (--timeout) {
-		int x = sd_dummy();
+		x = sd_dummy();
 		if (x == 0xFF) {
 			break;
 		}
