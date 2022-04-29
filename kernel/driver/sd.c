@@ -29,7 +29,7 @@ static inline u8 spi_xfer(u8 d)
 		cnt++;
 		r = REG32(spi, SPI_REG_RXFIFO);
 	} while (r < 0);
-	return r;
+	return (r & 0xFF);
 }
 
 static inline u8 sd_dummy(void)
@@ -61,7 +61,7 @@ static u8 sd_cmd(u8 cmd, u32 arg, u8 crc)
 	} while (--n > 0);
 	printf("sd_cmd: timeout\n");
 done:
-	return r;
+	return (r & 0xFF);
 }
 
 static inline void sd_cmd_end(void)
