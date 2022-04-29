@@ -230,6 +230,8 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 
 	u8 *p = buf;
 	while (sectorNumber--) {
+		sd_dummy();
+		sd_dummy();
 		spi_xfer(0xFC);
 		int n = 512;
 		do {
