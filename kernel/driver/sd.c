@@ -9,6 +9,7 @@
 
 
 #define MAX_CORES 8
+#define MAX_TIMES 0xFFF
 
 #define TL_CLK 1000000000UL
 #ifndef TL_CLK
@@ -165,16 +166,17 @@ static u16 crc16_round(u16 crc, u8 data) {
 int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 	DEC_PRINT(sectorNumber);
 	printf("[SD Read]Read: %x\n", startSector);
-	// printf("read %d\n", startSector);
+	int readTimes = 0;
 
+start:
 	volatile u8 *p = (void *)buf;
 	int rc = 0;
-
-	//printf("CMD18");
-	//printf("LOADING  ");
+	int timeout;
+	u8 x;
 
 	if (sd_cmd(0x52, startSector, 0xE1) != 0x00) {
 		sd_cmd_end();
+		panic("[SD Read]Read Error, retry times %x\n", readTimes);
 		return 1;
 	}
 	do {
@@ -183,9 +185,17 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 
 		crc = 0;
 		n = 512;
-		//printf("%d\n", __LINE__);
-		while (sd_dummy() != 0xFE);
-		//printf("%d\n", __LINE__);
+		timeout = MAX_TIMES;
+		while (timeout--) {
+			x = sd_dummy();
+			if (x == 0xFE)
+				break;
+		}
+
+		if (!timeout) {
+			goto retry;
+		}
+
 		do {
 			u8 x = sd_dummy();
 			*p++ = x;
@@ -204,15 +214,15 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 	sd_cmd_end();
 
 	sd_cmd(0x4C, 0, 0x01);
-	int timeout = 0xfff;
+	timeout = MAX_TIMES;
 	while (timeout--) {
-		int tmp = sd_dummy();
-		if (tmp == 0xFF) {
+		x = sd_dummy();
+		if (x == 0xFF) {
 			break;
 		}
 	}
 	if (!timeout) {
-		panic("");
+		goto retry;
 	}
 	sd_cmd_end();
 
@@ -221,12 +231,25 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 	// printf("\nread end\n");
 	printf("[SD Read]Finish\n");
 	return rc;
+
+retry:
+	readTimes++;
+	if (readTimes > 10) {
+		panic("[SD Read]There must be some error in sd read");
+	}
+	sd_cmd_end();
+	goto start;
 }
 
 int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 	printf("[SD Write]Write: %x\n", startSector);
+	int writeTimes = 0;
+	int timeout;
+
+start:
 	if (sd_cmd(25 | 0x40, startSector, 0) != 0) {
 		sd_cmd_end();
+		panic("[SD Write]Read Error, retry times %x\n", writeTimes);
 		return 1;
 	}
 	sd_dummy();
@@ -242,6 +265,77 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 		} while (--n > 0);
 		sd_dummy();
 		sd_dummy();
+
+		timeout = MAX_TIMES;
+		while (timeout--) {
+			u8 x = sd_dummy();
+			printf("%x ", x);
+			if (5 == (x & 0x1f)) {
+				break;
+			}
+		}
+
+		if (!timeout) {
+			goto retry;
+		}
+
+		timeout = MAX_TIMES;
+		while (--timeout) {
+			int x = sd_dummy();
+			if (x == 0xFF) {
+				break;
+			}
+		}
+
+		if (!timeout) {
+			goto retry;
+		}
+	}
+
+	spi_xfer(0xFD);
+	timeout = MAX_TIMES;
+	while (--timeout) {
+		int x = sd_dummy();
+		if (x == 0xFF) {
+			break;
+		}
+	}
+
+	if (!timeout) {
+		goto retry;
+	}
+
+	sd_cmd_end();
+	printf("[SD Write]Finish\n");
+	return 0;
+
+retry:
+	writeTimes++;
+	if (writeTimes > 10) {
+		panic("[SD Write]There must be some error in sd write");
+	}
+	sd_cmd_end();
+	goto start;
+}
+
+/* This is CMD24
+int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
+	printf("[SD Write]Write: %x\n", startSector);
+	u64 now = startSector;
+	u8 *p = buf;
+	while (sectorNumber > 0) {
+		if (sd_cmd(24 | 0x40, now, 0) != 0) {
+			sd_cmd_end();
+			return 1;
+		}
+		sd_dummy();
+		sd_dummy();
+		sd_dummy();
+		spi_xfer(0xFE);
+		int n = 512;
+		do {
+			spi_xfer(*p++);
+		} while (--n > 0);
 		int timeout = 0xfff;
 		while (--timeout) {
 			int x = sd_dummy();
@@ -253,69 +347,20 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 		if (timeout == 0) {
 			panic("");
 		}
-		timeout = 0xfff;
 		while (--timeout) {
 			int x = sd_dummy();
 			if (x == 0xFF) {
 				break;
 			}
 		}
-	}
-
-	spi_xfer(0xFD);
-	int timeout = 0xfff;
-	while (--timeout) {
-		int x = sd_dummy();
-		if (x == 0xFF) {
-			break;
-		}
+		sectorNumber--;
+		now++;
 	}
 	sd_cmd_end();
-	printf("[SD Write]Finish\n");
+
 	return 0;
 }
-
-// int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
-// 	printf("[SD Write]Write: %x\n", startSector);
-// 	u64 now = startSector;
-// 	u8 *p = buf;
-// 	while (sectorNumber > 0) {
-// 		if (sd_cmd(24 | 0x40, now, 0) != 0) {
-// 			sd_cmd_end();
-// 			return 1;
-// 		}
-// 		sd_dummy();
-// 		sd_dummy();
-// 		sd_dummy();
-// 		spi_xfer(0xFE);
-// 		int n = 512;
-// 		do {
-// 			spi_xfer(*p++);
-// 		} while (--n > 0);
-// 		int timeout = 0xfff;
-// 		while (--timeout) {
-// 			int x = sd_dummy();
-// 			printf("%x ", x);
-// 			if (5 == (x & 0x1f)) {
-// 				break;
-// 			}
-// 		}
-// 		if (timeout == 0) {
-// 			panic("");
-// 		}
-// 		while (--timeout) {
-// 			int x = sd_dummy();
-// 			if (x == 0xFF) {
-// 				break;
-// 			}
-// 		}
-// 		sectorNumber--;
-// 		now++;
-// 	}
-// 	sd_cmd_end();
-
-// 	return 0;
-// }
+*/
 
 int sdInit(void) {
 	REG32(uart, UART_REG_TXCTRL) = UART_TXEN;
