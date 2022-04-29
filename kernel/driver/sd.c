@@ -168,7 +168,7 @@ static u16 crc16_round(u16 crc, u8 data) {
 
 int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 	DEC_PRINT(sectorNumber);
-	printf("[SD Read]Read: %x\n", startSector);
+	// printf("[SD Read]Read: %x\n", startSector);
 	int readTimes = 0;
 
 start: ;
@@ -235,7 +235,7 @@ start: ;
 	// for (int i = 0; i < 1024; i++)
 	// 	printf("%x ", buf[i]);
 	// printf("\nread end\n");
-	printf("[SD Read]Finish\n");
+	// printf("[SD Read]Finish\n");
 	return rc;
 
 retry:
@@ -248,7 +248,7 @@ retry:
 }
 
 int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
-	printf("[SD Write]Write: %x\n", startSector);
+	// printf("[SD Write]Write: %x\n", startSector);
 	int writeTimes = 0;
 	int timeout;
 
@@ -316,7 +316,7 @@ start: ;
 	}
 
 	sd_cmd_end();
-	printf("[SD Write]Finish\n");
+	// printf("[SD Write]Finish\n");
 	return 0;
 
 retry:
