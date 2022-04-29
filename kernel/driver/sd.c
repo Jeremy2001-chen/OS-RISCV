@@ -168,7 +168,7 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 	printf("[SD Read]Read: %x\n", startSector);
 	int readTimes = 0;
 
-start:
+start: ;
 	volatile u8 *p = (void *)buf;
 	int rc = 0;
 	int timeout;
@@ -246,7 +246,7 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 	int writeTimes = 0;
 	int timeout;
 
-start:
+start: ;
 	if (sd_cmd(25 | 0x40, startSector, 0) != 0) {
 		sd_cmd_end();
 		panic("[SD Write]Read Error, retry times %x\n", writeTimes);
