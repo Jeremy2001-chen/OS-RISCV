@@ -127,7 +127,9 @@ static int sd_acmd41(void)
 
 static int sd_cmd58(void)
 {
-	//return 0;
+	#ifdef QEMU
+	return 0;
+	#else
 	int rc;
 	printf("CMD58");
 	rc = (sd_cmd(0x7A, 0, 0xFD) != 0x00);
@@ -137,6 +139,7 @@ static int sd_cmd58(void)
 	sd_dummy();
 	sd_cmd_end();
 	return rc;
+	#endif
 }
 
 static int sd_cmd16(void)
@@ -173,8 +176,11 @@ start: ;
 	int rc = 0;
 	int timeout;
 	u8 x;
-
+	#ifdef QEMU
+	if (sd_cmd(0x52, startSector * 512, 0xE1) != 0x00) {
+	#else
 	if (sd_cmd(0x52, startSector, 0xE1) != 0x00) {
+	#endif
 		sd_cmd_end();
 		panic("[SD Read]Read Error, retry times %x\n", readTimes);
 		return 1;
@@ -247,7 +253,11 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 	int timeout;
 
 start: ;
+	#ifdef QEMU
+	if (sd_cmd(25 | 0x40, startSector * 512, 0) != 0) {
+	#else
 	if (sd_cmd(25 | 0x40, startSector, 0) != 0) {
+	#endif
 		sd_cmd_end();
 		panic("[SD Write]Read Error, retry times %x\n", writeTimes);
 		return 1;
