@@ -14,7 +14,7 @@ void trapInit() {
     printf("Trap init start...\n");
     w_stvec((u64)kernelVector);
     w_sstatus(r_sstatus() | SSTATUS_SIE | SSTATUS_SPIE);
-    setNextTimeout();
+    //setNextTimeout();
     w_sip(0); //todo
     w_sie(r_sie() | SIE_SEIE | SIE_SSIE | SIE_STIE);
     printf("Trap init finish!\n");

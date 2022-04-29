@@ -141,7 +141,7 @@ static int sd_cmd58(void)
 static int sd_cmd16(void)
 {
 	int rc;
-	//printf("CMD16");
+	printf("CMD16");
 	rc = (sd_cmd(0x50, 0x200, 0x15) != 0x00);
 	sd_cmd_end();
 	return rc;
@@ -164,6 +164,7 @@ static u16 crc16_round(u16 crc, u8 data) {
 
 int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 	DEC_PRINT(sectorNumber);
+	// printf("read %d\n", startSector);
 
 	volatile u8 *p = (void *)buf;
 	int rc = 0;
@@ -171,7 +172,7 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 	//printf("CMD18");
 	//printf("LOADING  ");
 
-	if (sd_cmd(0x52, startSector * 512, 0xE1) != 0x00) {
+	if (sd_cmd(0x52, startSector, 0xE1) != 0x00) {
 		sd_cmd_end();
 		return 1;
 	}
@@ -214,11 +215,14 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 	}
 	sd_cmd_end();
 
+	// for (int i = 0; i < 1024; i++)
+	// 	printf("%x ", buf[i]);
+	// printf("\nread end\n");
 	return rc;
 }
 
 int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
-	if (sd_cmd(25 | 0x40, startSector * 512, 0) != 0) {
+	if (sd_cmd(25 | 0x40, startSector, 0) != 0) {
 		sd_cmd_end();
 		return 1;
 	}
@@ -291,21 +295,21 @@ int sdInit(void) {
 u8 binary[1024];
 int sdTest(void) {
 	sdInit();
-    for (int j = 0; j < 100000; j += 2) {
-        for (int i = 0; i < 1024; i++) {
-            binary[i] = i & 7;
-        }
-        sdWrite(binary, j, 2);
-        for (int i = 0; i < 1024; i++) {
-            binary[i] = 0;
-        }
+    for (int j = 0; j < 20; j += 2) {
+        // for (int i = 0; i < 1024; i++) {
+        //     binary[i] = i & 7;
+        // }
+        // sdWrite(binary, j, 2);
+        // for (int i = 0; i < 1024; i++) {
+        //     binary[i] = 0;
+        // }
         sdRead(binary, j, 2);
-        for (int i = 0; i < 1024; i++) {
-            if (binary[i] != (i & 7)) {
-                panic("gg: %d ", j);
-                break;
-            }
-        }
+        // for (int i = 0; i < 1024; i++) {
+        //     if (binary[i] != (i & 7)) {
+        //         panic("gg: %d ", j);
+        //         break;
+        //     }
+        // }
         printf("finish %d\n", j);
     }
 	return 0;
