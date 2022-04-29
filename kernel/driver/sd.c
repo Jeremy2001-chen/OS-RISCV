@@ -221,24 +221,74 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 	return rc;
 }
 
-int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
-	if (sd_cmd(25 | 0x40, startSector, 0) != 0) {
-		sd_cmd_end();
-		return 1;
-	}
-	sd_dummy();
+// int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
+// 	if (sd_cmd(25 | 0x40, startSector, 0) != 0) {
+// 		sd_cmd_end();
+// 		return 1;
+// 	}
+// 	sd_dummy();
 
+// 	u8 *p = buf;
+// 	while (sectorNumber--) {
+// 		sd_dummy();
+// 		sd_dummy();
+// 		spi_xfer(0xFC);
+// 		int n = 512;
+// 		do {
+// 			spi_xfer(*p++);
+// 		} while (--n > 0);
+// 		sd_dummy();
+// 		sd_dummy();
+// 		int timeout = 0xfff;
+// 		while (--timeout) {
+// 			int x = sd_dummy();
+// 			printf("%x ", x);
+// 			if (5 == (x & 0x1f)) {
+// 				break;
+// 			}
+// 		}
+// 		if (timeout == 0) {
+// 			panic("");
+// 		}
+// 		timeout = 0xfff;
+// 		while (--timeout) {
+// 			int x = sd_dummy();
+// 			if (x == 0xFF) {
+// 				break;
+// 			}
+// 		}
+// 	}
+
+// 	spi_xfer(0xFD);
+// 	int timeout = 0xfff;
+// 	while (--timeout) {
+// 		int x = sd_dummy();
+// 		if (x == 0xFF) {
+// 			break;
+// 		}
+// 	}
+// 	sd_cmd_end();
+
+// 	return 0;
+// }
+
+int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
+	printf("[SD Write]Write: %x\n", startSector);
+	u64 now = startSector;
 	u8 *p = buf;
-	while (sectorNumber--) {
+	while (sectorNumber > 0) {
+		if (sd_cmd(24 | 0x40, now, 0) != 0) {
+			sd_cmd_end();
+			return 1;
+		}
 		sd_dummy();
 		sd_dummy();
-		spi_xfer(0xFC);
+		sd_dummy();
+		spi_xfer(0xFE);
 		int n = 512;
 		do {
 			spi_xfer(*p++);
 		} while (--n > 0);
-		sd_dummy();
-		sd_dummy();
 		int timeout = 0xfff;
 		while (--timeout) {
 			int x = sd_dummy();
@@ -250,22 +300,14 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 		if (timeout == 0) {
 			panic("");
 		}
-		timeout = 0xfff;
 		while (--timeout) {
 			int x = sd_dummy();
 			if (x == 0xFF) {
 				break;
 			}
 		}
-	}
-
-	spi_xfer(0xFD);
-	int timeout = 0xfff;
-	while (--timeout) {
-		int x = sd_dummy();
-		if (x == 0xFF) {
-			break;
-		}
+		sectorNumber--;
+		now++;
 	}
 	sd_cmd_end();
 
