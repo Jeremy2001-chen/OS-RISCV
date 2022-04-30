@@ -217,7 +217,7 @@ start: ;
 			break;
 		}
 	} while (--sectorNumber > 0);
-	// sd_cmd_end();
+	sd_cmd_end();
 
 	sd_cmd(0x4C, 0, 0x01);
 	timeout = MAX_TIMES;
