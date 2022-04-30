@@ -275,7 +275,6 @@ start:
 
 	u8 *p = buf;
 	while (tot--) {
-		printf("1 %x \n", tot);
 		sd_dummy();
 		sd_dummy();
 		spi_xfer(0xFC);
