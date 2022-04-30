@@ -9,7 +9,7 @@
 
 
 #define MAX_CORES 8
-#define MAX_TIMES 0xFF
+#define MAX_TIMES 1000
 
 #define TL_CLK 1000000000UL
 #ifndef TL_CLK
@@ -431,6 +431,7 @@ start:	p = st;
 		if (!timeout) {
 			goto retry;
 		}
+		timeout = MAX_TIMES;
 		while (--timeout) {
 			int x = sd_dummy();
 			if (x == 0xFF) {
