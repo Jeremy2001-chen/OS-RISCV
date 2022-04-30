@@ -249,7 +249,7 @@ retry:
 	goto start;
 }
 
-int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
+/* int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 	printf("[SD Write]Write: %x %d\n", startSector, sectorNumber);
 	int writeTimes = 0, tot = 0;
 	int timeout;
@@ -337,16 +337,26 @@ retry:
 	}
 	sd_cmd_end();
 	goto start;
-}
+} */
 
-/* This is CMD24
+// This is CMD24
 int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
-	printf("[SD Write]Write: %x\n", startSector);
-	u64 now = startSector;
+	printf("[SD Write]Write: %x %d\n", startSector, sectorNumber);
 	u8 *p = buf;
-	while (sectorNumber > 0) {
+	u8 x;
+	int writeTimes = 0;
+
+	for (int i = 0; i < sectorNumber; i++) {
+		u64 now = startSector + i;
+		writeTimes = 0;
+start:	;
+		#ifdef QEMU
+		if (sd_cmd(24 | 0x40, now * 512, 0) != 0) {
+		#else
 		if (sd_cmd(24 | 0x40, now, 0) != 0) {
+		#endif			
 			sd_cmd_end();
+			panic("[SD Write]Write Error, can't use cmd24, retry times %x\n", writeTimes);
 			return 1;
 		}
 		sd_dummy();
@@ -357,31 +367,38 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 		do {
 			spi_xfer(*p++);
 		} while (--n > 0);
-		int timeout = 0xfff;
-		while (--timeout) {
-			int x = sd_dummy();
+		int timeout = MAX_TIMES;
+		while (timeout--) {
+			x = sd_dummy();
 			printf("%x ", x);
 			if (5 == (x & 0x1f)) {
 				break;
 			}
 		}
-		if (timeout == 0) {
-			panic("");
+		if (!timeout) {
+			goto retry;
 		}
-		while (--timeout) {
+		while (timeout--) {
 			int x = sd_dummy();
 			if (x == 0xFF) {
 				break;
 			}
 		}
-		sectorNumber--;
-		now++;
+		if (!timeout) {
+			goto retry;
+		}
+		sd_cmd_end();
+	}
+	return 0;
+retry:
+	writeTimes++;
+	if (writeTimes > 10) {
+		panic("[SD Write]There must be some error in sd write");
 	}
 	sd_cmd_end();
-
-	return 0;
+	goto start;
 }
-*/
+
 
 int sdInit(void) {
 	REG32(uart, UART_REG_TXCTRL) = UART_TXEN;
