@@ -170,8 +170,10 @@ int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 	DEC_PRINT(sectorNumber);
 	printf("[SD Read]Read: %x\n", startSector);
 	int readTimes = 0;
+	int tot = 0;
 
-start: ;
+start: 
+	tot = sectorNumber;
 	volatile u8 *p = (void *)buf;
 	int rc = 0;
 	int timeout;
@@ -216,7 +218,7 @@ start: ;
 			rc = 1;
 			break;
 		}
-	} while (--sectorNumber > 0);
+	} while (--tot > 0);
 	sd_cmd_end();
 
 	sd_cmd(0x4C, 0, 0x01);
@@ -249,12 +251,13 @@ retry:
 
 int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 	printf("[SD Write]Write: %x\n", startSector);
-	int writeTimes = 0;
+	int writeTimes = 0, tot = 0;
 	int timeout;
 	u8 x;
 
-start: ;
-	if (sd_cmd(23 | 0x40, sectorNumber, 0) != 0) {
+start: 
+	tot = sectorNumber;
+	if (sd_cmd(23 | 0x40, tot, 0) != 0) {
 		sd_cmd_end();
 		panic("[SD Write]Read Error, can't set block number, retry times %x\n", writeTimes);
 		return 1;
@@ -271,11 +274,8 @@ start: ;
 	sd_dummy();
 
 	u8 *p = buf;
-	while (sectorNumber--) {
-		printf("1 %x \n", sectorNumber);
-		if ((int)sectorNumber < 0) {
-			panic("error");
-		}
+	while (tot--) {
+		printf("1 %x \n", tot);
 		sd_dummy();
 		sd_dummy();
 		spi_xfer(0xFC);
