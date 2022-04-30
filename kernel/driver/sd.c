@@ -423,7 +423,7 @@ start:	p = st;
 		int timeout = MAX_TIMES;
 		while (--timeout) {
 			x = sd_dummy();
-			printf("%x ", x);
+			// printf("%x ", x);
 			if (5 == (x & 0x1f)) {
 				break;
 			}
@@ -431,11 +431,11 @@ start:	p = st;
 		if (!timeout) {
 			goto retry;
 		}
-		printf("\n");
+		// printf("\n");
 		timeout = MAX_TIMES;
 		while (--timeout) {
 			int x = sd_dummy();
-			printf("%x ", x);
+			// printf("%x ", x);
 			if (x == 0xFF) {
 				break;
 			}
