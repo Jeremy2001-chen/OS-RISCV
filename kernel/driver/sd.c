@@ -151,14 +151,14 @@ static int sd_cmd16(void)
 	return rc;
 }
 
-static u16 crc16_round(u16 crc, u8 data) {
-	crc = (u8)(crc >> 8) | (crc << 8);
-	crc ^= data;
-	crc ^= (u8)(crc >> 4) & 0xf;
-	crc ^= crc << 12;
-	crc ^= (crc & 0xff) << 5;
-	return crc;
-}
+// static u16 crc16_round(u16 crc, u8 data) {
+// 	crc = (u8)(crc >> 8) | (crc << 8);
+// 	crc ^= data;
+// 	crc ^= (u8)(crc >> 4) & 0xf;
+// 	crc ^= crc << 12;
+// 	crc ^= (crc & 0xff) << 5;
+// 	return crc;
+// }
 
 #define SPIN_SHIFT	6
 #define SPIN_UPDATE(i)	(!((i) & ((1 << SPIN_SHIFT)-1)))
@@ -166,6 +166,7 @@ static u16 crc16_round(u16 crc, u8 data) {
 
 //static const char spinner[] = { '-', '/', '|', '\\' };
 
+/*
 int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
 	DEC_PRINT(sectorNumber);
 	printf("[SD Read]Read: %x\n", startSector);
@@ -247,7 +248,7 @@ retry:
 	}
 	sd_cmd_end();
 	goto start;
-}
+} */
 
 /* int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 	printf("[SD Write]Write: %x %d\n", startSector, sectorNumber);
@@ -339,6 +340,57 @@ retry:
 	goto start;
 } */
 
+// This is CMD17
+int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
+	printf("[SD Read]Read: %x %d\n", startSector, sectorNumber);
+	u8 *p = buf;
+	u8 x;
+	int timeout;
+	int readTimes = 0;
+
+	for (int i = 0; i < sectorNumber; i++) {
+		u64 now = startSector + i;
+		u8 *st = p;
+		readTimes = 0;
+start:	p = st;
+		#ifdef QEMU
+		if (sd_cmd(17 | 0x40, now * 512, 0) != 0) {
+		#else
+		if (sd_cmd(17 | 0x40, now, 0) != 0) {
+		#endif			
+			sd_cmd_end();
+			panic("[SD Read]Read Error, can't use cmd17, retry times %x\n", readTimes);
+			return 1;
+		}
+		timeout = MAX_TIMES;
+		while (--timeout) {
+			x = sd_dummy();
+			if (x == 0xFE)
+				break;
+		}
+		if (!timeout) {
+			goto retry;
+		}
+		int n = 512;
+		do {
+			x = sd_dummy();
+			*p++ = x;
+		} while (--n > 0);
+		
+		sd_dummy();
+		sd_dummy();
+		sd_cmd_end();
+	}
+	return 0;
+retry:
+	readTimes++;
+	if (readTimes > 10) {
+		panic("[SD Read]There must be some error in sd write");
+	}
+	sd_cmd_end();
+	goto start;
+}
+
 // This is CMD24
 int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 	printf("[SD Write]Write: %x %d\n", startSector, sectorNumber);
@@ -348,8 +400,9 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 
 	for (int i = 0; i < sectorNumber; i++) {
 		u64 now = startSector + i;
+		u8* st = p;
 		writeTimes = 0;
-start:	;
+start:	p = st;
 		#ifdef QEMU
 		if (sd_cmd(24 | 0x40, now * 512, 0) != 0) {
 		#else
@@ -368,7 +421,7 @@ start:	;
 			spi_xfer(*p++);
 		} while (--n > 0);
 		int timeout = MAX_TIMES;
-		while (timeout--) {
+		while (--timeout) {
 			x = sd_dummy();
 			printf("%x ", x);
 			if (5 == (x & 0x1f)) {
@@ -378,7 +431,7 @@ start:	;
 		if (!timeout) {
 			goto retry;
 		}
-		while (timeout--) {
+		while (--timeout) {
 			int x = sd_dummy();
 			if (x == 0xFF) {
 				break;
