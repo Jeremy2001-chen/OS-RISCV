@@ -194,7 +194,7 @@ start:
 		crc = 0;
 		n = 512;
 		timeout = MAX_TIMES;
-		while (timeout--) {
+		while (--timeout) {
 			x = sd_dummy();
 			if (x == 0xFE)
 				break;
@@ -223,7 +223,7 @@ start:
 
 	sd_cmd(0x4C, 0, 0x01);
 	timeout = MAX_TIMES;
-	while (timeout--) {
+	while (--timeout) {
 		x = sd_dummy();
 		if (x == 0xFF) {
 			break;
@@ -250,7 +250,7 @@ retry:
 }
 
 int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
-	printf("[SD Write]Write: %x\n", startSector);
+	printf("[SD Write]Write: %x %d\n", startSector, sectorNumber);
 	int writeTimes = 0, tot = 0;
 	int timeout;
 	u8 x;
@@ -287,7 +287,7 @@ start:
 		// sd_dummy();
 
 		timeout = MAX_TIMES;
-		while (timeout--) {
+		while (--timeout) {
 			x = sd_dummy();
 			printf("%x ", x);
 			if (5 == (x & 0x1f)) {
