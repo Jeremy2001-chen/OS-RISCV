@@ -267,6 +267,10 @@ start: ;
 
 	u8 *p = buf;
 	while (sectorNumber--) {
+		printf("%x \n", sectorNumber);
+		if ((int)sectorNumber < 0) {
+			panic("error");
+		}
 		sd_dummy();
 		sd_dummy();
 		spi_xfer(0xFC);
