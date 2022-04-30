@@ -254,6 +254,11 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 	u8 x;
 
 start: ;
+	if (sd_cmd(23 | 0x40, sectorNumber, 0) != 0) {
+		sd_cmd_end();
+		panic("[SD Write]Read Error, can't set block number, retry times %x\n", writeTimes);
+		return 1;
+	}
 	#ifdef QEMU
 	if (sd_cmd(25 | 0x40, startSector * 512, 0) != 0) {
 	#else
@@ -267,7 +272,7 @@ start: ;
 
 	u8 *p = buf;
 	while (sectorNumber--) {
-		printf("%x \n", sectorNumber);
+		printf("1 %x \n", sectorNumber);
 		if ((int)sectorNumber < 0) {
 			panic("error");
 		}
@@ -307,20 +312,20 @@ start: ;
 		}
 	}
 
-	spi_xfer(0xFD);
-	timeout = MAX_TIMES;
-	while (--timeout) {
-		x = sd_dummy();
-		if (x == 0xFF) {
-			break;
-		}
-	}
+	// spi_xfer(0xFD);
+	// timeout = MAX_TIMES;
+	// while (--timeout) {
+	// 	x = sd_dummy();
+	// 	if (x == 0xFF) {
+	// 		break;
+	// 	}
+	// }
 
 	printf("%x %x\n", sectorNumber, timeout);
-	
-	if (!timeout) {
-		goto retry;
-	}
+
+	// if (!timeout) {
+	// 	goto retry;
+	// }
 
 	sd_cmd_end();
 	// printf("[SD Write]Finish\n");
