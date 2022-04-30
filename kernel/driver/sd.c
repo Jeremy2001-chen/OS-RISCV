@@ -423,7 +423,7 @@ start:	p = st;
 		int timeout = MAX_TIMES;
 		while (--timeout) {
 			x = sd_dummy();
-			// printf("%x ", x);
+			printf("%x ", x);
 			if (5 == (x & 0x1f)) {
 				break;
 			}
@@ -459,7 +459,7 @@ retry:
 int sdInit(void) {
 	REG32(uart, UART_REG_TXCTRL) = UART_TXEN;
 
-	sd_poweron(2000);
+	sd_poweron(3000);
 	sd_cmd0();
 	//sd_poweron(4094);
 	printf("SD card init\n");
