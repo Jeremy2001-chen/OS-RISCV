@@ -423,7 +423,7 @@ start:	p = st;
 		int timeout = MAX_TIMES;
 		while (--timeout) {
 			x = sd_dummy();
-			printf("%x ", x);
+			// printf("%x ", x);
 			if (5 == (x & 0x1f)) {
 				break;
 			}
