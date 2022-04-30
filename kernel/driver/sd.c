@@ -301,7 +301,6 @@ start: ;
 				break;
 			}
 		}
-		printf("%x \n", sectorNumber);
 
 		if (!timeout) {
 			goto retry;
@@ -317,6 +316,8 @@ start: ;
 		}
 	}
 
+	printf("%x %x\n", sectorNumber, timeout);
+	
 	if (!timeout) {
 		goto retry;
 	}
