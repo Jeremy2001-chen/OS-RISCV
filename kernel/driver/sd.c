@@ -9,7 +9,7 @@
 
 
 #define MAX_CORES 8
-#define MAX_TIMES 0xFFF
+#define MAX_TIMES 0xFF
 
 #define TL_CLK 1000000000UL
 #ifndef TL_CLK
@@ -217,7 +217,7 @@ start: ;
 			break;
 		}
 	} while (--sectorNumber > 0);
-	sd_cmd_end();
+	// sd_cmd_end();
 
 	sd_cmd(0x4C, 0, 0x01);
 	timeout = MAX_TIMES;
