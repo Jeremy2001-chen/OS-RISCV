@@ -375,7 +375,7 @@ int sdWrite(u8 *buf, u64 startSector, u32 sectorNumber) {
 int sdInit(void) {
 	REG32(uart, UART_REG_TXCTRL) = UART_TXEN;
 
-	sd_poweron(1000);
+	sd_poweron(2000);
 	sd_cmd0();
 	//sd_poweron(4094);
 	printf("SD card init\n");
