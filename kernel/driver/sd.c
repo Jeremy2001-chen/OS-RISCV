@@ -429,6 +429,7 @@ start:	p = st;
 			}
 		}
 		if (!timeout) {
+			printf("not receive 5\n");
 			goto retry;
 		}
 		// printf("\n");
@@ -441,6 +442,7 @@ start:	p = st;
 			}
 		}
 		if (!timeout) {
+			printf("keep busy");
 			goto retry;
 		}
 		sd_cmd_end();
