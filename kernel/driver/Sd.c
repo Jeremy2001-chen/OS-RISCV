@@ -73,7 +73,6 @@ static inline void sd_cmd_end(void)
 static void sd_poweron(int f)
 {
 	long i;
-	//volatile int a;
 	REG32(spi, SPI_REG_FMT) = 0x80000;
 	REG32(spi, SPI_REG_CSDEF) |= 1;
 	REG32(spi, SPI_REG_CSID) = 0;
@@ -83,13 +82,12 @@ static void sd_poweron(int f)
 		sd_dummy();
 	}
 	REG32(spi, SPI_REG_CSMODE) = SPI_CSMODE_AUTO;
-	//for (a = 0; a < 1000000; a++) a = a;
 }
 
 static int sd_cmd0(void)
 {
 	int rc;
-	//printf("CMD0");
+	// printf("CMD0");
 	rc = (sd_cmd(0x40, 0, 0x95) != 0x01);
 	sd_cmd_end();
 	return rc;
@@ -463,21 +461,35 @@ int sdInit(void) {
 	REG32(uart, UART_REG_TXCTRL) = UART_TXEN;
 
 	sd_poweron(3000);
-	sd_cmd0();
-	//sd_poweron(4094);
-	printf("SD card init\n");
-	if (sd_cmd0() ||
-	    sd_cmd8() ||
-	    sd_acmd41() ||
-	    sd_cmd58() ||
-	    sd_cmd16()) {
-		printf("ERROR");
-		return 1;
+
+	int initTimes = 10;
+	while (initTimes > 0 && sd_cmd0()) {
+		initTimes--;
 	}
 
-	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
-	printf("BOOT\n");
+	if (!initTimes) {
+		panic("[SD card]CMD0 error!\n");
+	}
 
+	if (sd_cmd8()) {
+		panic("[SD card]CMD8 error!\n");
+	}
+
+	if (sd_acmd41()) {
+		panic("[SD card]ACMD41 error!\n");
+	}
+
+	if (sd_cmd58()) {
+		panic("[SD card]CMD58 error!\n");
+	}
+
+	if (sd_cmd16()) {
+		panic("[SD card]CMD16 error!\n");
+	}
+
+	printf("[SD card]SD card init finish!\n");
+
+	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
 	__asm__ __volatile__ ("fence.i" : : : "memory");
 	return 0;
 }
