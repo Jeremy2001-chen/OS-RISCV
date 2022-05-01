@@ -435,13 +435,14 @@ start:	p = st;
 		// printf("\n");
 		timeout = MAX_TIMES;
 		while (--timeout) {
-			int x = sd_dummy();
-			printf("%x ", x);
+			x = sd_dummy();
+			// printf("%x ", x);
 			if (x == 0xFF) {
 				break;
 			}
 		}
 		if (!timeout) {
+			printf("%x \n", x);
 			printf("keep busy\n");
 			goto retry;
 		}
