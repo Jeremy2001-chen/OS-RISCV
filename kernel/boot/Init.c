@@ -36,6 +36,7 @@ void main(u64 hartId) {
         pageLockInit();
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
 
+        // while (getchar() != '\n');
         memoryInit();
         processInit();
 

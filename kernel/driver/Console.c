@@ -44,7 +44,10 @@ inline int getchar(void)
 {
     int* uartRegRXFIFO = (int*)(uartBaseAddr + UART_REG_RXFIFO);
 	u32 ret = readl(uartRegRXFIFO);
-	if (!(ret & UART_RXFIFO_EMPTY))
-		return ret & UART_RXFIFO_DATA;
-	return -1;
+    while (ret & UART_RXFIFO_EMPTY) {
+        ret = readl(uartRegRXFIFO);
+    }
+    if ((ret & UART_RXFIFO_DATA) == '\r')
+        return '\n';
+    return ret & UART_RXFIFO_DATA;
 }

@@ -26,12 +26,12 @@ inline void putcharSBI(char c) {
     asm volatile ("ecall" : "+r" (a0) : "r" (a7) : "memory");
 };
 
-// inline int getchar() {
-//     register u64 a7 asm ("a7") = (u64) SBI_CONSOLE_GETCHAR;
-//     register u64 a0 asm ("a0");
-//     asm volatile ("ecall" : "+r" (a0) : "r" (a7) : "memory");
-//     return a0;
-// }
+inline int getcharSBI() {
+    register u64 a7 asm ("a7") = (u64) SBI_CONSOLE_GETCHAR;
+    register u64 a0 asm ("a0");
+    asm volatile ("ecall" : "+r" (a0) : "r" (a7) : "memory");
+    return a0;
+}
 
 inline void setMode(int hartId) {
 	register u64 a7 asm ("a7") = 0x48534D;
