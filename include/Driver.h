@@ -17,18 +17,21 @@ void printLockInit(void);
 #define SBI_REMOTE_SFENCE_VMA_ASID 7
 #define SBI_SHUTDOWN 8
 
-inline void putchar(char c) {
+void putchar(char c);
+int getchar();
+
+inline void putcharSBI(char c) {
     register u64 a0 asm ("a0") = (u64) c;
     register u64 a7 asm ("a7") = (u64) SBI_CONSOLE_PUTCHAR;
     asm volatile ("ecall" : "+r" (a0) : "r" (a7) : "memory");
 };
 
-inline int getchar() {
-    register u64 a7 asm ("a7") = (u64) SBI_CONSOLE_GETCHAR;
-    register u64 a0 asm ("a0");
-    asm volatile ("ecall" : "+r" (a0) : "r" (a7) : "memory");
-    return a0;
-}
+// inline int getchar() {
+//     register u64 a7 asm ("a7") = (u64) SBI_CONSOLE_GETCHAR;
+//     register u64 a0 asm ("a0");
+//     asm volatile ("ecall" : "+r" (a0) : "r" (a7) : "memory");
+//     return a0;
+// }
 
 inline void setMode(int hartId) {
 	register u64 a7 asm ("a7") = 0x48534D;

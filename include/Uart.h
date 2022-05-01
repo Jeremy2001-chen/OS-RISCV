@@ -25,5 +25,10 @@
 #define UART_IP_TXWM            0x1
 #define UART_IP_RXWM            0x2
 
+#define UART_TXFIFO_FULL	0x80000000
+#define UART_RXFIFO_EMPTY	0x80000000
+#define UART_RXFIFO_DATA	0x000000ff
+#define UART_TXCTRL_TXEN	0x1
+#define UART_RXCTRL_RXEN	0x1
 
 #endif /* _SIFIVE_UART_H */
