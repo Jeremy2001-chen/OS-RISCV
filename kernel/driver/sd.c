@@ -9,7 +9,7 @@
 
 
 #define MAX_CORES 8
-#define MAX_TIMES 1000
+#define MAX_TIMES 10000
 
 #define TL_CLK 1000000000UL
 #ifndef TL_CLK
