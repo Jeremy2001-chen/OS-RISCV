@@ -83,4 +83,8 @@ inline int syscallFstat(int fd, struct stat *stat) {
     return a0;
 }
 
+inline int syscallPipe(int fd[2]) {
+    return msyscall(SYSCALL_PIPE, (u64)fd, 0, 0, 0, 0, 0);
+}
+
 #endif
