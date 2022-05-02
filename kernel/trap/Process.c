@@ -7,6 +7,8 @@
 #include <string.h>
 #include <Spinlock.h>
 #include <Interrupt.h>
+#include <debug.h>
+
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
 struct ProcessList scheduleList[2];
@@ -26,6 +28,9 @@ Process* myproc() {
 extern Trapframe trapframe[];
 struct Spinlock freeProcessesLock, scheduleListLock;
 
+u64 getProcessTopSp(Process* p) {
+    return KERNEL_PROCESS_SP_TOP - (u64)(p - processes) * 10 * PAGE_SIZE;
+}
 
 void processInit() {
     printf("Process init start...\n");
@@ -68,8 +73,16 @@ void processDestory(Process *p) {
 void processFree(Process *p) {
     printf("[%lx] free env %lx\n", currentProcess[r_hartid()] ? currentProcess[r_hartid()]->id : 0, p->id);
     pgdirFree(p->pgdir);
+    p->state = ZOMBIE; // new
+    for (int fd = 0; fd < NOFILE; fd++) {
+        if (p->ofile[fd]) {
+            struct file* f = p->ofile[fd];
+            fileclose(f);
+            p->ofile[fd] = 0;
+        }
+    }
     acquireLock(&freeProcessesLock);
-    LIST_INSERT_HEAD(&freeProcesses, p, link);
+    // LIST_INSERT_HEAD(&freeProcesses, p, link); //test pipe
     releaseLock(&freeProcessesLock);
     return;
 }
@@ -114,6 +127,10 @@ static int setup(Process *p) {
 
     p->pgdir = (u64*) page2pa(page);
     
+    r = pageAlloc(&page);
+    extern u64 kernelPageDirectory[];
+    pageInsert(kernelPageDirectory, getProcessTopSp(p) - PGSIZE, page2pa(page), PTE_READ | PTE_WRITE | PTE_EXECUTE);
+
     extern char trampoline[];
     pageInsert(p->pgdir, TRAMPOLINE_BASE, (u64)trampoline, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE);
@@ -141,7 +158,7 @@ int processAlloc(Process **new, u64 parentId) {
     p->id = generateProcessId(p);
     p->state = RUNNABLE;
     p->parentId = parentId;
-    p->trapframe.kernelSp = getHartKernelTopSp();
+    p->trapframe.kernelSp = getProcessTopSp(p);
     p->trapframe.sp = USER_STACK_TOP;
 
     *new = p;
@@ -221,6 +238,7 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
     releaseLock(&scheduleListLock);
 }
 
+void sleepRec();
 void processRun(Process* p) {
     static volatile int first = 0;
     int hartId = r_hartid();
@@ -240,17 +258,24 @@ void processRun(Process* p) {
         void testfat();
         testfat();
     }
-
     p->state = RUNNING;
-    bcopy(&(currentProcess[hartId]->trapframe), trapframe, sizeof(Trapframe));
-    userTrapReturn();
+    if (p->reason == 1) {
+        p->reason = 0;
+        bcopy(&currentProcess[hartId]->trapframe, trapframe, sizeof(Trapframe));
+        asm volatile("ld sp, 0(%0)" : : "r"(&p->currentKernelSp));
+        sleepRec();
+    } else {
+        bcopy(&(currentProcess[hartId]->trapframe), trapframe, sizeof(Trapframe));
+        userTrapReturn();
+    }
 }
 
 //因为与xv6的调度架构不同，所以目前不保证这个实现是正确且无死锁的
 // Atomically release lock and sleep on chan.
 // Reacquires lock when awakened.
-void sleep(void* chan, struct Spinlock* lk) {
-    // struct Process* p = myproc();
+void sleepSave();
+void sleep(void* chan, struct Spinlock* lk) {//wait()
+    struct Process* p = myproc();
 
     // Must acquire p->lock in order to
     // change p->state and then call sched.
@@ -264,21 +289,33 @@ void sleep(void* chan, struct Spinlock* lk) {
 
     //这里不将state改成SLEEPING，所以进程会被不停地调度,进程状态始终是RUNNABLE
     // Go to sleep.
-    // p->chan = chan;
-    // p->state = SLEEPING;
+    p->chan = (u64)chan;
+    p->state = SLEEPING;
+    p->reason = 1;
+	asm volatile("sd sp, 0(%0)" : :"r"(&p->currentKernelSp));
 
+    sleepSave();
     // yield();
-
-    // Tidy up.
-    // p->chan = 0;
+    // // Tidy up.
+    p->chan = 0;
+    // printf("%x\n", x);
 
     // Reacquire original lock.
     // releaseLock(&p->lock);
     acquireLock(lk);
 }
 
-void wakeup(void *channel) {
-    // todo
+void wakeup(void* channel) {  // notifyAll()
+    for (int i = 0; i < PROCESS_TOTAL_NUMBER; ++i) {
+        if (&processes[i] != myproc()) {
+            acquireLock(&processes[i].lock);
+            if (processes[i].state == SLEEPING &&
+                processes[i].chan == (u64)channel) {
+                processes[i].state = RUNNABLE;
+            }
+            releaseLock(&processes[i].lock);
+        }
+    }
 }
 
 static int processTimeCount[HART_TOTAL_NUMBER] = {0, 0, 0, 0, 0};
@@ -315,7 +352,11 @@ void yield() {
     int point = processBelongList[hartId];
     acquireLock(&scheduleListLock);
     Process* process = currentProcess[hartId];
+
     if (process && process->state == RUNNING) {
+        if(process->reason==1){
+            bcopy(getHartTrapFrame(), &process->trapframe, sizeof(Trapframe));
+        }
         process->state = RUNNABLE;
     }
     while ((count == 0) || (process == NULL) || (process->state != RUNNABLE)) {
@@ -349,6 +390,11 @@ void processFork() {
         panic("");
         return;
     }
+
+    for (int i = 0; i < NOFILE; i++)
+        if (myproc()->ofile[i])
+            process->ofile[i] = filedup(myproc()->ofile[i]);
+
     process->priority = currentProcess[hartId]->priority;
     Trapframe* trapframe = getHartTrapFrame();
     bcopy(trapframe, &process->trapframe, sizeof(Trapframe));

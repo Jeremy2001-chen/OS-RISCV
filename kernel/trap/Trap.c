@@ -135,6 +135,8 @@ void userTrap() {
                 trapframe->a0 = sys_readdir();
             else if(trapframe->a7==SYSCALL_FSTAT)
                 trapframe->a0 = sys_fstat();
+            else if(trapframe->a7==SYSCALL_PIPE)
+                trapframe->a0 = sys_pipe();
             else
                 syscallVector[trapframe->a7]();
             break;
@@ -167,7 +169,7 @@ void userTrapReturn() {
     extern Process *currentProcess[HART_TOTAL_NUMBER];
     Trapframe* trapframe = getHartTrapFrame();
 
-    trapframe->kernelSp = getHartKernelTopSp();
+    trapframe->kernelSp = getProcessTopSp(myproc());
     trapframe->trapHandler = (u64)userTrap;
     trapframe->kernelHartId = r_tp();
 

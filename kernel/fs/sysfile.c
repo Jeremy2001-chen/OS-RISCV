@@ -12,6 +12,9 @@
 #include <Sysarg.h>
 #include <file.h>
 #include <debug.h>
+#include <string.h>
+#include <Page.h>
+#include <pipe.h>
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -184,9 +187,7 @@ u64 sys_chdir(void) {
     return 0;
 }
 
-
 u64 sys_pipe(void) {
-/*
     u64 fdarray;  // user pointer to array of two integers
     struct file *rf, *wf;
     int fd0, fd1;
@@ -194,12 +195,8 @@ u64 sys_pipe(void) {
 
     if (argaddr(0, &fdarray) < 0)
         return -1;
-    //TODO
-    
     if (pipealloc(&rf, &wf) < 0)
         return -1;
-    
-
     fd0 = -1;
     if ((fd0 = fdalloc(rf)) < 0 || (fd1 = fdalloc(wf)) < 0) {
         if (fd0 >= 0)
@@ -208,18 +205,15 @@ u64 sys_pipe(void) {
         fileclose(wf);
         return -1;
     }
-    // if(copyout(p->pagetable, fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
-    //    copyout(p->pagetable, fdarray+sizeof(fd0), (char *)&fd1, sizeof(fd1))
-    //    < 0){
-    if (copyout2(fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
-        copyout2(fdarray + sizeof(fd0), (char*)&fd1, sizeof(fd1)) < 0) {
+    if (copyout(p->pgdir, fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
+        copyout(p->pgdir, fdarray + sizeof(fd0), (char*)&fd1, sizeof(fd1)) <
+            0) {
         p->ofile[fd0] = 0;
         p->ofile[fd1] = 0;
         fileclose(rf);
         fileclose(wf);
         return -1;
     }
-*/
     return 0;
 }
 
@@ -295,7 +289,7 @@ u64 sys_getcwd(void) {
         }
     }
 
-    // if (copyout(myproc()->pagetable, addr, s, strlen(s) + 1) < 0)
+    // if (copyout(myproc()->pgdir, addr, s, strlen(s) + 1) < 0)
     if (copyout2(addr, s, strlen(s) + 1) < 0)
         return -1;
 

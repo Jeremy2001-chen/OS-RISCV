@@ -8,6 +8,8 @@
 #include <string.h>
 #include <Spinlock.h>
 #include <defs.h>
+#include <pipe.h>
+#include <debug.h>
 
 struct devsw devsw[NDEV];
 struct {
@@ -69,7 +71,7 @@ void fileclose(struct file* f) {
     releaseLock(&ftable.lock);
 
     if (ff.type == FD_PIPE) {
-        panic("pipe unimplemented");
+        pipeclose(ff.pipe, ff.writable);
     } else if (ff.type == FD_ENTRY) {
         eput(ff.ep);
     } else if (ff.type == FD_DEVICE) {
@@ -103,7 +105,7 @@ int fileread(struct file* f, u64 addr, int n) {
 
     switch (f->type) {
         case FD_PIPE:
-            panic("pipe unimplemented");      
+            r = piperead(f->pipe, addr, n);
             break;
         case FD_DEVICE:
             if (f->major < 0 || f->major >= NDEV || !devsw[f->major].read)
@@ -132,7 +134,7 @@ int filewrite(struct file* f, u64 addr, int n) {
         return -1;
 
     if (f->type == FD_PIPE) {
-        panic("pipe unimplemented");
+        ret = pipewrite(f->pipe, addr, n);
     } else if (f->type == FD_DEVICE) {
         if (f->major < 0 || f->major >= NDEV || !devsw[f->major].write)
             return -1;

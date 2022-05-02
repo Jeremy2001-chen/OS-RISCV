@@ -77,9 +77,14 @@ typedef struct Process {
     struct Spinlock lock;
     struct dirent *cwd;           // Current directory
     struct file *ofile[NOFILE];
+    u64 chan;//wait Object
+    u64 currentKernelSp;
+    int reason;
 } Process;
 
 LIST_HEAD(ProcessList, Process);
+
+u64 getProcessTopSp(Process* p);
 
 Process* myproc();
 void processInit();
