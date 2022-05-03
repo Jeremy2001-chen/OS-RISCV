@@ -7,6 +7,7 @@
 #include "Type.h"
 #include "file.h"
 #include "string.h"
+#include "Riscv.h"
 
 int pipealloc(struct file** f0, struct file** f1) {
     struct pipe* pi;
@@ -64,8 +65,10 @@ int pipewrite(struct pipe* pi, u64 addr, int n) {
     int i = 0;
     struct Process* pr = myproc();
 
+    // printf("%d KKKK\n", r_hartid());
     acquireLock(&pi->lock);
     while (i < n) {
+        // printf("hart id %x, now write %d\n", r_hartid(), i);
         if (pi->readopen == 0 /*|| pr->killed*/) {
             releaseLock(&pi->lock);
             return -1;
@@ -74,6 +77,7 @@ int pipewrite(struct pipe* pi, u64 addr, int n) {
             wakeup(&pi->nread);
             sleep(&pi->nwrite, &pi->lock);
         } else {
+            // printf("%d %d\n", i, n);
             char ch;
             if (copyin(pr->pgdir, &ch, addr + i, 1) == -1)
                 break;
@@ -92,6 +96,7 @@ int piperead(struct pipe* pi, u64 addr, int n) {
     struct Process* pr = myproc();
     char ch;
 
+    // printf("%d WWWW\n", r_hartid());
     acquireLock(&pi->lock);
     while (pi->nread == pi->nwrite && pi->writeopen) {  // DOC: pipe-empty
         if (0 /*pr->killed*/) {
@@ -103,6 +108,7 @@ int piperead(struct pipe* pi, u64 addr, int n) {
     for (i = 0; i < n; i++) {  // DOC: piperead-copy
         if (pi->nread == pi->nwrite)
             break;
+        // printf("hart id %x, now read %d\n", r_hartid(), i);
         ch = pi->data[pi->nread++ % PIPESIZE];
         if (copyout(pr->pgdir, addr + i, &ch, 1) == -1) {
             break;

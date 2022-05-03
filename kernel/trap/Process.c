@@ -284,7 +284,7 @@ void sleep(void* chan, struct Spinlock* lk) {//wait()
     // (wakeup locks p->lock),
     // so it's okay to release lk.
 
-    // acquireLock(&p->lock);  // DOC: sleeplock1
+    acquireLock(&p->lock);  // DOC: sleeplock1
     releaseLock(lk);
 
     //这里不将state改成SLEEPING，所以进程会被不停地调度,进程状态始终是RUNNABLE
@@ -292,20 +292,27 @@ void sleep(void* chan, struct Spinlock* lk) {//wait()
     p->chan = (u64)chan;
     p->state = SLEEPING;
     p->reason = 1;
+    releaseLock(&p->lock);
+
 	asm volatile("sd sp, 0(%0)" : :"r"(&p->currentKernelSp));
 
     sleepSave();
+
     // yield();
     // // Tidy up.
+    acquireLock(&p->lock);  // DOC: sleeplock1
     p->chan = 0;
+    releaseLock(&p->lock);
+
+
     // printf("%x\n", x);
 
     // Reacquire original lock.
-    // releaseLock(&p->lock);
     acquireLock(lk);
 }
 
 void wakeup(void* channel) {  // notifyAll()
+    // printf("hart %x wake up\n", r_hartid());
     for (int i = 0; i < PROCESS_TOTAL_NUMBER; ++i) {
         if (&processes[i] != myproc()) {
             acquireLock(&processes[i].lock);
@@ -313,9 +320,11 @@ void wakeup(void* channel) {  // notifyAll()
                 processes[i].chan == (u64)channel) {
                 processes[i].state = RUNNABLE;
             }
+            // printf("%d ", i);
             releaseLock(&processes[i].lock);
         }
     }
+    // printf("hart %x wake up finish\n", r_hartid());
 }
 
 static int processTimeCount[HART_TOTAL_NUMBER] = {0, 0, 0, 0, 0};

@@ -5,7 +5,7 @@
 sleepSave:
     sd ra, -8(sp)
     sd gp, -16(sp)
-    sd tp, -24(sp)
+    # sd tp, -24(sp)
     sd s0, -32(sp)
     sd s1, -40(sp)
     sd s2, -48(sp)
@@ -34,7 +34,7 @@ sleepSave:
 sleepRec:
     ld ra, -8(sp)
     ld gp, -16(sp)
-    ld tp, -24(sp)
+    # ld tp, -24(sp)
     ld s0, -32(sp)
     ld s1, -40(sp)
     ld s2, -48(sp)
