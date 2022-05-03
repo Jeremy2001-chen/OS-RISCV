@@ -11,6 +11,7 @@ void syscallFork();
 void syscallPutString();
 void syscallGetProcessId();
 void syscallGetParentProcessId();
+void syscallWait();
 
 extern void (*syscallVector[])(void);
 

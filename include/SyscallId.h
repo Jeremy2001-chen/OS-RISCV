@@ -21,4 +21,5 @@
 #define SYSCALL_GET_PID 172
 #define SYSCALL_GET_PARENT_PID 173
 
+#define SYSCALL_WAIT 100
 #endif

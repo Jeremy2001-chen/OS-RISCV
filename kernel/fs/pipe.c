@@ -47,6 +47,7 @@ bad:
 
 void pipeclose(struct pipe* pi, int writable) {
     acquireLock(&pi->lock);
+    // printf("%x %x %x\n", pi->writeopen, pi->readopen, writable);
     if (writable) {
         pi->writeopen = 0;
         wakeup(&pi->nread);
@@ -65,17 +66,19 @@ int pipewrite(struct pipe* pi, u64 addr, int n) {
     int i = 0;
     struct Process* pr = myproc();
 
-    // printf("%d KKKK\n", r_hartid());
+    // printf("%d WWWW pipe addr %x\n", r_hartid(), pi);
     acquireLock(&pi->lock);
     while (i < n) {
-        // printf("hart id %x, now write %d\n", r_hartid(), i);
+        // printf("hart id %x, now write %d, to %d, %d\n", r_hartid(), i, n, pi->readopen);
         if (pi->readopen == 0 /*|| pr->killed*/) {
             releaseLock(&pi->lock);
             return -1;
         }
         if (pi->nwrite == pi->nread + PIPESIZE) {  // DOC: pipewrite-full
             wakeup(&pi->nread);
+            // printf("Write %x Sleep? Now %x for %x, start %x, end %x, ask for %x\n", r_hartid(), i, n, pi->nread, pi->nwrite, &pi->nwrite);
             sleep(&pi->nwrite, &pi->lock);
+            // printf("Write %x Stop sleep\n", r_hartid());
         } else {
             // printf("%d %d\n", i, n);
             char ch;
@@ -86,8 +89,8 @@ int pipewrite(struct pipe* pi, u64 addr, int n) {
         }
     }
     wakeup(&pi->nread);
+    // printf("%d %d\n", pi->nread, pi->nwrite);
     releaseLock(&pi->lock);
-
     return i;
 }
 
@@ -96,24 +99,28 @@ int piperead(struct pipe* pi, u64 addr, int n) {
     struct Process* pr = myproc();
     char ch;
 
-    // printf("%d WWWW\n", r_hartid());
+    // printf("%d RRRR pipe addr %x\n", r_hartid(), pi);
     acquireLock(&pi->lock);
     while (pi->nread == pi->nwrite && pi->writeopen) {  // DOC: pipe-empty
         if (0 /*pr->killed*/) {
             releaseLock(&pi->lock);
             return -1;
         }
+        // printf("Read %x Sleep?\n", r_hartid());
         sleep(&pi->nread, &pi->lock);  // DOC: piperead-sleep
+        // printf("Read %x Stop sleep\n", r_hartid());
     }
     for (i = 0; i < n; i++) {  // DOC: piperead-copy
         if (pi->nread == pi->nwrite)
             break;
         // printf("hart id %x, now read %d\n", r_hartid(), i);
         ch = pi->data[pi->nread++ % PIPESIZE];
+        // printf("%x %x\n", r_hartid(), ch);
         if (copyout(pr->pgdir, addr + i, &ch, 1) == -1) {
             break;
         }
     }
+    // printf("%x wake up %x, start %x, end %x\n", r_hartid(), &pi->nwrite, pi->nread, pi->nwrite);
     wakeup(&pi->nwrite);  // DOC: piperead-wakeup
     releaseLock(&pi->lock);
     return i;

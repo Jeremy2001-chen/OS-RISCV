@@ -58,6 +58,7 @@ struct file* filedup(struct file* f) {
 void fileclose(struct file* f) {
     struct file ff;
 
+    // printf("[FILE CLOSE]%x %x\n", f, f->ref);
     acquireLock(&ftable.lock);
     if (f->ref < 1)
         panic("fileclose");
@@ -70,6 +71,7 @@ void fileclose(struct file* f) {
     f->type = FD_NONE;
     releaseLock(&ftable.lock);
 
+    // printf("FILECLOSE %x\n", ff.type);
     if (ff.type == FD_PIPE) {
         pipeclose(ff.pipe, ff.writable);
     } else if (ff.type == FD_ENTRY) {
@@ -135,6 +137,7 @@ int filewrite(struct file* f, u64 addr, int n) {
 
     if (f->type == FD_PIPE) {
         ret = pipewrite(f->pipe, addr, n);
+        assert(ret != 0);
     } else if (f->type == FD_DEVICE) {
         if (f->major < 0 || f->major >= NDEV || !devsw[f->major].write)
             return -1;
@@ -152,6 +155,7 @@ int filewrite(struct file* f, u64 addr, int n) {
         panic("filewrite");
     }
 
+    assert(ret != 0);
     return ret;
 }
 

@@ -18,7 +18,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_PUT_STRING]        syscallPutString,
     [SYSCALL_GET_PID]               syscallGetProcessId,
     [SYSCALL_GET_PARENT_PID]        syscallGetParentProcessId,
-
+    [SYSCALL_WAIT]              syscallWait
 };
 
 extern struct Spinlock printLock;
@@ -55,6 +55,12 @@ void syscallProcessDestory() {
     processDestory(process);
     trapframe->a0 = 0;
     return;
+}
+
+void syscallWait() {
+    Trapframe* trapframe = getHartTrapFrame();
+    u64 addr = trapframe->a0;    
+    trapframe->a0 = wait(addr);
 }
 
 void syscallYield() {

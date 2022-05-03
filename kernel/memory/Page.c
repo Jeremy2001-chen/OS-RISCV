@@ -4,6 +4,7 @@
 #include <Riscv.h>
 #include <Spinlock.h>
 #include <string.h>
+#include <Process.h>
 
 extern PageList freePages;
 struct Spinlock pageListLock, cowBufferLock;
@@ -188,9 +189,10 @@ void pageout(u64 *pgdir, u64 badAddr) {
 
 u8 cowBuffer[PAGE_SIZE];
 void cowHandler(u64 *pgdir, u64 badAddr) {
+    u64 pa;
     u64 *pte;
-    u64 pa = pageLookup(pgdir, badAddr, &pte);
-    // printf("[COW]to cow %lx %lx\n", badAddr, pa);
+    pa = pageLookup(pgdir, badAddr, &pte);
+    // printf("[COW] %x to cow %lx %lx\n", myproc()->id, badAddr, pa);
     if (!(*pte & PTE_COW)) {
         printf("access denied");
         return;
@@ -207,13 +209,12 @@ void cowHandler(u64 *pgdir, u64 badAddr) {
     pageInsert(pgdir, badAddr, page2pa(page), (PTE2PERM(*pte) | PTE_WRITE) & ~PTE_COW);
     bcopy((void*) cowBuffer, (void*) page2pa(page), PAGE_SIZE);
     releaseLock(&cowBufferLock);
-    // pa = pageLookup(currentProcess[hartId]->pgdir, USER_STACK_TOP - PAGE_SIZE, &pte);
 }
 
 // Look up a virtual address, return the physical address,
 // or 0 if not mapped.
 // Can only be used to look up user pages.
-u64 vir2phy(u64* pagetable, u64 va) {
+u64 vir2phy(u64* pagetable, u64 va, int* cow) {
     u64* pte;
     u64 pa;
 
@@ -230,6 +231,7 @@ u64 vir2phy(u64* pagetable, u64 va) {
         return NULL;
     if ((*pte & PTE_USER) == 0)
         return NULL;
+    *cow = (*pte & PTE_COW) > 0;
     pa = PTE2PA(*pte) + (va&0xfff);
     return pa;
 }
@@ -239,10 +241,11 @@ u64 vir2phy(u64* pagetable, u64 va) {
 // Return 0 on success, -1 on error.
 int copyin(u64* pagetable, char* dst, u64 srcva, u64 len) {
     u64 n, va0, pa0;
+    int cow;
 
     while (len > 0) {
         va0 = DOWN_ALIGN(srcva, PGSIZE);
-        pa0 = vir2phy(pagetable, va0);
+        pa0 = vir2phy(pagetable, va0, &cow);
         if (pa0 == NULL)
             return -1;
         n = PGSIZE - (srcva - va0);
@@ -262,12 +265,18 @@ int copyin(u64* pagetable, char* dst, u64 srcva, u64 len) {
 // Return 0 on success, -1 on error.
 int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
     u64 n, va0, pa0;
+    int cow;
 
     while (len > 0) {
         va0 = DOWN_ALIGN(dstva, PGSIZE);
-        pa0 = vir2phy(pagetable, va0);
+        pa0 = vir2phy(pagetable, va0, &cow);
         if (pa0 == NULL)
             return -1;
+        if (cow) {
+            // printf("COW?\n");
+            cowHandler(pagetable, va0);
+        }
+        pa0 = vir2phy(pagetable, va0, &cow);
         n = PGSIZE - (dstva - va0);
         if (n > len)
             n = len;

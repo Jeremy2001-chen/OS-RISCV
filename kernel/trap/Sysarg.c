@@ -68,11 +68,11 @@ int argstr(int n, char* buf, int max) {
 // Return 0 on success, -1 on error.
 int copyinstr(u64* pagetable, char* dst, u64 srcva, u64 max) {
     u64 n, va0, pa0;
-    int got_null = 0;
+    int got_null = 0, cow;
 
     while (got_null == 0 && max > 0) {
         va0 = DOWN_ALIGN(srcva, PGSIZE);
-        pa0 = vir2phy(pagetable, va0);
+        pa0 = vir2phy(pagetable, va0, &cow);
         if (pa0 == 0){
             printf("pa0=0!");
             return -1;

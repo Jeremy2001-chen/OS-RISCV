@@ -36,4 +36,7 @@ static inline u32 getppid() {
     return msyscall(SYSCALL_GET_PARENT_PID, 0, 0, 0, 0, 0, 0);
 }
 
+static inline int wait(u64 addr) {
+    return msyscall(SYSCALL_WAIT, addr, 0, 0, 0, 0, 0);
+}
 #endif

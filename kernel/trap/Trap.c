@@ -14,7 +14,7 @@ void trapInit() {
     printf("Trap init start...\n");
     w_stvec((u64)kernelVector);
     w_sstatus(r_sstatus() | SSTATUS_SIE | SSTATUS_SPIE);
-    //setNextTimeout();
+    // setNextTimeout();
     w_sip(0); //todo
     w_sie(r_sie() | SIE_SEIE | SIE_SSIE | SIE_STIE);
     printf("Trap init finish!\n");
@@ -125,10 +125,14 @@ void userTrap() {
             //so I use if-else to discriminate them.
             if(trapframe->a7==SYSCALL_OPEN)
                 trapframe->a0 = sys_open();
-            else if(trapframe->a7==SYSCALL_READ)
+            else if(trapframe->a7==SYSCALL_READ) {
                 trapframe->a0 = sys_read();
-            else if(trapframe->a7==SYSCALL_WRITE)
+                // printf("%xREAD%x\n", r_hartid(), trapframe->a0);
+            }
+            else if(trapframe->a7==SYSCALL_WRITE) {
                 trapframe->a0 = sys_write();
+                // printf("WRITE%x\n", trapframe->a0);
+            }
             else if(trapframe->a7==SYSCALL_CLOSE)
                 trapframe->a0 = sys_close();
             else if(trapframe->a7==SYSCALL_READDIR)
