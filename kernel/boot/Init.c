@@ -9,7 +9,7 @@
 #include <file.h>
 #include <sysfile.h>
 
-#define SINGLE_CORE
+// #define SINGLE_CORE
 
 volatile int mainCount = 1000;
 volatile int initFinish = 0;
