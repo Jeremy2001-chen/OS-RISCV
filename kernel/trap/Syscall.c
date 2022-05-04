@@ -7,7 +7,7 @@
 #include <Trap.h>
 #include <Spinlock.h>
 #include <sysfile.h>
-
+#include <exec.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,

@@ -69,4 +69,14 @@ typedef struct {
 int loadElf(u8 *binary, int size, u64 *entry, void *userData, 
     int (*map)(u64, u32, u8*, u32, void*));
 
+inline bool is_elf_format(u8 *binary) {
+    u8 *magic = ((Indent*) binary)->magic;
+    if (magic[0] == ELF_MAGIC0 &&
+        magic[1] == ELF_MAGIC1 &&
+        magic[2] == ELF_MAGIC2 &&
+        magic[3] == ELF_MAGIC3)
+        return true;
+    return false;
+}
+
 #endif

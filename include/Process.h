@@ -17,7 +17,6 @@
     extern int binary##x##Size; \
     processCreatePriority(binary##x##Start, binary##x##Size, y); \
 }
-
 typedef struct Trapframe {
     u64 kernelSatp;
     u64 kernelSp;
@@ -100,4 +99,5 @@ int pid2Process(u32 processId, struct Process **process, int checkPerm);
 int either_copyout(int user_dst, u64 dst, void* src, u64 len);
 int either_copyin(void* dst, int user_src, u64 src, u64 len);
 int wait(u64);
+int setup(Process *p);
 #endif

@@ -49,7 +49,7 @@ sifive: clean build
 
 fs:
 	
-fat:
+fat: $(user_dir)
 	if [ ! -f "$(fs_img)" ]; then \
 		echo "making fs image..."; \
 		dd if=/dev/zero of=$(fs_img) bs=512k count=512; fi
@@ -57,7 +57,7 @@ fat:
 	@sudo mount $(fs_img) $(dst)
 	# @if [ ! -d "$(dst)/bin" ]; then sudo mkdir $(dst)/bin; fi
 	# @sudo cp README $(dst)/README
-	@sudo cp -r user/* $(dst)/
+	@sudo cp -r user/*.b $(dst)/
 	# @for file in $$( ls user/_* ); do \
 	# 	sudo cp $$file $(dst)/$${file#$U/_};\
 	# 	sudo cp $$file $(dst)/bin/$${file#$U/_}; done

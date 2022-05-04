@@ -4,6 +4,15 @@
 #include <Driver.h>
 #include <string.h>
 #include <Page.h>
+#include <debug.h>
+
+// Fetch the u64 at addr from the current process.
+int fetchaddr(u64 addr, u64* ip) {
+    struct Process* p = myproc();
+    if (copyin(p->pgdir, (char*)ip, addr, sizeof(*ip)) != 0)
+        return -1;
+    return 0;
+}
 
 // Fetch the nul-terminated string at addr from the current process.
 // Returns length of string, not including nul, or -1 for error.
@@ -15,6 +24,8 @@ int fetchstr(u64 addr, char* buf, int max) {
         return err;
     return strlen(buf);
 }
+
+
 
 
 static u64 argraw(int n) {

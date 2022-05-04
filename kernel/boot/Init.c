@@ -70,7 +70,8 @@ void main(u64 hartId) {
         // PROCESS_CREATE_PRIORITY(ProcessIdTest, 4);
         // PROCESS_CREATE_PRIORITY(ls, 1);
         // PROCESS_CREATE_PRIORITY(SysfileTest, 1);
-        PROCESS_CREATE_PRIORITY(PipeTest, 1);
+        // PROCESS_CREATE_PRIORITY(PipeTest, 1);
+        PROCESS_CREATE_PRIORITY(ExecTest,1);
 
     } else {
         while (initFinish == 0);

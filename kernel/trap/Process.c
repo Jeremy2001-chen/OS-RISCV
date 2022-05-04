@@ -128,7 +128,7 @@ int pid2Process(u32 processId, struct Process **process, int checkPerm) {
 }
 
 extern void userVector();
-static int setup(Process *p) {
+int setup(Process *p) {
     int r;
     PhysicalPage *page;
     r = allocPgdir(&page);
@@ -136,7 +136,7 @@ static int setup(Process *p) {
         panic("setup page alloc error\n");
         return r;
     }
-
+    
     p->pgdir = (u64*) page2pa(page);
     p->chan = 0;
     p->retValue = 0;
@@ -146,7 +146,7 @@ static int setup(Process *p) {
     r = pageAlloc(&page);
     extern u64 kernelPageDirectory[];
     pageInsert(kernelPageDirectory, getProcessTopSp(p) - PGSIZE, page2pa(page), PTE_READ | PTE_WRITE | PTE_EXECUTE);
-
+   
     extern char trampoline[];
     pageInsert(p->pgdir, TRAMPOLINE_BASE, (u64)trampoline, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE);
@@ -256,22 +256,14 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
 
 void sleepRec();
 void processRun(Process* p) {
-    // static volatile int first = 0;
+    static volatile int first = 0;
     Trapframe* trapframe = getHartTrapFrame();
     if (currentProcess[r_hartid()]) {
         bcopy(trapframe, &(currentProcess[r_hartid()]->trapframe),
               sizeof(Trapframe));
     }
 
-    // if (first == 0) {
-    //     // File system initialization must be run in the context of a
-    //     // regular process (e.g., because it calls sleep), and thus cannot
-    //     // be run from main().
-    //     first = 1;
-    //     fat32_init();
-    //     void testfat();
-    //     testfat();
-    // }
+
     p->state = RUNNING;
     if (p->reason == 1) {
         p->reason = 0;
@@ -284,6 +276,15 @@ void processRun(Process* p) {
     } else {
         // acquireLock(&currentProcessLock);
         currentProcess[r_hartid()] = p;
+        if (first == 0) {
+            // File system initialization must be run in the context of a
+            // regular process (e.g., because it calls sleep), and thus cannot
+            // be run from main().
+            first = 1;
+            fat32_init();
+            void testfat();
+            testfat();
+        }
         bcopy(&(currentProcess[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
         u64 sp = getHartKernelTopSp(p);
         asm volatile("ld sp, 0(%0)" : :"r"(&sp): "memory");

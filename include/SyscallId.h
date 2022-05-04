@@ -12,9 +12,10 @@
 #define SYSCALL_CLOSE 9
 #define SYSCALL_READDIR 10
 #define SYSCALL_FSTAT 11
-
 //---------pipe-----------
 #define SYSCALL_PIPE 12
+
+#define SYSCALL_EXEC 13
 
 #define SYSCALL_SCHED_YIELD 124
 

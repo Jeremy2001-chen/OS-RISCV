@@ -9,6 +9,7 @@
 #include <sysfile.h>
 #include <debug.h>
 #include <defs.h>
+#include <exec.h>
 
 void trapInit() {
     printf("Trap init start...\n");
@@ -141,7 +142,9 @@ void userTrap() {
                 trapframe->a0 = sys_fstat();
             else if(trapframe->a7==SYSCALL_PIPE)
                 trapframe->a0 = sys_pipe();
-            else
+            else if(trapframe->a7==SYSCALL_EXEC){
+                trapframe->a0 = sys_exec();
+            }else
                 syscallVector[trapframe->a7]();
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
@@ -177,6 +180,8 @@ void userTrapReturn() {
     trapframe->trapHandler = (u64)userTrap;
     trapframe->kernelHartId = r_tp();
 
+    HEX_PRINT(trapframe->epc);
+    HEX_PRINT(trapframe->sp);
     //bcopy(&(currentProcess->trapframe), trapframe, sizeof(Trapframe));
 
     u64 sstatus = r_sstatus();

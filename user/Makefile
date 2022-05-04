@@ -4,7 +4,8 @@ BIN_TOC     := ../utility/BinaryToC.c
 
 USER_LIB	:= LibMain.o Printf.o uLib.o
 
-USER_TARGET	:= ProcessA.x ProcessB.x ForkTest.x ProcessIdTest.x SysfileTest.x ls.x PipeTest.x
+USER_TARGET	:= ProcessA.x ProcessB.x ForkTest.x ProcessIdTest.x SysfileTest.x ls.x PipeTest.x ExecTest.x\
+	ProcessA.b ProcessB.b ForkTest.b ProcessIdTest.b SysfileTest.b ls.b PipeTest.b ExecTest.b
 
 .PHONY: bintoc build clean
 
@@ -35,6 +36,6 @@ clean:
 		do \
 			$(MAKE) --directory=$$d clean; \
 		done
-	rm -rf *.o *~ *.d *.x *.b.txt BinaryToC
+	rm -rf *.o *~ *.d *.x *.b.txt BinaryToC *.b
 
 include ../include.mk
