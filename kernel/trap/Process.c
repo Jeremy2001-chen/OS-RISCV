@@ -372,7 +372,7 @@ int wait(u64 addr) {
             return -1;
         }
 
-        printf("[WAIT]porcess id %x wait for %x\n", p->id, p);
+        // printf("[WAIT]porcess id %x wait for %x\n", p->id, p);
         sleep(p, &waitLock);
     }
 }
@@ -452,7 +452,7 @@ void yield() {
     count--;
     processTimeCount[hartId] = count;
     processBelongList[hartId] = point;
-    printf("hartID %d yield process %lx\n", hartId, process->id);
+    // printf("hartID %d yield process %lx\n", hartId, process->id);
     processRun(process);
 }
 

@@ -18,10 +18,7 @@ void userMain() {
             pid = fork();
             if (pid == 0) {
                 pid = fork();
-                if (pid == 0)
-                    syscallExec("/exit", argv);
-                else
-                    syscallExec("/yield", argv);
+                syscallExec("/exit", argv);
             }
             else
                 syscallExec("/getppid", argv);
@@ -31,6 +28,8 @@ void userMain() {
     } else {
         syscallExec("/getpid", argv);
     }
+    // yield must test finally!!!
+    
     // write(1, argv[0], strlen(argv[0]));
     // printf("[exec test]\n");
     // syscallExec("/ls.b", argv);
