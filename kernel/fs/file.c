@@ -155,7 +155,6 @@ int filewrite(struct file* f, u64 addr, int n) {
         panic("filewrite");
     }
 
-    assert(ret != 0);
     return ret;
 }
 

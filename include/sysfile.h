@@ -19,18 +19,14 @@ int argfd(int n, int* pfd, struct file** pf);
 int fdalloc(struct file* f);
 
 u64 sys_dup(void);
-
 u64 sys_read(void);
-
 u64 sys_write(void);
-
 u64 sys_close(void);
-
 u64 sys_fstat(void);
 u64 sys_open(void);
 u64 sys_mkdir(void);
 u64 sys_chdir(void);
-
+u64 sys_dev(void);
 u64 sys_pipe(void);
 
 // To support ls command

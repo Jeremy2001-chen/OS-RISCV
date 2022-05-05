@@ -12,6 +12,9 @@ void syscallPutString();
 void syscallGetProcessId();
 void syscallGetParentProcessId();
 void syscallWait();
+void syscallDev();
+void syscallWrite();
+void syscallDup();
 
 extern void (*syscallVector[])(void);
 

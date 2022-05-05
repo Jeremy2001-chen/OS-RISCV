@@ -12,13 +12,15 @@
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
     [SYSCALL_GET_PROCESS_ID]    syscallGetProcessId,
-    [SYSCALL_SCHED_YIELD]           syscallYield,
+    [SYSCALL_SCHED_YIELD]       syscallYield,
     [SYSCALL_PROCESS_DESTORY]   syscallProcessDestory,
     [SYSCALL_FORK]              syscallFork,
     [SYSCALL_PUT_STRING]        syscallPutString,
-    [SYSCALL_GET_PID]               syscallGetProcessId,
-    [SYSCALL_GET_PARENT_PID]        syscallGetParentProcessId,
-    [SYSCALL_WAIT]              syscallWait
+    [SYSCALL_GET_PID]           syscallGetProcessId,
+    [SYSCALL_GET_PARENT_PID]    syscallGetParentProcessId,
+    [SYSCALL_WAIT]              syscallWait,
+    [SYSCALL_DEV]               syscallDev,
+    [SYSCALL_DUP]               syscallDup
 };
 
 extern struct Spinlock printLock;
@@ -69,6 +71,16 @@ void syscallYield() {
 
 void syscallFork() {
     processFork();
+}
+
+void syscallDev() {
+    Trapframe* trapframe = getHartTrapFrame();
+    trapframe->a0 = sys_dev();
+}
+
+void syscallDup() {
+    Trapframe* trapframe = getHartTrapFrame();
+    trapframe->a0 = sys_dup();
 }
 
 void syscallPutString() {

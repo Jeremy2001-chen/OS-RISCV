@@ -217,39 +217,38 @@ u64 sys_pipe(void) {
     return 0;
 }
 
-// To open console device.
-// u64 sys_dev(void) {
-//     int fd, omode;
-//     int major, minor;
-//     struct file* f;
+u64 sys_dev(void) {
+    int fd, omode;
+    int major;
+    struct file* f;
 
-//     if (argint(0, &omode) < 0 || argint(1, &major) < 0 ||
-//         argint(2, &minor) < 0) {
-//         return -1;
-//     }
+    if (argint(0, &major) || argint(1, &omode) < 0) {
+        panic("get parse error\n");
+        return -1;
+    }
 
-//     if (omode & O_CREATE) {
-//         panic("dev file on FAT");
-//     }
+    if (omode & O_CREATE) {
+        panic("dev file on FAT");
+    }
 
-//     if (major < 0 || major >= NDEV)
-//         return -1;
+    if (major < 0 || major >= NDEV)
+        return -1;
 
-//     if ((f = filealloc()) == NULL || (fd = fdalloc(f)) < 0) {
-//         if (f)
-//             fileclose(f);
-//         return -1;
-//     }
+    if ((f = filealloc()) == NULL || (fd = fdalloc(f)) < 0) {
+        if (f)
+            fileclose(f);
+        return -1;
+    }
 
-//     f->type = FD_DEVICE;
-//     f->off = 0;
-//     f->ep = 0;
-//     f->major = major;
-//     f->readable = !(omode & O_WRONLY);
-//     f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
+    f->type = FD_DEVICE;
+    f->off = 0;
+    f->ep = 0;
+    f->major = major;
+    f->readable = !(omode & O_WRONLY);
+    f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
 
-//     return fd;
-// }
+    return fd;
+}
 
 // To support ls command
 u64 sys_readdir(void) {

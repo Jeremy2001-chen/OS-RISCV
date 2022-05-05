@@ -39,4 +39,17 @@ static inline u32 getppid() {
 static inline int wait(u64 addr) {
     return msyscall(SYSCALL_WAIT, addr, 0, 0, 0, 0, 0);
 }
+
+static inline int dev(int fd, int mode) {
+    return msyscall(SYSCALL_DEV, (u64)fd, (u64)mode, 0, 0, 0, 0);
+}
+
+static inline int write(int fd, const void* src, int len) {
+    return msyscall(SYSCALL_WRITE, (u64)fd, (u64)src, (u64)len, 0, 0, 0);
+}
+
+static inline int dup(int fd) {
+    return msyscall(SYSCALL_DUP, (u64)fd, 0, 0, 0, 0, 0);
+}
+
 #endif

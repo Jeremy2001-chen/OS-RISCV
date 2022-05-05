@@ -1,11 +1,13 @@
 #include <Type.h>
 #include <Driver.h>
 #include <Uart.h>
+#include <Spinlock.h>
+#include <file.h>
+#include <Process.h>
 
-static u64 uartBaseAddr = 0x10010000; 
-void consoleInit() {
-    // todo
-}
+static u64 uartBaseAddr = 0x10010000;
+
+struct Spinlock consoleLock;
 
 void consoleInterrupt(int c) {
     // todo
@@ -50,4 +52,27 @@ inline int getchar(void)
     if ((ret & UART_RXFIFO_DATA) == '\r')
         return '\n';
     return ret & UART_RXFIFO_DATA;
+}
+
+int consoleWrite(int user_src, u64 src, int n) {
+    int i;
+    for (i = 0; i < n; i++) {
+        char c;
+        if(either_copyin(&c, user_src, src+i, 1) == -1)
+            break;
+        putchar(c);
+    }
+    return 0;
+}
+
+int consoleRead(int user_src, u64 dst, int n) {
+    //todo
+    return 0;
+}
+
+void consoleInit() {
+    initLock(&consoleLock, "console");
+
+    devsw[CONSOLE].read = consoleRead;
+    devsw[CONSOLE].write = consoleWrite;
 }
