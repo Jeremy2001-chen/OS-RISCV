@@ -78,7 +78,7 @@ void processDestory(Process *p) {
 }
 
 void processFree(Process *p) {
-    printf("[%lx] free env %lx\n", currentProcess[r_hartid()] ? currentProcess[r_hartid()]->id : 0, p->id);
+    // printf("[%lx] free env %lx\n", currentProcess[r_hartid()] ? currentProcess[r_hartid()]->id : 0, p->id);
     pgdirFree(p->pgdir);
     p->state = ZOMBIE; // new
     for (int fd = 0; fd < NOFILE; fd++) {
@@ -348,7 +348,7 @@ int wait(u64 addr) {
             if (np->parentId == p->id) {
                 haveChildProcess = 1;
                 if (np->state == ZOMBIE) {
-                    printf("%x %x\n", np->retValue, addr);
+                    // printf("%x %x\n", np->retValue, addr);
                     pid = np->id;
                     if (addr != 0 && copyout(p->pgdir, addr, (char *)&np->retValue, sizeof(np->retValue)) < 0) {
                         releaseLock(&np->lock);
