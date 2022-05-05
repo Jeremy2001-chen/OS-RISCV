@@ -20,7 +20,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_PARENT_PID]    syscallGetParentProcessId,
     [SYSCALL_WAIT]              syscallWait,
     [SYSCALL_DEV]               syscallDev,
-    [SYSCALL_DUP]               syscallDup
+    [SYSCALL_DUP]               syscallDup,
+    [SYSCALL_EXIT]              syscallExit
 };
 
 extern struct Spinlock printLock;
@@ -81,6 +82,22 @@ void syscallDev() {
 void syscallDup() {
     Trapframe* trapframe = getHartTrapFrame();
     trapframe->a0 = sys_dup();
+}
+
+void syscallExit() {
+    Trapframe* trapframe = getHartTrapFrame();
+    struct Process* process;
+    int ret, ec = trapframe->a1;
+
+    if ((ret = pid2Process(0, &process, 1)) < 0) {
+        panic("Process exit error\n");
+        return;
+    }    
+
+    process->retValue = ec;
+    processDestory(process);
+    //will not reach here
+    panic("sycall exit error");
 }
 
 void syscallPutString() {

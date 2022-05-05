@@ -15,6 +15,7 @@ void syscallWait();
 void syscallDev();
 void syscallWrite();
 void syscallDup();
+void syscallExit();
 
 extern void (*syscallVector[])(void);
 

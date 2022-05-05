@@ -60,6 +60,8 @@ int consoleWrite(int user_src, u64 src, int n) {
         char c;
         if(either_copyin(&c, user_src, src+i, 1) == -1)
             break;
+        if (c == '\n')
+            putchar('\r');
         putchar(c);
     }
     return 0;

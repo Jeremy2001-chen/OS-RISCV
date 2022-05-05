@@ -3,11 +3,7 @@
 #include "./include/Syscall.h"
 #include "./include/Printf.h"
 
-void exit(void) {
-    processDestory(0);
-}
-
 void libMain() {
     userMain();
-    exit();
+    exit(0);
 }

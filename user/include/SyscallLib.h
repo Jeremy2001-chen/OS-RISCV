@@ -52,4 +52,9 @@ static inline int dup(int fd) {
     return msyscall(SYSCALL_DUP, (u64)fd, 0, 0, 0, 0, 0);
 }
 
+static inline int exit(int ec) {
+    return msyscall(SYSCALL_EXIT, (u64)ec, 0, 0, 0, 0, 0);
+}
+
+
 #endif
