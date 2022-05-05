@@ -56,11 +56,11 @@ static int prepSeg(u64* pagetable, uint va, uint filesz) {
 int exec(char* path, char** argv) {
     MSG_PRINT("in exec");
     STR_PRINT(path);
-    char **s = argv;
+    // char **s = argv;
 
-    while(*s)
-        printf("%s ", *s++);
-    printf("\n");
+    // while(*s)
+    //     printf("%s ", *s++);
+    // printf("\n");
 
     /*char *s, *last*/;
     int i, off;
