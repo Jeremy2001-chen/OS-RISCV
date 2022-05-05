@@ -4,6 +4,6 @@
 #include "./include/Printf.h"
 
 void libMain(int argc, char **argv) {
-    userMain(argc, argv);
-    exit(0);
+    int ret = userMain(argc, argv);
+    exit(ret);
 }
