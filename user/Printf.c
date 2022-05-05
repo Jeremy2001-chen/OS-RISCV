@@ -70,3 +70,9 @@ void _uPanic_(const char *file, int line, const char *fmt, ...) {
     putchar('\n');
     while (true);
 }
+
+void _assert_(const char* file, int line, const char *func, int statement) {
+    if (!statement) {
+        _uPanic_(file, line, func, "assert failed\n");
+    }
+}

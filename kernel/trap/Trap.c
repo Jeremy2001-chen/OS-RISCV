@@ -121,7 +121,6 @@ void userTrap() {
         {
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
-            
             //because some func have return value, while other func haven't return value.
             //so I use if-else to discriminate them.
             if(trapframe->a7==SYSCALL_OPEN)

@@ -67,6 +67,8 @@ void syscallWait() {
 }
 
 void syscallYield() {
+    Trapframe* trapframe = getHartTrapFrame();
+    trapframe->a0 = 0;
 	yield();
 }
 
