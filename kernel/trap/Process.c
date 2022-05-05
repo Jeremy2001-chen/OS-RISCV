@@ -348,7 +348,7 @@ int wait(u64 addr) {
             if (np->parentId == p->id) {
                 haveChildProcess = 1;
                 if (np->state == ZOMBIE) {
-                    printf("%x\n", p->id);
+                    printf("%x %x\n", np->retValue, addr);
                     pid = np->id;
                     if (addr != 0 && copyout(p->pgdir, addr, (char *)&np->retValue, sizeof(np->retValue)) < 0) {
                         releaseLock(&np->lock);
@@ -367,7 +367,6 @@ int wait(u64 addr) {
         }
 
         if (!haveChildProcess) {
-            printf("[FUCK]%x\n", p->id);
             releaseLock(&waitLock);
             return -1;
         }

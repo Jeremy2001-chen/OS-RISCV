@@ -60,9 +60,10 @@ void syscallProcessDestory() {
     return;
 }
 
+//todo not all finish!
 void syscallWait() {
     Trapframe* trapframe = getHartTrapFrame();
-    u64 addr = trapframe->a0;    
+    u64 addr = trapframe->a2;    
     trapframe->a0 = wait(addr);
 }
 
