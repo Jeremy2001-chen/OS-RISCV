@@ -4,8 +4,8 @@ BIN_TOC     := ../utility/BinaryToC.c
 
 USER_LIB	:= LibMain.o Printf.o uLib.o
 
-USER_TARGET	:= ProcessA.x ProcessB.x ForkTest.x ProcessIdTest.x SysfileTest.x ls.x PipeTest.x ExecTest.x\
-	ProcessA.b ProcessB.b ForkTest.b ProcessIdTest.b SysfileTest.b ls.b PipeTest.b ExecTest.b
+USER_TARGET	:= ProcessA.x ProcessB.x ForkTest.x ProcessIdTest.x SysfileTest.x PipeTest.x ExecTest.x ls.x \
+	ProcessA.b ProcessB.b ForkTest.b ProcessIdTest.b SysfileTest.b PipeTest.b ExecTest.b ls.b 
 
 .PHONY: bintoc build clean
 
