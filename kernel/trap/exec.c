@@ -186,14 +186,7 @@ int exec(char* path, char** argv) {
 
     //free old pagetable
     pgdirFree(oldpagetable);
-    int cow;
-    u64 *pa = (u64*)vir2phy(pagetable, getHartTrapFrame()->epc, &cow);
-    for(u64*i=pa;i<pa+64;++i){
-        HEX_PRINT(*i);
-    }
-    HEX_PRINT(*pa);
-    HEX_PRINT(elf.entry);
-    HEX_PRINT(sp);
+
     MSG_PRINT("out exec");
     return argc;  // this ends up in a0, the first argument to main(argc, argv)
 

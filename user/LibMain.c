@@ -3,7 +3,7 @@
 #include "./include/Syscall.h"
 #include "./include/Printf.h"
 
-void libMain() {
-    userMain();
+void libMain(int argc, char **argv) {
+    userMain(argc, argv);
     exit(0);
 }

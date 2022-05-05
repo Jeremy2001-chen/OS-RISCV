@@ -179,8 +179,6 @@ void userTrapReturn() {
     trapframe->trapHandler = (u64)userTrap;
     trapframe->kernelHartId = r_tp();
 
-    HEX_PRINT(trapframe->epc);
-    HEX_PRINT(trapframe->sp);
     //bcopy(&(currentProcess->trapframe), trapframe, sizeof(Trapframe));
 
     u64 sstatus = r_sstatus();

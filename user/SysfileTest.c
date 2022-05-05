@@ -3,7 +3,7 @@
 #include <userfile.h>
 
 char message[10];
-void userMain() {
+int userMain(int argc, char **argv) {
     int fd = syscallOpen("/testfile", O_RDONLY);
     printf("fd1=%d\n", fd);
     char buf[10]={0};

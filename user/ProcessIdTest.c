@@ -1,7 +1,7 @@
 #include <Syscall.h>
 #include <Printf.h>
 
-void userMain() {
+int userMain(int argc, char **argv) {
     //int pid = getpid();
     int pid = getpid();
     printf("[ProcessTest] current pid is %lx\n", pid);
@@ -12,4 +12,5 @@ void userMain() {
         }
         printf("[ProcessTest] this pid is %lx, parent pid is %lx\n", getpid(), getppid());
     }
+    return 0;
 }

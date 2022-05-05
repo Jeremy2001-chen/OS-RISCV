@@ -151,6 +151,7 @@ int pipe3(char* s) {
     return 0;
 }
 
-void userMain(){
+int userMain(int argc, char **argv){
     pipe2("[Test Pipe]");
+    return 0;
 }

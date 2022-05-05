@@ -1,7 +1,7 @@
 #include <Syscall.h>
 #include <Printf.h>
 
-void userMain(void) {
+int userMain(int argc, char **argv) {
     printf("start fork test....\n");
     int a = 0;
     int id = 0;

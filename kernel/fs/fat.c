@@ -942,6 +942,7 @@ static struct dirent* lookup_path(char* path, int parent, char* name) {
     if (*path == '/') {
         entry = edup(&root);
     } else if (*path != '\0') {
+        panic("unimplement relative path!");
         entry = edup(myproc()->cwd);
     } else {
         return NULL;

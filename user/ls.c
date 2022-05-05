@@ -48,13 +48,15 @@ void ls(char* path) {
     syscallClose(fd);
 }
 
-int userMain() {
+int userMain(int argc, char **argv) {
     printf("[ls test]\n");
+    printf("argc=%d\n",argc);
+    for(int i=0;i<argc;++i){
+        printf("%s ",argv[i]);
+    }
+    printf("\n");
     int i;
 
-    // gloss
-    int argc = 1;
-    char* argv[] = {"."};
     if (argc < 2) {
         ls("/");
         return 0;

@@ -86,8 +86,8 @@ inline int syscallFstat(int fd, struct stat *stat) {
 inline int syscallPipe(int fd[2]) {
     return msyscall(SYSCALL_PIPE, (u64)fd, 0, 0, 0, 0, 0);
 }
-inline void syscallExec(const char *path, char **argv){
-    msyscall(SYSCALL_EXEC, (u64)path, (u64)argv,0,0,0,0);
+inline int syscallExec(const char *path, char **argv){
+    return msyscall(SYSCALL_EXEC, (u64)path, (u64)argv,0,0,0,0);
 }
 
 #endif
