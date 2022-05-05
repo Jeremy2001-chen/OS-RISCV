@@ -141,9 +141,11 @@ void userTrap() {
                 trapframe->a0 = sys_fstat();
             else if(trapframe->a7==SYSCALL_PIPE)
                 trapframe->a0 = sys_pipe();
-            else if(trapframe->a7==SYSCALL_EXEC){
+            else if(trapframe->a7==SYSCALL_EXEC)
                 trapframe->a0 = sys_exec();
-            }else
+            else if(trapframe->a7==SYSCALL_SBRK)
+                trapframe->a0 = sys_sbrk();
+            else
                 syscallVector[trapframe->a7]();
             break;
         case SCAUSE_LOAD_PAGE_FAULT:

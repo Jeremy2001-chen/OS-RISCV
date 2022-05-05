@@ -80,6 +80,7 @@ typedef struct Process {
     u64 currentKernelSp;
     int reason;
     u64 retValue;
+    u64 heapBottom;
 } Process;
 
 LIST_HEAD(ProcessList, Process);

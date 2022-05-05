@@ -142,6 +142,7 @@ int setup(Process *p) {
     p->retValue = 0;
     p->state = UNUSED;
     p->parentId = 0;
+    p->heapBottom = USER_HEAP_BOTTOM;
 
     r = pageAlloc(&page);
     extern u64 kernelPageDirectory[];

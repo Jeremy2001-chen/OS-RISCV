@@ -79,7 +79,8 @@ int exec(char* path, char** argv) {
         panic("setup page alloc error\n");
         return r;
     }
-    
+
+    p->heapBottom = USER_HEAP_BOTTOM;// TODO,these code have writen twice
     pagetable = (u64*)page2pa(page);
     extern char trampoline[];
     pageInsert(pagetable, TRAMPOLINE_BASE, (u64)trampoline, 

@@ -67,9 +67,18 @@ int consoleWrite(int user_src, u64 src, int n) {
     return 0;
 }
 
+//TODO, 未考虑多进程
+//没有回显
+#define GET_BUF_LEN 64
+char buf[GET_BUF_LEN];
 int consoleRead(int user_src, u64 dst, int n) {
-    //todo
-    return 0;
+    int i;
+    for (i = 0; i < n; i++) {
+        char c = getchar();
+        if (either_copyout(1, dst + i, &c, 1) == -1)
+            break;
+    }
+    return i;
 }
 
 void consoleInit() {

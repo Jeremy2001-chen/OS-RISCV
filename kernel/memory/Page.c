@@ -5,6 +5,9 @@
 #include <Spinlock.h>
 #include <string.h>
 #include <Process.h>
+#include <Sysarg.h>
+#include <MemoryConfig.h>
+
 
 extern PageList freePages;
 struct Spinlock pageListLock, cowBufferLock;
@@ -289,3 +292,20 @@ int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
     return 0;
 }
 
+int growproc(int n) {
+    if (myproc()->heapBottom + n >= USER_HEAP_TOP)
+        return -1;
+    myproc()->heapBottom += n;
+    return 0;
+}
+u64 sys_sbrk(void) {
+    int addr;
+    int n;
+
+    if (argint(0, &n) < 0)
+        return -1;
+    addr = myproc()->heapBottom;
+    if (growproc(n) < 0)
+        return -1;
+    return addr;
+}

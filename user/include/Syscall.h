@@ -89,5 +89,7 @@ inline int syscallPipe(int fd[2]) {
 inline int syscallExec(const char *path, char **argv){
     return msyscall(SYSCALL_EXEC, (u64)path, (u64)argv,0,0,0,0);
 }
-
+inline u64 syscallSbrk(int size) {
+    return msyscall(SYSCALL_SBRK, (u64)size, 0, 0, 0, 0, 0);
+}
 #endif

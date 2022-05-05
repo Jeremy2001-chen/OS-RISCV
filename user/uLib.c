@@ -1,4 +1,5 @@
 #include <uLib.h>
+#include <Printf.h>
 
 char* strcpy(char* s, const char* t) {
     char* os;
@@ -52,6 +53,7 @@ char* gets(char* buf, int max) {
             break;
     }
     buf[i] = '\0';
+    printf("gets:%s", buf);
     return buf;
 }
 
