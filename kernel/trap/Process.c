@@ -146,7 +146,7 @@ int setup(Process *p) {
     r = pageAlloc(&page);
     extern u64 kernelPageDirectory[];
     pageInsert(kernelPageDirectory, getProcessTopSp(p) - PGSIZE, page2pa(page), PTE_READ | PTE_WRITE | PTE_EXECUTE);
-   
+
     extern char trampoline[];
     pageInsert(p->pgdir, TRAMPOLINE_BASE, (u64)trampoline, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE);

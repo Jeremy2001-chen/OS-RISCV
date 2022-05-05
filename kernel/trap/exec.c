@@ -57,8 +57,11 @@ int exec(char* path, char** argv) {
     MSG_PRINT("in exec");
     STR_PRINT(path);
     char **s = argv;
+
     while(*s)
-        STR_PRINT(*s++);
+        printf("%s ", *s++);
+    printf("\n");
+
     /*char *s, *last*/;
     int i, off;
     u64 argc,  sp, ustack[MAXARG], stackbase;
@@ -70,8 +73,23 @@ int exec(char* path, char** argv) {
 
     pgdirFree(p->pgdir);
     MSG_PRINT("free old page");
-    setup(p);
+
+    PhysicalPage *page;
+    int r = allocPgdir(&page);
+    if (r < 0) {
+        panic("setup page alloc error\n");
+        return r;
+    }
+    
+    p->pgdir = (u64*)page2pa(page);
+    extern char trampoline[];
+    pageInsert(p->pgdir, TRAMPOLINE_BASE, (u64)trampoline, 
+        PTE_READ | PTE_WRITE | PTE_EXECUTE);
+    pageInsert(p->pgdir, TRAMPOLINE_BASE + PAGE_SIZE, ((u64)trampoline) + PAGE_SIZE, 
+        PTE_READ | PTE_WRITE | PTE_EXECUTE);    
+    
     MSG_PRINT("setup");
+
     if ((de = ename(path)) == 0) {
         MSG_PRINT("find file error\n");
         return -1;
@@ -116,7 +134,6 @@ int exec(char* path, char** argv) {
     p = myproc();
     sp = USER_STACK_TOP;
     stackbase = sp - PGSIZE;
-    PhysicalPage* page;
     if (pageAlloc(&page)){
         MSG_PRINT("allock stack error\n");
         goto bad;
