@@ -71,8 +71,7 @@ int exec(char* path, char** argv) {
     u64 *pagetable = 0;
     Process* p = myproc();
 
-    pgdirFree(p->pgdir);
-    MSG_PRINT("free old page");
+    u64* oldpagetable = p->pgdir;
 
     PhysicalPage *page;
     int r = allocPgdir(&page);
@@ -81,11 +80,11 @@ int exec(char* path, char** argv) {
         return r;
     }
     
-    p->pgdir = (u64*)page2pa(page);
+    pagetable = (u64*)page2pa(page);
     extern char trampoline[];
-    pageInsert(p->pgdir, TRAMPOLINE_BASE, (u64)trampoline, 
+    pageInsert(pagetable, TRAMPOLINE_BASE, (u64)trampoline, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE);
-    pageInsert(p->pgdir, TRAMPOLINE_BASE + PAGE_SIZE, ((u64)trampoline) + PAGE_SIZE, 
+    pageInsert(pagetable, TRAMPOLINE_BASE + PAGE_SIZE, ((u64)trampoline) + PAGE_SIZE, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE);    
     
     MSG_PRINT("setup");
@@ -107,7 +106,6 @@ int exec(char* path, char** argv) {
         goto bad;
     }
 
-    pagetable =p->pgdir;
 
     MSG_PRINT("begin map");
     // Load program into memory.
@@ -186,6 +184,8 @@ int exec(char* path, char** argv) {
     getHartTrapFrame()->epc = elf.entry;  // initial program counter = main
     getHartTrapFrame()->sp = sp;          // initial stack pointer
 
+    //free old pagetable
+    pgdirFree(oldpagetable);
     int cow;
     u64 *pa = (u64*)vir2phy(pagetable, getHartTrapFrame()->epc, &cow);
     for(u64*i=pa;i<pa+64;++i){
