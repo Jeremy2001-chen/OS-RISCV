@@ -235,6 +235,7 @@ u64 sys_dev(void) {
         return -1;
     }
 
+    printf("test major %x\n", major);
     if (omode & O_CREATE) {
         panic("dev file on FAT");
     }

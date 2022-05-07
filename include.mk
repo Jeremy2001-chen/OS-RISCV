@@ -17,8 +17,9 @@ OPENSBI			:=	./bootloader/dynamic.bin
 
 CPUS := 5
 
-QEMUOPTS = -machine sifive_u -m 1G -nographic
-QEMUOPTS += -smp $(CPUS)
-QEMUOPTS += -bios $(OPENSBI)
-QEMUOPTS += -drive file=fs.img,if=sd,format=raw 
+OPTS = -machine sifive_u -m 1G -nographic
+OPTS += -smp $(CPUS)
+OPTS += -bios $(OPENSBI)
+BOARDOPTS = $(OPTS) -drive file=sdcard.img,if=sd,format=raw 
+QEMUOPTS = $(OPTS) -drive file=fs.img,if=sd,format=raw 
 #QEMUOPTS += -device virtio-blk-device,drive=x0,bus=virtio-mmio-bus.0

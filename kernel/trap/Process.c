@@ -265,7 +265,6 @@ void processRun(Process* p) {
               sizeof(Trapframe));
     }
 
-
     p->state = RUNNING;
     if (p->reason == 1) {
         p->reason = 0;
