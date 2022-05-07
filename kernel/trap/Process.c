@@ -88,6 +88,7 @@ void processFree(Process *p) {
             p->ofile[fd] = 0;
         }
     }
+    kernelProcessCpuTimeEnd();
     if (p->parentId > 0) {
         Process* parentProcess;
         int r = pid2Process(p->parentId, &parentProcess, 0);
@@ -97,7 +98,6 @@ void processFree(Process *p) {
         // printf("[Free] process %x wake up %x\n", p->id, parentProcess);
         wakeup(parentProcess);
     }
-
 }
 
 int pid2Process(u32 processId, struct Process **process, int checkPerm) {
@@ -143,6 +143,7 @@ int setup(Process *p) {
     p->state = UNUSED;
     p->parentId = 0;
     p->heapBottom = USER_HEAP_BOTTOM;
+    p->awakeTime = 0;
 
     r = pageAlloc(&page);
     extern u64 kernelPageDirectory[];
@@ -307,6 +308,7 @@ void sleep(void* chan, struct Spinlock* lk) {//wait()
     // (wakeup locks p->lock),
     // so it's okay to release lk.
 
+    kernelProcessCpuTimeEnd();
     acquireLock(&p->lock);  // DOC: sleeplock1
     releaseLock(lk);
 
@@ -327,11 +329,20 @@ void sleep(void* chan, struct Spinlock* lk) {//wait()
     p->chan = 0;
     releaseLock(&p->lock);
 
+    kernelProcessCpuTimeBegin();
 
     // printf("%x\n", x);
 
     // Reacquire original lock.
     acquireLock(lk);
+}
+
+static inline void updateAncestorsCpuTime(Process *p) {
+    Process *pp = p;
+    while (pp->parentId > 0 && pid2Process(pp->parentId, &pp, false) >= 0) {
+        pp->cpuTime.deadChildrenKernel += p->cpuTime.kernel;
+        pp->cpuTime.deadChildrenUser += p->cpuTime.user;
+    }
 }
 
 int wait(u64 addr) {
@@ -356,6 +367,7 @@ int wait(u64 addr) {
                         return -1;
                     }
                     acquireLock(&freeProcessesLock);
+                    updateAncestorsCpuTime(np);
                     LIST_INSERT_HEAD(&freeProcesses, np, link); //test pipe
                     releaseLock(&freeProcessesLock);
                     releaseLock(&np->lock);
@@ -433,7 +445,7 @@ void yield() {
         }
         process->state = RUNNABLE;
     }
-    while ((count == 0) || !process || (process->state != RUNNABLE)) {
+    while ((count == 0) || !process || (process->state != RUNNABLE) || process->awakeTime > r_time()) {
         if (process)
             LIST_INSERT_TAIL(&scheduleList[point ^ 1], process, scheduleLink);
         if (LIST_EMPTY(&scheduleList[point]))
@@ -519,4 +531,15 @@ void processFork() {
 
     sfence_vma();
     return;
+}
+
+void kernelProcessCpuTimeBegin() {
+    Process *p = myproc();
+    long currentTime = r_time();
+    p->cpuTime.kernel += currentTime - p->processTime.lastKernelTime;
+}
+
+void kernelProcessCpuTimeEnd() {
+    Process *p = myproc();
+    p->processTime.lastKernelTime = r_time();
 }

@@ -93,6 +93,12 @@ void kernelTrap() {
     w_sstatus(sstatus);
 }
 
+static inline void userProcessCpuTimeEnd() {
+    Process *p = myproc();
+    long currentTime = r_time();
+    p->cpuTime.user += currentTime - p->processTime.lastUserTime;
+}
+
 void userTrap() {
     u64 sepc = r_sepc();
     u64 sstatus = r_sstatus();
@@ -109,12 +115,13 @@ void userTrap() {
     }
     w_stvec((u64) kernelVector);
     extern Process *currentProcess[HART_TOTAL_NUMBER];
-
+    userProcessCpuTimeEnd();
     Trapframe* trapframe = getHartTrapFrame();
     if (scause & SCAUSE_INTERRUPT) {
         trapDevice();
         yield();
-    } else {    
+    } else {
+        kernelProcessCpuTimeBegin();
         u64 *pte = NULL;
         u64 pa = -1;
         switch (scause & SCAUSE_EXCEPTION_CODE)
@@ -152,10 +159,17 @@ void userTrap() {
             break;
         }
     }
+    kernelProcessCpuTimeEnd();
     userTrapReturn();
 }
 
+static inline void userProcessCpuTimeBegin() {
+    Process *p = myproc();
+    p->processTime.lastUserTime = r_time();
+}
+
 void userTrapReturn() {
+    userProcessCpuTimeBegin();
     extern char trampoline[];
     w_stvec(TRAMPOLINE_BASE + ((u64)userVector - (u64)trampoline));
     int hartId = r_hartid();

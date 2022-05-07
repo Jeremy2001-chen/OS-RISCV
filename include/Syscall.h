@@ -21,6 +21,9 @@ void syscallRead();
 void syscallClose();
 void syscallOpenat();
 void syscallOpen();
+void syscallGetCpuTimes();
+void syscallGetTime();
+void syscallSleepTime();
 
 extern void (*syscallVector[])(void);
 
