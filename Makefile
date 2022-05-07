@@ -79,6 +79,9 @@ clean:
 		done; \
 	rm -rf *.o *~ $(target_dir)/*
 
+comp: clean build
+	$(QEMU) -kernel $(vmlinux_img) $(BOARDOPTS)
+
 run: clean build
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS)
 

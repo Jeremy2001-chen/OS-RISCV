@@ -29,6 +29,7 @@ static void pageRemove(u64 *pgdir, u64 va) {
     page->ref--;
     pageFree(page);
     *pte = 0;
+    sfence_vma();
 }
 
 int countFreePages() {
@@ -117,6 +118,7 @@ static void paDecreaseRef(u64 pa) {
 }
 
 void pgdirFree(u64* pgdir) {
+   // printf("jaoeifherigh   %lx\n", (u64)pgdir);
     u64 i, j, k;
     u64* pageTable;
     for (i = 0; i < PTE2PT; i++) {
