@@ -78,7 +78,7 @@ void processDestory(Process *p) {
 }
 
 void processFree(Process *p) {
-    printf("[%lx] free env %lx\n", currentProcess[r_hartid()] ? currentProcess[r_hartid()]->id : 0, p->id);
+    // printf("[%lx] free env %lx\n", currentProcess[r_hartid()] ? currentProcess[r_hartid()]->id : 0, p->id);
     pgdirFree(p->pgdir);
     p->state = ZOMBIE; // new
     for (int fd = 0; fd < NOFILE; fd++) {
