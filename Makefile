@@ -58,6 +58,7 @@ fat: $(user_dir)
 	# @if [ ! -d "$(dst)/bin" ]; then sudo mkdir $(dst)/bin; fi
 	# @sudo cp README $(dst)/README
 	@sudo cp -r user/*.b $(dst)/
+	@sudo cp -r home $(dst)/
 	# @for file in $$( ls user/_* ); do \
 	# 	sudo cp $$file $(dst)/$${file#$U/_};\
 	# 	sudo cp $$file $(dst)/bin/$${file#$U/_}; done

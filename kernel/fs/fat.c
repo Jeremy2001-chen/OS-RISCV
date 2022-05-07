@@ -49,7 +49,7 @@ static struct entry_cache {
     struct dirent entries[ENTRY_CACHE_NUM];
 } ecache;
 
-static struct dirent root;
+struct dirent root;
 
 /**
  * Read the Boot Parameter Block.
@@ -103,6 +103,7 @@ int fat32_init() {
     root.valid = 1;
     root.prev = &root;
     root.next = &root;
+    root.filename[0]='/';
     for (struct dirent* de = ecache.entries;
          de < ecache.entries + ENTRY_CACHE_NUM; de++) {
         de->dev = 0;
@@ -942,7 +943,6 @@ static struct dirent* lookup_path(char* path, int parent, char* name) {
     if (*path == '/') {
         entry = edup(&root);
     } else if (*path != '\0') {
-        panic("unimplement relative path!");
         entry = edup(myproc()->cwd);
     } else {
         return NULL;

@@ -14,6 +14,8 @@
 //---------pipe-----------
 #define SYSCALL_PIPE 12
 #define SYSCALL_SBRK 13 // TODO , this id is wrong
+#define SYSCALL_CHDIR 14// TODO , this id is wrong
+#define SYSCALL_CWD 15 // TODO , this id is wrong
 
 #define SYSCALL_DEV 20
 #define SYSCALL_DUP 23

@@ -92,4 +92,12 @@ inline int syscallExec(const char *path, char **argv){
 inline u64 syscallSbrk(int size) {
     return msyscall(SYSCALL_SBRK, (u64)size, 0, 0, 0, 0, 0);
 }
+inline int syscallChdir(const char* path) {
+    return msyscall(SYSCALL_CHDIR, (u64)path, 0, 0, 0, 0, 0);
+}
+
+inline int syscallCwd(char *buf, int n) {
+    return msyscall(SYSCALL_CWD, (u64)buf, n, 0, 0, 0, 0);
+}
+
 #endif

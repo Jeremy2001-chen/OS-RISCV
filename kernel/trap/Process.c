@@ -128,6 +128,7 @@ int pid2Process(u32 processId, struct Process **process, int checkPerm) {
 }
 
 extern void userVector();
+extern struct dirent root;
 int setup(Process *p) {
     int r;
     PhysicalPage *page;
@@ -143,7 +144,7 @@ int setup(Process *p) {
     p->state = UNUSED;
     p->parentId = 0;
     p->heapBottom = USER_HEAP_BOTTOM;
-
+    p->cwd = &root;
     r = pageAlloc(&page);
     extern u64 kernelPageDirectory[];
     pageInsert(kernelPageDirectory, getProcessTopSp(p) - PGSIZE, page2pa(page), PTE_READ | PTE_WRITE | PTE_EXECUTE);
@@ -460,6 +461,7 @@ void processFork() {
     Process *process;
     int hartId = r_hartid();
     int r = processAlloc(&process, currentProcess[hartId]->id);
+    process->cwd = myproc()->cwd; //when we fork, we should keep cwd
     if (r < 0) {
         currentProcess[hartId]->trapframe.a0 = r;
         panic("");

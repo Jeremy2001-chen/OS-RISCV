@@ -8,10 +8,6 @@
 #include <userHeap.h>
 
 
-int chdir(char *x){
-    printf("unimplement relative path!");
-    return 0;
-}
 // Parsed command representation
 #define EXEC 1
 #define REDIR 2
@@ -137,7 +133,11 @@ void runcmd(struct cmd* cmd) {
 }
 
 int getcmd(char* buf, int nbuf) {
-    printf("$ ");
+    static char cwd_buf[32];
+    memset(cwd_buf, 0, sizeof(cwd_buf));
+    if(syscallCwd(cwd_buf, 32))
+        printf("get cwd error!\n");
+    printf("[%s]:$ ", cwd_buf);
     memset(buf, 0, nbuf);
     gets(buf, nbuf);
     if (buf[0] == 0)  // EOF
@@ -162,7 +162,7 @@ int userMain(int argc, char **argv) {
         if (buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' ') {
             // Chdir must be called by the parent, not the child.
             buf[strlen(buf) - 1] = 0;  // chop \n
-            if (chdir(buf + 3) < 0)
+            if (syscallChdir(buf + 3) < 0)
                 printf("cannot cd %s\n", buf + 3);
             continue;
         }
