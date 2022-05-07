@@ -323,7 +323,6 @@ void sleep(void* chan, struct Spinlock* lk) {//wait()
 
     sleepSave();
 
-    // yield();
     // // Tidy up.
     acquireLock(&p->lock);  // DOC: sleeplock1
     p->chan = 0;
@@ -464,6 +463,10 @@ void yield() {
     processTimeCount[hartId] = count;
     processBelongList[hartId] = point;
     // printf("hartID %d yield process %lx\n", hartId, process->id);
+    if (process->awakeTime > 0) {
+        getHartTrapFrame()->a0 = 0;
+        process->awakeTime = 0;
+    }
     processRun(process);
 }
 

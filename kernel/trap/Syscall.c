@@ -77,8 +77,7 @@ void syscallWait() {
 }
 
 void syscallYield() {
-    Trapframe* trapframe = getHartTrapFrame();
-    trapframe->a0 = 0;
+    kernelProcessCpuTimeEnd();
 	yield();
 }
 
@@ -172,7 +171,7 @@ void syscallGetCpuTimes() {
         cowHandler(myproc()->pgdir, tf->a0);
     }
     *ct = myproc()->cpuTime;
-    tf->a0 = r_cycle();
+    tf->a0 = 19260817;
 }
 
 void syscallGetTime() {
@@ -192,5 +191,6 @@ void syscallSleepTime() {
     Trapframe *tf = getHartTrapFrame();
     TimeSpec *ts = (TimeSpec*)vir2phy(myproc()->pgdir, tf->a0, NULL);
     myproc()->awakeTime = r_time() +  ts->second * 1000000 + ts->microSecond;
+    kernelProcessCpuTimeEnd();
     yield();
 }
