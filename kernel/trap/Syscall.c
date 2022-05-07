@@ -21,7 +21,13 @@ void (*syscallVector[])(void) = {
     [SYSCALL_WAIT]              syscallWait,
     [SYSCALL_DEV]               syscallDev,
     [SYSCALL_DUP]               syscallDup,
-    [SYSCALL_EXIT]              syscallExit
+    [SYSCALL_EXIT]              syscallExit,
+    [SYSCALL_PIPE2]             syscallPipe,
+    [SYSCALL_WRITE]             syscallWrite,
+    [SYSCALL_READ]              syscallRead,
+    [SYSCALL_CLOSE]             syscallClose,
+    [SYSCALL_OPENAT]            syscallOpenat,
+    [SYSCALL_OPEN]              syscallOpen
 };
 
 extern struct Spinlock printLock;
@@ -122,4 +128,34 @@ void syscallPutString() {
         start++;
     }
     releaseLock(&printLock);
+}
+
+void syscallPipe() {
+    Trapframe* trapframe = getHartTrapFrame();
+    trapframe->a0 = sys_pipe();
+}
+
+void syscallWrite() {
+    Trapframe* trapframe = getHartTrapFrame();
+    trapframe->a0 = sys_write();
+}
+
+void syscallRead() {
+    Trapframe* trapframe = getHartTrapFrame();
+    trapframe->a0 = sys_read();
+}
+
+void syscallClose() {
+    Trapframe* trapframe = getHartTrapFrame();
+    trapframe->a0 = sys_close();    
+}
+
+void syscallOpen() {
+    Trapframe* trapframe = getHartTrapFrame();
+    trapframe->a0 = sys_open();       
+}
+
+void syscallOpenat() {
+    //todo       
+    panic("syscall Openat not implement\n");
 }

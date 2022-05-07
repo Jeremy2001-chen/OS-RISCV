@@ -123,24 +123,10 @@ void userTrap() {
             trapframe->epc += 4;
             //because some func have return value, while other func haven't return value.
             //so I use if-else to discriminate them.
-            if(trapframe->a7==SYSCALL_OPEN)
-                trapframe->a0 = sys_open();
-            else if(trapframe->a7==SYSCALL_READ) {
-                trapframe->a0 = sys_read();
-                // printf("%xREAD%x\n", r_hartid(), trapframe->a0);
-            }
-            else if(trapframe->a7==SYSCALL_WRITE) {
-                trapframe->a0 = sys_write();
-                // printf("WRITE%x\n", trapframe->a0);
-            }
-            else if(trapframe->a7==SYSCALL_CLOSE)
-                trapframe->a0 = sys_close();
-            else if(trapframe->a7==SYSCALL_READDIR)
+            if(trapframe->a7==SYSCALL_READDIR)
                 trapframe->a0 = sys_readdir();
             else if(trapframe->a7==SYSCALL_FSTAT)
                 trapframe->a0 = sys_fstat();
-            else if(trapframe->a7==SYSCALL_PIPE)
-                trapframe->a0 = sys_pipe();
             else if(trapframe->a7==SYSCALL_EXEC)
                 trapframe->a0 = sys_exec();
             else if(trapframe->a7==SYSCALL_SBRK)

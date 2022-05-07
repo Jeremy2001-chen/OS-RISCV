@@ -56,5 +56,15 @@ static inline int exit(int ec) {
     return msyscall(SYSCALL_EXIT, (u64)ec, 0, 0, 0, 0, 0);
 }
 
+static inline int pipe(int fd[2]) {
+    return msyscall(SYSCALL_PIPE2, (u64)fd, 0, 0, 0, 0, 0);
+}
 
+static inline int close(int fd) {
+    return msyscall(SYSCALL_CLOSE, (u64)fd, 0, 0, 0, 0, 0);
+}
+
+static inline int open(int fd, const char* name, int flags, int mode) {
+    return msyscall(SYSCALL_OPENAT, (u64)fd, (u64)name, (u64)flags, (u64)mode, 0, 0);
+}
 #endif
