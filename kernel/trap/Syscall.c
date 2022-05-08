@@ -34,7 +34,9 @@ void (*syscallVector[])(void) = {
     [SYSCALL_DUP3]              syscallSetDup,
     [SYSCALL_CHDIR]             syscallChdir,
     [SYSCALL_CWD]               syscallGetWorkDir,
-    [SYSCALL_MKDIRAT]           syscallMakeDir
+    [SYSCALL_MKDIRAT]           syscallMakeDir,
+    [SYSCALL_BRK]               syscallBrk,
+    [SYSCALL_SBRK]              syscallSetBrk
 };
 
 extern struct Spinlock printLock;
@@ -237,4 +239,21 @@ void syscallChdir() {
 void syscallGetWorkDir() {
     Trapframe *trapframe = getHartTrapFrame();
     trapframe->a0 = sys_cwd();
+}
+
+void syscallBrk() {
+    Trapframe *trapframe = getHartTrapFrame();
+    u64 addr = trapframe->a0;
+    if (addr == 0) {
+        trapframe->a0 = myproc()->heapBottom;
+    } else if (addr >= myproc()->heapBottom) {
+        trapframe->a0 = (sys_sbrk(addr - myproc()->heapBottom) != -1);
+    } else 
+        trapframe->a0 = -1;
+}
+
+void syscallSetBrk() {
+    Trapframe *trapframe = getHartTrapFrame();
+    u32 len = trapframe->a0;
+    trapframe->a0 = sys_sbrk(len);
 }

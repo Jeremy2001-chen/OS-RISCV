@@ -28,6 +28,8 @@ void syscallSetDup();
 void syscallChdir();
 void syscallGetWorkDir();
 void syscallMakeDir();
+void syscallBrk();
+void syscallSetBrk();
 
 extern void (*syscallVector[])(void);
 

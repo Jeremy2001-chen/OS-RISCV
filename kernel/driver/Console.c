@@ -77,7 +77,6 @@ int consoleRead(int user_src, u64 dst, int n) {
         char c = getchar();
         if (c == '\n')
             putchar('\r');
-        putchar(c);
         if (either_copyout(1, dst + i, &c, 1) == -1)
             break;
     }

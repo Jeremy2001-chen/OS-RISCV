@@ -300,14 +300,10 @@ int growproc(int n) {
     myproc()->heapBottom += n;
     return 0;
 }
-u64 sys_sbrk(void) {
-    int addr;
-    int n;
 
-    if (argint(0, &n) < 0)
-        return -1;
-    addr = myproc()->heapBottom;
-    if (growproc(n) < 0)
+u64 sys_sbrk(u32 len) {
+    u64 addr = myproc()->heapBottom;
+    if (growproc(len) < 0)
         return -1;
     return addr;
 }

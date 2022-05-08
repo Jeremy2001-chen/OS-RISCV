@@ -136,8 +136,6 @@ void userTrap() {
                 trapframe->a0 = sys_fstat();
             else if(trapframe->a7==SYSCALL_EXEC)
                 trapframe->a0 = sys_exec();
-            else if(trapframe->a7==SYSCALL_SBRK)
-                trapframe->a0 = sys_sbrk();
             else if(trapframe->a7==SYSCALL_CWD)
                 trapframe->a0 = sys_cwd();
             else
