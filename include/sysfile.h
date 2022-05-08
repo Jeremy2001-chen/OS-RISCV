@@ -35,3 +35,5 @@ u64 sys_remove(void);
 // Must hold too many locks at a time! It's possible to raise a deadlock.
 // Because this op takes some steps, we can't promise
 u64 sys_rename(void);
+
+int sysDupAndSet(void);

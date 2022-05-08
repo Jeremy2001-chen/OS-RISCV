@@ -60,6 +60,21 @@ u64 sys_dup(void) {
     return fd;
 }
 
+int sysDupAndSet(void) {
+    struct file* f;
+    int fdnew;
+
+    if (argfd(0, 0, &f) < 0)
+        return -1;
+    if (argint(1, &fdnew) < 0)
+        return -1;
+    if (myproc()->ofile[fdnew] != NULL)
+        return -1;
+    myproc()->ofile[fdnew] = f;
+    filedup(f);
+    return fdnew;
+}
+
 u64 sys_read(void) {
     struct file* f;
     int n;

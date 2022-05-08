@@ -31,6 +31,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_CPU_TIMES]     syscallGetCpuTimes,
     [SYSCALL_GET_TIME]          syscallGetTime,
     [SYSCALL_SLEEP_TIME]        syscallSleepTime,
+    [SYSCALL_DUP3]              syscallSetDup,
 };
 
 extern struct Spinlock printLock;
@@ -193,4 +194,9 @@ void syscallSleepTime() {
     myproc()->awakeTime = r_time() +  ts->second * 1000000 + ts->microSecond;
     kernelProcessCpuTimeEnd();
     yield();
+}
+
+void syscallSetDup() {
+    Trapframe *trapframe = getHartTrapFrame();
+    trapframe->a0 = sysDupAndSet();
 }

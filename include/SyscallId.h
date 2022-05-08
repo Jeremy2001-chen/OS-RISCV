@@ -15,6 +15,7 @@
 
 #define SYSCALL_DEV 20
 #define SYSCALL_DUP 23
+#define SYSCALL_DUP3 24
 
 #define SYSCALL_OPEN 55
 #define SYSCALL_OPENAT 56
