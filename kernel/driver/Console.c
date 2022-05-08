@@ -64,7 +64,7 @@ int consoleWrite(int user_src, u64 src, int n) {
             putchar('\r');
         putchar(c);
     }
-    return 0;
+    return i;
 }
 
 //TODO, 未考虑多进程

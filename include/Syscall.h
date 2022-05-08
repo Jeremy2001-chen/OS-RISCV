@@ -27,6 +27,7 @@ void syscallSleepTime();
 void syscallSetDup();
 void syscallChdir();
 void syscallGetWorkDir();
+void syscallMakeDir();
 
 extern void (*syscallVector[])(void);
 

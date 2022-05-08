@@ -33,7 +33,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_SLEEP_TIME]        syscallSleepTime,
     [SYSCALL_DUP3]              syscallSetDup,
     [SYSCALL_CHDIR]             syscallChdir,
-    [SYSCALL_CWD]               syscallGetWorkDir
+    [SYSCALL_CWD]               syscallGetWorkDir,
+    [SYSCALL_MKDIRAT]           syscallMakeDir
 };
 
 extern struct Spinlock printLock;
@@ -161,8 +162,32 @@ void syscallOpen() {
 }
 
 void syscallOpenat() {
-    //todo       
-    panic("syscall Openat not implement\n");
+    Trapframe* trapframe = getHartTrapFrame();
+    int fd, flags, mode;
+    char path[FAT32_MAX_PATH];
+    
+    if (argint(0, &fd) < 0 || 
+        argstr(1, path, FAT32_MAX_PATH) < 0 || 
+        argint(2, &flags) < 0 || 
+        argint(3, &mode)) {
+            panic("syscall openat arg error!\n");
+        }
+
+    trapframe->a0 = sysOpenAt(fd, path, flags, mode);    
+}
+
+void syscallMakeDir() {
+    Trapframe* trapframe = getHartTrapFrame();
+    int dirFd, mode;
+    char path[FAT32_MAX_PATH];
+
+    if (argint(0, &dirFd) < 0 || 
+        argstr(1, path, FAT32_MAX_PATH) < 0 || 
+        argint(2, &mode) < 0) {
+            panic("syscall mkdirat arg error!\n");
+        }
+
+    trapframe->a0 = sysMkdirAt(dirFd, path, mode);    
 }
 
 void syscallGetCpuTimes() {

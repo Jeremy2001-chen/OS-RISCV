@@ -116,6 +116,60 @@ u64 sys_fstat(void) {
     return filestat(f, st);
 }
 
+//todo: support the mode
+int sysOpenAt(int startFd, char* path, int flags, int mode) {
+    bool absolutePath = (path[0] == '/');
+    struct dirent* entryPoint;
+
+    if (!absolutePath && startFd != AT_FDCWD) {
+        panic("Use fd to find the file not support!\n");
+    }
+
+    if (flags & O_CREATE) {
+        entryPoint = create(path, T_FILE, mode);
+        if (entryPoint == NULL) {
+            return -1;
+        }
+    } else {
+        if ((entryPoint = ename(path)) == NULL) {
+            return -1;
+        }
+        elock(entryPoint);
+        if ((entryPoint->attribute & ATTR_DIRECTORY) && flags != O_RDONLY) {
+            eunlock(entryPoint);
+            eput(entryPoint);
+            return -1;
+        }
+    }
+
+    struct file* file;
+    int fd;
+    if ((file = filealloc()) == NULL || (fd = fdalloc(file)) < 0) {
+        if (file) {
+            fileclose(file);
+        }
+        eunlock(entryPoint);
+        eput(entryPoint);
+        return -1;
+    }
+
+    if (!(entryPoint->attribute & ATTR_DIRECTORY) && (flags & O_TRUNC)) {
+        etrunc(entryPoint);
+    }
+
+    file->type = FD_ENTRY;
+    file->off = (flags & O_APPEND) ? entryPoint->file_size : 0;
+    file->ep = entryPoint;
+    file->readable = !(flags & O_WRONLY);
+    file->writable = (flags & O_WRONLY) || (flags & O_RDWR);
+
+    eunlock(entryPoint);
+
+    DEC_PRINT(fd);
+    return fd;
+}
+
+
 
 u64 sys_open(void) {
     char path[FAT32_MAX_PATH];
@@ -167,6 +221,23 @@ u64 sys_open(void) {
 
     DEC_PRINT(fd);
     return fd;
+}
+
+int sysMkdirAt(int dirFd, char* path, int mode) {
+    bool absolutePath = (path[0] == '/');
+    struct dirent* entryPoint;
+
+    if (!absolutePath && dirFd != AT_FDCWD) {
+        panic("Use fd to make directory not support!\n");
+    }
+
+    if ((entryPoint = create(path, T_DIR, mode)) == 0) {
+        return -1;
+    }
+
+    eunlock(entryPoint);
+    eput(entryPoint);
+    return 0;
 }
 
 u64 sys_mkdir(void) {

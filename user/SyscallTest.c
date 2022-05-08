@@ -4,8 +4,8 @@
 #include <uLib.h>
 
 char *argv[]={"ls.b", "arg1", "arg2", 0};
-char *syscallList[] = {"/getpid", "/getppid", "/dup", "/exit", "/yield", "/pipe", "/times", "/gettimeofday", "/sleep", "/dup2",
-                        "/getcwd"};
+char *syscallList[] = {"getpid", "getppid", "dup", "exit", "yield", "pipe", "times", "gettimeofday", "sleep", "dup2",
+                        "getcwd", "open", "read", "write", "close", "execve", "chdir"};
 
 void userMain() {
     dev(1, O_RDWR); //stdin

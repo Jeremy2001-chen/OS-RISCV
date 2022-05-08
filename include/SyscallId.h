@@ -11,11 +11,12 @@
 
 #define SYSCALL_SBRK 13 // TODO , this id is wrong
 
-#define SYSCALL_CWD 17 // TODO , this id is wrong
+#define SYSCALL_CWD 17
 #define SYSCALL_DEV 20
 #define SYSCALL_DUP 23
 #define SYSCALL_DUP3 24
 
+#define SYSCALL_MKDIRAT 34
 #define SYSCALL_CHDIR 49
 
 #define SYSCALL_OPEN 55

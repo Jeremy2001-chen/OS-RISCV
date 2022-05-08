@@ -1,3 +1,6 @@
+#ifndef _SYSFILE_H_
+#define _SYSFILE_H_
+
 //
 // File-system system calls.
 // Mostly argument checking, since we don't trust
@@ -37,3 +40,9 @@ u64 sys_remove(void);
 u64 sys_rename(void);
 
 int sysDupAndSet(void);
+int sysOpenAt(int fd, char* path, int flags, int mode);
+int sysMkdirAt(int dirFd, char* path, int mode);
+
+#define AT_FDCWD -100
+
+#endif
