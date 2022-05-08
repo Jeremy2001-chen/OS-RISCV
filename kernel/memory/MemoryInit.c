@@ -102,29 +102,10 @@ void memoryInit() {
 void bcopy(void *src, void *dst, u32 len) {
     void *finish = src + len;
 
-    if (len <= 7) {
-        while (src < finish) {
-            *(u8*)dst = *(u8*)src;
-            src++;
-            dst++;
-        }
-        return;
-    }
-    while (((u64)src) & 7) {
+    while (src < finish) {
         *(u8*)dst = *(u8*)src;
         src++;
         dst++;
-    }
-    while (src + 7 < finish) {
-        *(u64*)dst = *(u64*)src;
-        src += 8;
-        dst += 8;
-    }
-    while (src < finish){
-        *(u8*)dst = *(u8*)src;
-        src++;
-        dst++;
-        
     }
 }
 

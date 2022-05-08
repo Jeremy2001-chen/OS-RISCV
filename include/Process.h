@@ -5,6 +5,7 @@
 #include <Queue.h>
 #include <Spinlock.h>
 #include <fat.h>
+#include <Timer.h>
 #include <file.h>
 
 #define NOFILE 16  //Number of fds that a process can open
@@ -64,9 +65,17 @@ enum ProcessState {
     ZOMBIE
 };
 
+struct ProcessTime {
+    long lastUserTime;
+    long lastKernelTime;
+};
+
 typedef struct Process {
     Trapframe trapframe;
+    struct ProcessTime processTime;
+    CpuTimes cpuTime;
     LIST_ENTRY(Process) link;
+    u64 awakeTime;
     u64 *pgdir;
     u32 id;
     u32 parentId;
@@ -101,4 +110,6 @@ int either_copyout(int user_dst, u64 dst, void* src, u64 len);
 int either_copyin(void* dst, int user_src, u64 src, u64 len);
 int wait(u64);
 int setup(Process *p);
+void kernelProcessCpuTimeBegin(void);
+void kernelProcessCpuTimeEnd(void);
 #endif

@@ -27,7 +27,10 @@ void (*syscallVector[])(void) = {
     [SYSCALL_READ]              syscallRead,
     [SYSCALL_CLOSE]             syscallClose,
     [SYSCALL_OPENAT]            syscallOpenat,
-    [SYSCALL_OPEN]              syscallOpen
+    [SYSCALL_OPEN]              syscallOpen,
+    [SYSCALL_GET_CPU_TIMES]     syscallGetCpuTimes,
+    [SYSCALL_GET_TIME]          syscallGetTime,
+    [SYSCALL_SLEEP_TIME]        syscallSleepTime,
 };
 
 extern struct Spinlock printLock;
@@ -74,8 +77,7 @@ void syscallWait() {
 }
 
 void syscallYield() {
-    Trapframe* trapframe = getHartTrapFrame();
-    trapframe->a0 = 0;
+    kernelProcessCpuTimeEnd();
 	yield();
 }
 
@@ -158,4 +160,37 @@ void syscallOpen() {
 void syscallOpenat() {
     //todo       
     panic("syscall Openat not implement\n");
+}
+
+void syscallGetCpuTimes() {
+    Trapframe *tf = getHartTrapFrame();
+    // printf("addr : %lx\n", tf->a0);
+    int cow;
+    CpuTimes *ct = (CpuTimes*)vir2phy(myproc()->pgdir, tf->a0, &cow);
+    if (cow) {
+        cowHandler(myproc()->pgdir, tf->a0);
+    }
+    *ct = myproc()->cpuTime;
+    tf->a0 = 19260817;
+}
+
+void syscallGetTime() {
+    Trapframe *tf = getHartTrapFrame();
+    int cow;
+    TimeSpec *ts = (TimeSpec*)vir2phy(myproc()->pgdir, tf->a0, &cow);
+    if (cow) {
+        cowHandler(myproc()->pgdir, tf->a0);
+    }
+    u64 time = r_time();
+    ts->second = time / 1000000;
+    ts->microSecond = time % 1000000;
+    tf->a0 = 0;
+}
+
+void syscallSleepTime() {
+    Trapframe *tf = getHartTrapFrame();
+    TimeSpec *ts = (TimeSpec*)vir2phy(myproc()->pgdir, tf->a0, NULL);
+    myproc()->awakeTime = r_time() +  ts->second * 1000000 + ts->microSecond;
+    kernelProcessCpuTimeEnd();
+    yield();
 }

@@ -236,7 +236,8 @@ u64 vir2phy(u64* pagetable, u64 va, int* cow) {
         return NULL;
     if ((*pte & PTE_USER) == 0)
         return NULL;
-    *cow = (*pte & PTE_COW) > 0;
+    if (cow)
+        *cow = (*pte & PTE_COW) > 0;
     pa = PTE2PA(*pte) + (va&0xfff);
     return pa;
 }

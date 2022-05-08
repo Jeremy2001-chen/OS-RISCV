@@ -206,6 +206,12 @@ static inline u64 r_time() {
 	return x;
 }
 
+static inline u64 r_cycle() {
+	u64 x;
+	asm volatile("rdcycle %0" : "=r" (x) );
+	return x;
+}
+
 // enable device interrupts
 static inline void intr_on() {
 	w_sstatus(r_sstatus() | SSTATUS_SIE);

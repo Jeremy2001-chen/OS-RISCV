@@ -8,7 +8,7 @@
 #include <bio.h>
 #include <file.h>
 #include <sysfile.h>
-
+#include <Riscv.h>
 #define SINGLE_CORE
 
 volatile int mainCount = 1000;
