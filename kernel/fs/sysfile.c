@@ -262,9 +262,9 @@ int sys_cwd(void) {
         panic("Alloc addr not support for cwd\n");
     }
     if(copyout(myproc()->pgdir, addr, myproc()->cwd->filename, n) < 0) {
-        return 0;
+        return -1;
     }
-    return addr;
+    return 0;
 }
 
 u64 sys_chdir(void) {
