@@ -167,6 +167,14 @@ u64 sys_mkdir(void) {
     return 0;
 }
 
+int sys_cwd(void) {
+    u64 addr;
+    int n;
+    if (argaddr(0,  &addr) < 0 || argint(1, &n) < 0)
+        return -1;
+    return copyout(myproc()->pgdir, addr, myproc()->cwd->filename, n);
+}
+
 u64 sys_chdir(void) {
     char path[FAT32_MAX_PATH];
     struct dirent* ep;

@@ -43,17 +43,24 @@ char* strchr(const char* s, char c) {
 char* gets(char* buf, int max) {
     int i, cc;
     char c;
-
+    static int backspace = 0x082008;
     for (i = 0; i + 1 < max;) {
         cc = syscallRead(0, &c, 1);
         if (cc < 1)
             break;
+        if(c==127){
+            if(i>0){
+                --i;
+                syscallWrite(1, (char *)&backspace, 3);
+            }
+            continue;
+        }
+        syscallWrite(1, &c, 1);
         buf[i++] = c;
         if (c == '\n' || c == '\r')
             break;
     }
     buf[i] = '\0';
-    printf("gets:%s", buf);
     return buf;
 }
 

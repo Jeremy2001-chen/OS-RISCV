@@ -58,7 +58,7 @@ int userMain(int argc, char **argv) {
     int i;
 
     if (argc < 2) {
-        ls("/");
+        ls(".");
         return 0;
     }
     for (i = 1; i < argc; i++)

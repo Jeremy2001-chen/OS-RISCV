@@ -28,7 +28,7 @@ u64 sys_mkdir(void);
 u64 sys_chdir(void);
 u64 sys_dev(void);
 u64 sys_pipe(void);
-
+int sys_cwd(void);
 // To support ls command
 u64 sys_readdir(void);
 u64 sys_remove(void);
