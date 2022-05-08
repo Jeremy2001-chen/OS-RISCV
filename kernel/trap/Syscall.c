@@ -73,11 +73,12 @@ void syscallProcessDestory() {
     return;
 }
 
-//todo not all finish!
+//todo: support mode
 void syscallWait() {
     Trapframe* trapframe = getHartTrapFrame();
-    u64 addr = trapframe->a2;    
-    trapframe->a0 = wait(addr);
+    int pid = trapframe->a0;
+    u64 addr = trapframe->a1;    
+    trapframe->a0 = wait(pid, addr);
 }
 
 void syscallYield() {
@@ -102,14 +103,14 @@ void syscallDup() {
 void syscallExit() {
     Trapframe* trapframe = getHartTrapFrame();
     struct Process* process;
-    int ret, ec = trapframe->a1;
+    int ret, ec = trapframe->a0;
 
     if ((ret = pid2Process(0, &process, 1)) < 0) {
         panic("Process exit error\n");
         return;
     }    
 
-    process->retValue = ec;
+    process->retValue = (ec << 8); //todo
     processDestory(process);
     //will not reach here
     panic("sycall exit error");

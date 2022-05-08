@@ -37,8 +37,13 @@ static inline u32 getppid() {
 }
 
 static inline int wait(u64 addr) {
-    return msyscall(SYSCALL_WAIT, addr, 0, 0, 0, 0, 0);
+    return msyscall(SYSCALL_WAIT, (u64)-1, addr, 0, 0, 0, 0);
 }
+
+static inline int waitpid(int pid, u64 addr, int mode) {
+    return msyscall(SYSCALL_WAIT, (u64)pid, addr, (u64)mode, 0, 0, 0);
+}
+
 
 static inline int dev(int fd, int mode) {
     return msyscall(SYSCALL_DEV, (u64)fd, (u64)mode, 0, 0, 0, 0);

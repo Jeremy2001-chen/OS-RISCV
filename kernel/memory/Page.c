@@ -287,7 +287,6 @@ int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
         if (n > len)
             n = len;
         memmove((void*)(pa0 + (dstva - va0)), src, n);
-
         len -= n;
         src += n;
         dstva = va0 + PGSIZE;

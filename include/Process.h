@@ -108,7 +108,7 @@ void processFree(Process* p);
 int pid2Process(u32 processId, struct Process **process, int checkPerm);
 int either_copyout(int user_dst, u64 dst, void* src, u64 len);
 int either_copyin(void* dst, int user_src, u64 src, u64 len);
-int wait(u64);
+int wait(int, u64);
 int setup(Process *p);
 void kernelProcessCpuTimeBegin(void);
 void kernelProcessCpuTimeEnd(void);

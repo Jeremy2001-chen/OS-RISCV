@@ -346,7 +346,7 @@ static inline void updateAncestorsCpuTime(Process *p) {
     }
 }
 
-int wait(u64 addr) {
+int wait(int targetProcessId, u64 addr) {
     Process* p = myproc();
     int haveChildProcess, pid;
 
@@ -359,8 +359,7 @@ int wait(u64 addr) {
             acquireLock(&np->lock);
             if (np->parentId == p->id) {
                 haveChildProcess = 1;
-                if (np->state == ZOMBIE) {
-                    // printf("%x %x\n", np->retValue, addr);
+                if ((targetProcessId == -1 || np->id == targetProcessId) && np->state == ZOMBIE) {
                     pid = np->id;
                     if (addr != 0 && copyout(p->pgdir, addr, (char *)&np->retValue, sizeof(np->retValue)) < 0) {
                         releaseLock(&np->lock);
