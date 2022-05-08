@@ -187,7 +187,13 @@ int sys_cwd(void) {
     int n;
     if (argaddr(0,  &addr) < 0 || argint(1, &n) < 0)
         return -1;
-    return copyout(myproc()->pgdir, addr, myproc()->cwd->filename, n);
+    if (addr == 0) {
+        panic("Alloc addr not support for cwd\n");
+    }
+    if(copyout(myproc()->pgdir, addr, myproc()->cwd->filename, n) < 0) {
+        return 0;
+    }
+    return addr;
 }
 
 u64 sys_chdir(void) {

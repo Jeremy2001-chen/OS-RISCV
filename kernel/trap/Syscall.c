@@ -32,6 +32,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_TIME]          syscallGetTime,
     [SYSCALL_SLEEP_TIME]        syscallSleepTime,
     [SYSCALL_DUP3]              syscallSetDup,
+    [SYSCALL_CHDIR]             syscallChdir,
+    [SYSCALL_CWD]               syscallGetWorkDir
 };
 
 extern struct Spinlock printLock;
@@ -199,4 +201,14 @@ void syscallSleepTime() {
 void syscallSetDup() {
     Trapframe *trapframe = getHartTrapFrame();
     trapframe->a0 = sysDupAndSet();
+}
+
+void syscallChdir() {
+    Trapframe *trapframe = getHartTrapFrame();
+    trapframe->a0 = sys_chdir();
+}
+
+void syscallGetWorkDir() {
+    Trapframe *trapframe = getHartTrapFrame();
+    trapframe->a0 = sys_cwd();
 }
