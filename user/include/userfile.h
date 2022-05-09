@@ -10,4 +10,6 @@
 #define O_CREATE  0x200
 #define O_TRUNC   0x400
 
+#define AT_FDCWD -100
+
 #endif

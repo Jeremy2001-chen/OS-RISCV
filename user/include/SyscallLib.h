@@ -4,6 +4,7 @@
 #include "../../include/SyscallId.h"
 #include "../../include/Type.h"
 #include "./include/Syscall.h"
+#include "./include/userfile.h"
 
 extern char printfBuffer[];
 extern int bufferLen;
@@ -69,7 +70,11 @@ static inline int close(int fd) {
     return msyscall(SYSCALL_CLOSE, (u64)fd, 0, 0, 0, 0, 0);
 }
 
-static inline int open(int fd, const char* name, int flags, int mode) {
-    return msyscall(SYSCALL_OPENAT, (u64)fd, (u64)name, (u64)flags, (u64)mode, 0, 0);
+static inline int open(const char* path, int flags) {
+    return msyscall(SYSCALL_OPENAT, AT_FDCWD, (u64)path, (u64)flags, O_RDWR, 0, 0);
+}
+
+static inline int mkdir(const char* path, int mode) {
+    return msyscall(SYSCALL_MKDIRAT, AT_FDCWD, (u64)path, (u64)mode, 0, 0, 0);
 }
 #endif
