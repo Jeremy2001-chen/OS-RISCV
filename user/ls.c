@@ -38,13 +38,14 @@ void ls(char* path) {
         return;
     }
     MSG_PRINT("finish Fstat");
-    if (st.type == T_DIR) {
-        while (syscallReaddir(fd, &st) == 1) {
-            printf("%s %s\t\t\t%d\n", fmtname(st.name), stat_map[st.type], st.size);
-        }
-    } else {
-        printf("%s %s\t\t\t%d\n", fmtname(st.name), stat_map[st.type], st.size);
-    }
+    //todo
+    // if (st.type == T_DIR) {
+    //     while (syscallReaddir(fd, &st) == 1) {
+    //         printf("%s %s\t\t\t%d\n", fmtname(st.name), stat_map[st.type], st.st_size);
+    //     }
+    // } else {
+    //     printf("%s %s\t\t\t%d\n", fmtname(st.name), stat_map[st.type], st.st_size);
+    // }
     syscallClose(fd);
 }
 

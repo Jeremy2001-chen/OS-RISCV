@@ -748,11 +748,12 @@ void eput(struct dirent* entry) {
     releaseLock(&ecache.lock);
 }
 
+//todo(need more)
 void estat(struct dirent* de, struct stat* st) {
-    strncpy(st->name, de->filename, STAT_MAX_NAME);
-    st->type = (de->attribute & ATTR_DIRECTORY) ? T_DIR : T_FILE;
-    st->dev = de->dev;
-    st->size = de->file_size;
+    // strncpy(st->name, de->filename, STAT_MAX_NAME);
+    // st->type = (de->attribute & ATTR_DIRECTORY) ? T_DIR : T_FILE;
+    st->st_dev = de->dev;
+    st->st_size = de->file_size;
 }
 
 /**

@@ -80,6 +80,7 @@ inline PhysicalPage* pte2page(u64 *pte) {
     return pa2page(PTE2PA(*pte));
 }
 
+int pageRemove(u64 *pgdir, u64 va);
 int countFreePages();
 int pageAlloc(PhysicalPage **page);
 int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm);

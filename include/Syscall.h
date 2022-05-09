@@ -30,6 +30,9 @@ void syscallGetWorkDir();
 void syscallMakeDir();
 void syscallBrk();
 void syscallSetBrk();
+void syscallGetFileState();
+void syscallMapMemory();
+void syscallUnMapMemory();
 
 extern void (*syscallVector[])(void);
 

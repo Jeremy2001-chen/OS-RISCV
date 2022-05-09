@@ -132,8 +132,6 @@ void userTrap() {
             //so I use if-else to discriminate them.
             if(trapframe->a7==SYSCALL_READDIR)
                 trapframe->a0 = sys_readdir();
-            else if(trapframe->a7==SYSCALL_FSTAT)
-                trapframe->a0 = sys_fstat();
             else if(trapframe->a7==SYSCALL_EXEC)
                 trapframe->a0 = sys_exec();
             else if(trapframe->a7==SYSCALL_CWD)

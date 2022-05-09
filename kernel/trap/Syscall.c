@@ -36,7 +36,10 @@ void (*syscallVector[])(void) = {
     [SYSCALL_CWD]               syscallGetWorkDir,
     [SYSCALL_MKDIRAT]           syscallMakeDir,
     [SYSCALL_BRK]               syscallBrk,
-    [SYSCALL_SBRK]              syscallSetBrk
+    [SYSCALL_SBRK]              syscallSetBrk,
+    [SYSCALL_FSTAT]             syscallGetFileState,
+    [SYSCALL_MAP_MEMORY]        syscallMapMemory,
+    [SYSCALL_UNMAP_MEMORY]      syscallUnMapMemory
 };
 
 extern struct Spinlock printLock;
@@ -256,4 +259,63 @@ void syscallSetBrk() {
     Trapframe *trapframe = getHartTrapFrame();
     u32 len = trapframe->a0;
     trapframe->a0 = sys_sbrk(len);
+}
+
+void syscallGetFileState() {
+    Trapframe *trapframe = getHartTrapFrame();
+    trapframe->a0 = sys_fstat();
+}
+
+void syscallMapMemory() {
+    Trapframe *trapframe = getHartTrapFrame();
+    u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2;
+    bool alloc = (start == 0);
+    if (alloc) {
+        start = 0x0;
+        myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom + len, 12); 
+    }
+    u64 addr = start, end = start + len;
+    start = DOWN_ALIGN(start, 12);
+    while (start < end) {
+        u64* pte;
+        u64 pa = pageLookup(myproc()->pgdir, start, &pte);
+        if (pa > 0 && (*pte & PTE_COW)) {
+            cowHandler(myproc()->pgdir, start);
+        }
+        PhysicalPage* page;
+        if (pageAlloc(&page) < 0) {        
+            trapframe->a0 = -1;
+            return ;
+        }
+        pageInsert(myproc()->pgdir, start, page2pa(page), perm);
+        start += PGSIZE;
+    }
+
+    struct file* fd;
+    if (argfd(4, 0, &fd)) {
+        trapframe->a0 = -1;
+        return ;
+    }
+    fd->off = trapframe->a5;
+    // if (fileread(fd, addr, len)) {
+        // trapframe->a0 = addr;
+    // } else {
+        // trapframe->a0 = -1;
+    // }
+    fileread(fd, addr, len);
+    trapframe->a0 = addr;
+}
+
+void syscallUnMapMemory() {
+    Trapframe *trapframe = getHartTrapFrame();
+    u64 start = trapframe->a0, len = trapframe->a1, end = start + len;
+    start = DOWN_ALIGN(start, 12);
+    while (start < end) {
+        if (pageRemove(myproc()->pgdir, start) < 0) {
+            trapframe->a0 = -1;
+            return ;
+        }
+        start += PGSIZE;
+    }
+    trapframe->a0 = 0;
 }

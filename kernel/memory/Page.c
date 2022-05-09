@@ -17,19 +17,23 @@ inline void pageLockInit(void) {
     initLock(&cowBufferLock, "cowBufferLock");
 }
 
-static void pageRemove(u64 *pgdir, u64 va) {
+int pageRemove(u64 *pgdir, u64 va) {
     u64 *pte;
     u64 pa = pageLookup(pgdir, va, &pte);
 
+    if (!pte) {
+        return -1;
+    }
     // tlb flush
     if (pa < PHYSICAL_ADDRESS_BASE || pa >= PHYSICAL_MEMORY_TOP) {
-        return;
+        return -1;
     }
     PhysicalPage *page = pa2page(pa);
     page->ref--;
     pageFree(page);
     *pte = 0;
     sfence_vma();
+    return 0;
 }
 
 int countFreePages() {

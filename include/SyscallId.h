@@ -6,8 +6,6 @@
 #define SYSCALL_PROCESS_DESTORY 3
 #define SYSCALL_PUT_STRING 5
 #define SYSCALL_READDIR 10
-#define SYSCALL_FSTAT 11
-//---------pipe-----------
 
 #define SYSCALL_SBRK 13 // TODO , this id is wrong
 
@@ -26,6 +24,7 @@
 #define SYSCALL_READ 63
 #define SYSCALL_WRITE 64
 
+#define SYSCALL_FSTAT 80
 #define SYSCALL_EXIT 93
 #define SYSCALL_SLEEP_TIME 101
 
@@ -38,7 +37,9 @@
 
 #define SYSCALL_BRK 214
 
+#define SYSCALL_UNMAP_MEMORY 215
 #define SYSCALL_FORK 220
 #define SYSCALL_EXEC 221
+#define SYSCALL_MAP_MEMORY 222
 #define SYSCALL_WAIT 260
 #endif
