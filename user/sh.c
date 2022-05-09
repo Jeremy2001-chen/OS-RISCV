@@ -135,7 +135,7 @@ void runcmd(struct cmd* cmd) {
 int getcmd(char* buf, int nbuf) {
     static char cwd_buf[32];
     memset(cwd_buf, 0, sizeof(cwd_buf));
-    if(syscallCwd(cwd_buf, 32))
+    if(syscallCwd(cwd_buf, 32) < 0)
         printf("get cwd error!\n");
     printf("[%s]:$ ", cwd_buf);
     memset(buf, 0, nbuf);

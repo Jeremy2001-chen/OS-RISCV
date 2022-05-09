@@ -287,7 +287,7 @@ int sys_cwd(void) {
     if(copyout(myproc()->pgdir, addr, myproc()->cwd->filename, n) < 0) {
         return -1;
     }
-    return 0;
+    return addr;
 }
 
 u64 sys_chdir(void) {
