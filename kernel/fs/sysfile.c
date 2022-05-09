@@ -117,28 +117,35 @@ u64 sys_fstat(void) {
 }
 
 //todo: support the mode
+//todo: change the directory? whether we should add the ref(eput)
 int sysOpenAt(int startFd, char* path, int flags, int mode) {
     bool absolutePath = (path[0] == '/');
-    struct dirent* entryPoint;
+    struct dirent* entryPoint, *startEntry;
 
     if (!absolutePath && startFd != AT_FDCWD) {
-        panic("Use fd to find the file not support!\n");
+        startEntry = myproc()->cwd;
+        myproc()->cwd = myproc()->ofile[startFd]->ep;
     }
 
     if (flags & O_CREATE) {
         entryPoint = create(path, T_FILE, mode);
         if (entryPoint == NULL) {
-            return -1;
+            goto bad;
         }
     } else {
         if ((entryPoint = ename(path)) == NULL) {
-            return -1;
+            goto bad;
         }
         elock(entryPoint);
-        if ((entryPoint->attribute & ATTR_DIRECTORY) && flags != O_RDONLY) {
+        if (!(entryPoint->attribute & ATTR_DIRECTORY) && (flags & O_DIRECTORY)) {
             eunlock(entryPoint);
             eput(entryPoint);
-            return -1;
+            goto bad;
+        }
+        if ((entryPoint->attribute & ATTR_DIRECTORY) && (flags & 0xFFF) != O_RDONLY) { //todo
+            eunlock(entryPoint);
+            eput(entryPoint);
+            goto bad;
         }
     }
 
@@ -150,7 +157,7 @@ int sysOpenAt(int startFd, char* path, int flags, int mode) {
         }
         eunlock(entryPoint);
         eput(entryPoint);
-        return -1;
+        goto bad;
     }
 
     if (!(entryPoint->attribute & ATTR_DIRECTORY) && (flags & O_TRUNC)) {
@@ -164,9 +171,16 @@ int sysOpenAt(int startFd, char* path, int flags, int mode) {
     file->writable = (flags & O_WRONLY) || (flags & O_RDWR);
 
     eunlock(entryPoint);
-
+    if (!absolutePath && startFd != AT_FDCWD) {
+        myproc()->cwd = startEntry;
+    }
     DEC_PRINT(fd);
     return fd;
+bad:  
+    if (!absolutePath && startFd != AT_FDCWD) {
+        myproc()->cwd = startEntry;
+    }
+    return -1;
 }
 
 
@@ -223,21 +237,30 @@ u64 sys_open(void) {
     return fd;
 }
 
+//todo: support the mode
+//todo: change the directory? whether we should add the ref(eput)
 int sysMkdirAt(int dirFd, char* path, int mode) {
     bool absolutePath = (path[0] == '/');
-    struct dirent* entryPoint;
+    struct dirent* entryPoint, *startEntry;
 
     if (!absolutePath && dirFd != AT_FDCWD) {
-        panic("Use fd to make directory not support!\n");
+        startEntry = myproc()->cwd;
+        myproc()->cwd = myproc()->ofile[dirFd]->ep;    
     }
 
     if ((entryPoint = create(path, T_DIR, mode)) == 0) {
-        return -1;
+        goto bad;
     }
 
     eunlock(entryPoint);
     eput(entryPoint);
     return 0;
+
+bad:  
+    if (!absolutePath && dirFd != AT_FDCWD) {
+        myproc()->cwd = startEntry;
+    }
+    return -1;
 }
 
 u64 sys_mkdir(void) {
