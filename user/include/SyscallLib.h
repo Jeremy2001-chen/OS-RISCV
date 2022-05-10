@@ -26,7 +26,7 @@ static inline u32 fork() {
         putString(printfBuffer, bufferLen);
         bufferLen = 0;
     }
-    return msyscall(SYSCALL_FORK, 0, 0, 0, 0, 0, 0);
+    return msyscall(SYSCALL_CLONE, 17, 0, 0, 0, 0, 0);
 }
 
 static inline u32 getpid() {

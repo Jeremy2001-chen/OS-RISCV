@@ -94,6 +94,8 @@ typedef struct Process {
 
 LIST_HEAD(ProcessList, Process);
 
+#define START_FORK 17
+
 u64 getProcessTopSp(Process* p);
 
 Process* myproc();
@@ -102,7 +104,7 @@ void processCreatePriority(u8* binary, u32 size, u32 priority);
 void sleep(void* chan, struct Spinlock* lk);
 void wakeup(void* channel);
 void yield();
-void processFork();
+void processFork(u32, u64, u64, u64, u64);
 void processDestory(Process* p);
 void processFree(Process* p);
 int pid2Process(u32 processId, struct Process **process, int checkPerm);

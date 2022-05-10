@@ -7,7 +7,7 @@ void syscallPutchar();
 void syscallGetProcessId();
 void syscallYield();
 void syscallProcessDestory();
-void syscallFork();
+void syscallClone();
 void syscallPutString();
 void syscallGetProcessId();
 void syscallGetParentProcessId();

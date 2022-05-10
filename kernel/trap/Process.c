@@ -471,14 +471,17 @@ void yield() {
     processRun(process);
 }
 
-void processFork() {
+void processFork(u32 flags, u64 stackVa, u64 parentThreadId, u64 tls, u64 childThreadId) {
+    if (flags != START_FORK) {
+        currentProcess[r_hartid()]->trapframe.a0 = -1;
+        return;
+    }
     Process *process;
     int hartId = r_hartid();
     int r = processAlloc(&process, currentProcess[hartId]->id);
     process->cwd = myproc()->cwd; //when we fork, we should keep cwd
     if (r < 0) {
         currentProcess[hartId]->trapframe.a0 = r;
-        panic("");
         return;
     }
 
@@ -490,7 +493,16 @@ void processFork() {
     Trapframe* trapframe = getHartTrapFrame();
     bcopy(trapframe, &process->trapframe, sizeof(Trapframe));
     process->trapframe.a0 = 0;
-    
+    if (stackVa != 0) {
+        process->trapframe.sp = stackVa;
+    }
+    if (parentThreadId != NULL) {
+        copyout(currentProcess[hartId]->pgdir, parentThreadId, (char*) &currentProcess[hartId]->id, sizeof(u32));
+    }
+    if (childThreadId != NULL) {
+        copyout(currentProcess[hartId]->pgdir, childThreadId, (char*) &process->id, sizeof(u32));
+    }
+
     trapframe->a0 = process->id;
     u64 i, j, k;
     for (i = 0; i < 512; i++) {
@@ -511,30 +523,19 @@ void processFork() {
                 if (va == TRAMPOLINE_BASE || va == TRAMPOLINE_BASE + PAGE_SIZE) {
                     continue;
                 }
-                if (va == USER_BUFFER_BASE) {
-                    PhysicalPage *p;
-                    if (pageAlloc(&p) < 0) {
-                        panic("Fork alloc page error!\n");
-                    }
-                    pageInsert(process->pgdir, va, page2pa(p), PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE);
-                } else {
-                    if (pa2[k] & PTE_WRITE) {
-                        pa2[k] |= PTE_COW;
-                        pa2[k] &= ~PTE_WRITE;
-                    } 
-                    pageInsert(process->pgdir, va, PTE2PA(pa2[k]), PTE2PERM(pa2[k]));
-                }
+                if (pa2[k] & PTE_WRITE) {
+                    pa2[k] |= PTE_COW;
+                    pa2[k] &= ~PTE_WRITE;
+                } 
+                pageInsert(process->pgdir, va, PTE2PA(pa2[k]), PTE2PERM(pa2[k]));
             }
         }
     }
-
-    sfence_vma();
 
     acquireLock(&scheduleListLock);
     LIST_INSERT_TAIL(&scheduleList[0], process, scheduleLink);
     releaseLock(&scheduleListLock);
 
-    sfence_vma();
     return;
 }
 
