@@ -271,7 +271,8 @@ void syscallMapMemory() {
     u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2;
     bool alloc = (start == 0);
     if (alloc) {
-        start = 0x0;
+        myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom, 12);
+        start = myproc()->heapBottom;
         myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom + len, 12); 
     }
     u64 addr = start, end = start + len;
@@ -287,7 +288,7 @@ void syscallMapMemory() {
             trapframe->a0 = -1;
             return ;
         }
-        pageInsert(myproc()->pgdir, start, page2pa(page), perm);
+        pageInsert(myproc()->pgdir, start, page2pa(page), perm | PTE_USER);
         start += PGSIZE;
     }
 
@@ -297,13 +298,11 @@ void syscallMapMemory() {
         return ;
     }
     fd->off = trapframe->a5;
-    // if (fileread(fd, addr, len)) {
-        // trapframe->a0 = addr;
-    // } else {
-        // trapframe->a0 = -1;
-    // }
-    fileread(fd, addr, len);
-    trapframe->a0 = addr;
+    if (fileread(fd, addr, len)) {
+        trapframe->a0 = addr;
+    } else {
+        trapframe->a0 = -1;
+    }
 }
 
 void syscallUnMapMemory() {
