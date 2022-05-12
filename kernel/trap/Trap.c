@@ -128,16 +128,7 @@ void userTrap() {
         {
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
-            //because some func have return value, while other func haven't return value.
-            //so I use if-else to discriminate them.
-            if(trapframe->a7==SYSCALL_READDIR)
-                trapframe->a0 = sys_readdir();
-            else if(trapframe->a7==SYSCALL_EXEC)
-                trapframe->a0 = sys_exec();
-            else if(trapframe->a7==SYSCALL_CWD)
-                trapframe->a0 = sys_cwd();
-            else
-                syscallVector[trapframe->a7]();
+            syscallVector[trapframe->a7]();
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
         case SCAUSE_STORE_PAGE_FAULT:

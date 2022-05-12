@@ -33,6 +33,9 @@ void syscallSetBrk();
 void syscallGetFileState();
 void syscallMapMemory();
 void syscallUnMapMemory();
+void syscallReadDirectory();
+void syscallExec();
+void syscallCwd();
 
 extern void (*syscallVector[])(void);
 

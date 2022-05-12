@@ -39,7 +39,10 @@ void (*syscallVector[])(void) = {
     [SYSCALL_SBRK]              syscallSetBrk,
     [SYSCALL_FSTAT]             syscallGetFileState,
     [SYSCALL_MAP_MEMORY]        syscallMapMemory,
-    [SYSCALL_UNMAP_MEMORY]      syscallUnMapMemory
+    [SYSCALL_UNMAP_MEMORY]      syscallUnMapMemory,
+    [SYSCALL_READDIR]           syscallReadDirectory,
+    [SYSCALL_EXEC]              syscallExec,
+    [SYSCALL_CWD]               syscallCwd
 };
 
 extern struct Spinlock printLock;
@@ -316,4 +319,19 @@ void syscallUnMapMemory() {
         start += PGSIZE;
     }
     trapframe->a0 = 0;
+}
+
+void syscallReadDirectory() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = sys_readdir();
+}
+
+void syscallExec() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = sys_exec();
+}
+
+void syscallCwd() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = sys_cwd();
 }
