@@ -211,21 +211,19 @@ void syscallGetCpuTimes() {
 
 void syscallGetTime() {
     Trapframe *tf = getHartTrapFrame();
-    int cow;
-    TimeSpec *ts = (TimeSpec*)vir2phy(myproc()->pgdir, tf->a0, &cow);
-    if (cow) {
-        cowHandler(myproc()->pgdir, tf->a0);
-    }
     u64 time = r_time();
-    ts->second = time / 1000000;
-    ts->microSecond = time % 1000000;
+    TimeSpec ts;
+    ts.second = time / 1000000;
+    ts.microSecond = time % 1000000;
+    copyout(myproc()->pgdir, tf->a0, (char*)&ts, sizeof(TimeSpec));
     tf->a0 = 0;
 }
 
 void syscallSleepTime() {
     Trapframe *tf = getHartTrapFrame();
-    TimeSpec *ts = (TimeSpec*)vir2phy(myproc()->pgdir, tf->a0, NULL);
-    myproc()->awakeTime = r_time() +  ts->second * 1000000 + ts->microSecond;
+    TimeSpec ts;
+    copyin(myproc()->pgdir, (char*)&ts, tf->a0, sizeof(TimeSpec));
+    myproc()->awakeTime = r_time() +  ts.second * 1000000 + ts.microSecond;
     kernelProcessCpuTimeEnd();
     yield();
 }
