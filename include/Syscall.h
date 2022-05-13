@@ -12,7 +12,6 @@ void syscallPutString();
 void syscallGetProcessId();
 void syscallGetParentProcessId();
 void syscallWait();
-void syscallDev();
 void syscallExit();
 void syscallGetCpuTimes();
 void syscallGetTime();

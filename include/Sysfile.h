@@ -32,8 +32,8 @@ void syscallMakeDirAt(void);
 void syscallChangeDir(void);
 void syscallGetWorkDir(void);
 void syscallPipe(void);
+void syscallDevice(void);
 
-u64 sys_dev(void);
 // To support ls command
 u64 sys_readdir(void);
 u64 sys_remove(void);

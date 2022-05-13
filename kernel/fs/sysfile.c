@@ -344,28 +344,24 @@ bad:
     tf->a0 = -1;
 }
 
-u64 sys_dev(void) {
-    int fd, omode;
-    int major;
+void syscallDevice(void) {
+    Trapframe* tf = getHartTrapFrame();
+    int fd, omode = tf->a1;
+    int major = tf->a0;
     struct file* f;
 
-    if (argint(0, &major) || argint(1, &omode) < 0) {
-        panic("get parse error\n");
-        return -1;
-    }
-
-    printf("test major %x\n", major);
     if (omode & O_CREATE) {
         panic("dev file on FAT");
     }
 
-    if (major < 0 || major >= NDEV)
-        return -1;
+    if (major < 0 || major >= NDEV) {
+        goto bad;
+    }
 
     if ((f = filealloc()) == NULL || (fd = fdalloc(f)) < 0) {
         if (f)
             fileclose(f);
-        return -1;
+        goto bad;
     }
 
     f->type = FD_DEVICE;
@@ -375,7 +371,11 @@ u64 sys_dev(void) {
     f->readable = !(omode & O_WRONLY);
     f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
 
-    return fd;
+    tf->a0 = fd;
+    return;
+
+bad:
+    tf->a0 = -1;
 }
 
 // To support ls command

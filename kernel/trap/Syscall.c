@@ -19,7 +19,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_PID]           syscallGetProcessId,
     [SYSCALL_GET_PARENT_PID]    syscallGetParentProcessId,
     [SYSCALL_WAIT]              syscallWait,
-    [SYSCALL_DEV]               syscallDev,
+    [SYSCALL_DEV]               syscallDevice,
     [SYSCALL_DUP]               syscallDup,
     [SYSCALL_EXIT]              syscallExit,
     [SYSCALL_PIPE2]             syscallPipe,
@@ -95,11 +95,6 @@ void syscallYield() {
 void syscallClone() {
     Trapframe *tf = getHartTrapFrame();
     processFork(tf->a0, tf->a1, tf->a2, tf->a3, tf->a4);
-}
-
-void syscallDev() {
-    Trapframe* trapframe = getHartTrapFrame();
-    trapframe->a0 = sys_dev();
 }
 
 void syscallExit() {
