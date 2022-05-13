@@ -15,7 +15,6 @@ void syscallWait();
 void syscallDev();
 void syscallExit();
 void syscallPipe();
-void syscallClose();
 void syscallOpenat();
 void syscallOpen();
 void syscallGetCpuTimes();
