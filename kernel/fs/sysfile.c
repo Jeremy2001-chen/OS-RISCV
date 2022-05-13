@@ -290,6 +290,7 @@ void syscallChangeDir(void) {
 }
 
 //todo: support alloc addr
+//maybe not absolute name
 void syscallGetWorkDir(void) {
     Trapframe* tf = getHartTrapFrame();
     u64 uva = tf->a0;
@@ -378,14 +379,18 @@ bad:
     tf->a0 = -1;
 }
 
-// To support ls command
-u64 sys_readdir(void) {
+void syscallReadDir(void) {
+    Trapframe* tf = getHartTrapFrame();
     struct file* f;
-    u64 p;
+    int fd = tf->a0;
+    u64 uva = tf->a1;
 
-    if (argfd(0, 0, &f) < 0 || argaddr(1, &p) < 0)
-        return -1;
-    return dirnext(f, p);
+    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+    
+    tf->a0 = dirnext(f, uva);
 }
 
 // get absolute cwd string

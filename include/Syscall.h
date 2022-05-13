@@ -23,7 +23,6 @@ void syscallBrk();
 void syscallSetBrk();
 void syscallMapMemory();
 void syscallUnMapMemory();
-void syscallReadDirectory();
 void syscallExec();
 
 extern void (*syscallVector[])(void);

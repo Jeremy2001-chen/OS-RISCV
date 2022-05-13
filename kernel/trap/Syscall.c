@@ -39,7 +39,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_FSTAT]             syscallGetFileState,
     [SYSCALL_MAP_MEMORY]        syscallMapMemory,
     [SYSCALL_UNMAP_MEMORY]      syscallUnMapMemory,
-    [SYSCALL_READDIR]           syscallReadDirectory,
+    [SYSCALL_READDIR]           syscallReadDir,
     [SYSCALL_EXEC]              syscallExec,
 };
 
@@ -233,11 +233,6 @@ void syscallUnMapMemory() {
         start += PGSIZE;
     }
     trapframe->a0 = 0;
-}
-
-void syscallReadDirectory() {
-    Trapframe *tf = getHartTrapFrame();
-    tf->a0 = sys_readdir();
 }
 
 void syscallExec() {
