@@ -155,7 +155,14 @@ void syscallGetFileState(void) {
 
 //todo: support the mode
 //todo: change the directory? whether we should add the ref(eput)
-int sysOpenAt(int startFd, char* path, int flags, int mode) {
+void syscallOpenAt(void) {
+    Trapframe* tf = getHartTrapFrame();
+    int startFd = tf->a0, flags = tf->a2, mode = tf->a3;
+    char path[FAT32_MAX_PATH];
+    if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
     bool absolutePath = (path[0] == '/');
     struct dirent* entryPoint, *startEntry;
 
@@ -211,16 +218,15 @@ int sysOpenAt(int startFd, char* path, int flags, int mode) {
     if (!absolutePath && startFd != AT_FDCWD) {
         myproc()->cwd = startEntry;
     }
-    DEC_PRINT(fd);
-    return fd;
+
+    tf->a0 = fd;
+    return;
 bad:  
     if (!absolutePath && startFd != AT_FDCWD) {
         myproc()->cwd = startEntry;
     }
-    return -1;
+    tf->a0 = -1;
 }
-
-
 
 u64 sys_open(void) {
     char path[FAT32_MAX_PATH];

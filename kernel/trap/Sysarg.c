@@ -17,9 +17,9 @@ int fetchaddr(u64 addr, u64* ip) {
 // Fetch the nul-terminated string at addr from the current process.
 // Returns length of string, not including nul, or -1 for error.
 
-int fetchstr(u64 addr, char* buf, int max) {
+int fetchstr(u64 uva, char* buf, int max) {
     struct Process* p = myproc();
-    int err = copyinstr(p->pgdir, buf, addr, max);
+    int err = copyinstr(p->pgdir, buf, uva, max);
     if (err < 0)
         return err;
     return strlen(buf);

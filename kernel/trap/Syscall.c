@@ -26,8 +26,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_WRITE]             syscallWrite,
     [SYSCALL_READ]              syscallRead,
     [SYSCALL_CLOSE]             syscallClose,
-    [SYSCALL_OPENAT]            syscallOpenat,
-    [SYSCALL_OPEN]              syscallOpen,
+    [SYSCALL_OPENAT]            syscallOpenAt,
     [SYSCALL_GET_CPU_TIMES]     syscallGetCpuTimes,
     [SYSCALL_GET_TIME]          syscallGetTime,
     [SYSCALL_SLEEP_TIME]        syscallSleepTime,
@@ -149,21 +148,6 @@ void syscallPipe() {
 void syscallOpen() {
     Trapframe* trapframe = getHartTrapFrame();
     trapframe->a0 = sys_open();       
-}
-
-void syscallOpenat() {
-    Trapframe* trapframe = getHartTrapFrame();
-    int fd, flags, mode;
-    char path[FAT32_MAX_PATH];
-    
-    if (argint(0, &fd) < 0 || 
-        argstr(1, path, FAT32_MAX_PATH) < 0 || 
-        argint(2, &flags) < 0 || 
-        argint(3, &mode)) {
-            panic("syscall openat arg error!\n");
-        }
-
-    trapframe->a0 = sysOpenAt(fd, path, flags, mode);    
 }
 
 void syscallMakeDir() {
