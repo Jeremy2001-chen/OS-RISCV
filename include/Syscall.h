@@ -16,7 +16,6 @@ void syscallDev();
 void syscallWrite();
 void syscallExit();
 void syscallPipe();
-void syscallRead();
 void syscallClose();
 void syscallOpenat();
 void syscallOpen();

@@ -86,14 +86,23 @@ void syscallDupAndSet(void) {
     tf->a0 = fdnew;
 }
 
-u64 sys_read(void) {
+void syscallRead(void) {
+    Trapframe* tf = getHartTrapFrame();
     struct file* f;
-    int n;
-    u64 p;
+    int len = tf->a2, fd = tf->a0;
+    u64 uva = tf->a1;
 
-    if (argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argaddr(1, &p) < 0)
-        return -1;
-    return fileread(f, p, n);
+    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+
+    if (len < 0) {
+        tf->a0 = -1;
+        return;
+    }
+    
+    tf->a0 = fileread(f, uva, len);
 }
 
 u64 sys_write(void) {

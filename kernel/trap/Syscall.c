@@ -151,11 +151,6 @@ void syscallWrite() {
     trapframe->a0 = sys_write();
 }
 
-void syscallRead() {
-    Trapframe* trapframe = getHartTrapFrame();
-    trapframe->a0 = sys_read();
-}
-
 void syscallClose() {
     Trapframe* trapframe = getHartTrapFrame();
     trapframe->a0 = sys_close();    

@@ -23,8 +23,8 @@ int fdalloc(struct file* f);
 
 void syscallDup(void);
 void syscallDupAndSet(void);
+void syscallRead(void);
 
-u64 sys_read(void);
 u64 sys_write(void);
 u64 sys_close(void);
 u64 sys_fstat(void);
