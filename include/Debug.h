@@ -1,7 +1,7 @@
 #ifndef __DEBUG_H
 #define __DEBUG_H
 
-#include "../../include/defs.h"
+#include "defs.h"
 //if we undefine "DEBUG", some variable become unused, so we will get
 //a compile error.
 //so we can use use() to cheat the compiler

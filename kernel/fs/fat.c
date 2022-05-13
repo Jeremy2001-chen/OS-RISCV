@@ -1,4 +1,4 @@
-#include "defs.h"
+#include <defs.h>
 #include "bio.h"
 #include "fat.h"
 #include "Sleeplock.h"
@@ -6,9 +6,9 @@
 #include "stat.h"
 #include "Type.h"
 #include "string.h"
-#include "Driver.h"
-#include "Process.h"
-#include <debug.h>
+#include <Driver.h>
+#include <Process.h>
+#include <Debug.h>
 /* fields that start with "_" are something we don't use */
 
 typedef struct short_name_entry {
