@@ -6,7 +6,7 @@
 
 #include <fat.h>
 #include <Process.h>
-#include <sysfile.h>
+#include <Sysfile.h>
 #include <Driver.h>
 #include <string.h>
 #include <Sysarg.h>
@@ -48,16 +48,22 @@ int fdalloc(struct file* f) {
     return -1;
 }
 
-u64 sys_dup(void) {
+void syscallDup(void) {
+    Trapframe* tf = getHartTrapFrame();
     struct file* f;
-    int fd;
+    int fd = tf->a0;
+    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+        tf->a0 = -1;
+        return;
+    }
 
-    if (argfd(0, 0, &f) < 0)
-        return -1;
-    if ((fd = fdalloc(f)) < 0)
-        return -1;
+    if ((fd = fdalloc(f)) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+
     filedup(f);
-    return fd;
+    tf->a0 = fd;
 }
 
 int sysDupAndSet(void) {

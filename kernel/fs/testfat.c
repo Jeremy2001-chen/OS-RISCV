@@ -1,6 +1,6 @@
 #include <defs.h>
 #include <string.h>
-#include <sysfile.h>
+#include <Sysfile.h>
 #include <debug.h>
 
 char test_content_to_write[10] = "abcdefghi";

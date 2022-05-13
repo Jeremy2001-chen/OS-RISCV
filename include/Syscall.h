@@ -14,7 +14,6 @@ void syscallGetParentProcessId();
 void syscallWait();
 void syscallDev();
 void syscallWrite();
-void syscallDup();
 void syscallExit();
 void syscallPipe();
 void syscallRead();

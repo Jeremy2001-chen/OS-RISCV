@@ -21,7 +21,7 @@ int argfd(int n, int* pfd, struct file** pf);
 // Takes over file reference from caller on success.
 int fdalloc(struct file* f);
 
-u64 sys_dup(void);
+void syscallDup(void);
 u64 sys_read(void);
 u64 sys_write(void);
 u64 sys_close(void);

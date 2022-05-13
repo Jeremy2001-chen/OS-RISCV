@@ -6,7 +6,7 @@
 #include <Riscv.h>
 #include <Trap.h>
 #include <Spinlock.h>
-#include <sysfile.h>
+#include <Sysfile.h>
 #include <exec.h>
 
 void (*syscallVector[])(void) = {
@@ -102,11 +102,6 @@ void syscallClone() {
 void syscallDev() {
     Trapframe* trapframe = getHartTrapFrame();
     trapframe->a0 = sys_dev();
-}
-
-void syscallDup() {
-    Trapframe* trapframe = getHartTrapFrame();
-    trapframe->a0 = sys_dup();
 }
 
 void syscallExit() {

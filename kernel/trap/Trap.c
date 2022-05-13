@@ -6,7 +6,7 @@
 #include <Page.h>
 #include <Syscall.h>
 #include <Hart.h>
-#include <sysfile.h>
+#include <Sysfile.h>
 #include <debug.h>
 #include <defs.h>
 #include <exec.h>

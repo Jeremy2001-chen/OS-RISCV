@@ -16,7 +16,7 @@
 
 #define NDEV 4
 #define NFILE 64 //Number of fd that all process can open
-struct file {
+typedef struct file {
     enum { FD_NONE, FD_PIPE, FD_ENTRY, FD_DEVICE } type;
     int ref;  // reference count
     char readable;
@@ -25,7 +25,7 @@ struct file {
     struct dirent* ep;
     uint off;     // FD_ENTRY
     short major;  // FD_DEVICE
-};
+} file;
 
 #define major(dev) ((dev) >> 16 & 0xFFFF)
 #define minor(dev) ((dev)&0xFFFF)
