@@ -263,17 +263,30 @@ bad:
     tf->a0 = -1;
 }
 
-u64 sys_mkdir(void) {
+void syscallChangeDir(void) {
+    Trapframe* tf = getHartTrapFrame();
     char path[FAT32_MAX_PATH];
     struct dirent* ep;
 
-    if (argstr(0, path, FAT32_MAX_PATH) < 0 ||
-        (ep = create(path, T_DIR, 0)) == 0) {
-        return -1;
+    struct Process* p = myproc();
+    
+    if (fetchstr(tf->a0, path, FAT32_MAX_PATH) < 0 || (ep = ename(path)) == NULL) {
+        tf->a0 = -1;
+        return;
     }
+
+    elock(ep);
+    if (!(ep->attribute & ATTR_DIRECTORY)) {
+        eunlock(ep);
+        eput(ep);
+        tf->a0 = -1;
+        return;
+    }    
+
     eunlock(ep);
-    eput(ep);
-    return 0;
+    eput(p->cwd);
+    p->cwd = ep;
+    tf->a0 = 0;
 }
 
 int sys_cwd(void) {
@@ -290,25 +303,6 @@ int sys_cwd(void) {
     return addr;
 }
 
-u64 sys_chdir(void) {
-    char path[FAT32_MAX_PATH];
-    struct dirent* ep;
-    struct Process* p = myproc();
-
-    if (argstr(0, path, FAT32_MAX_PATH) < 0 || (ep = ename(path)) == NULL) {
-        return -1;
-    }
-    elock(ep);
-    if (!(ep->attribute & ATTR_DIRECTORY)) {
-        eunlock(ep);
-        eput(ep);
-        return -1;
-    }
-    eunlock(ep);
-    eput(p->cwd);
-    p->cwd = ep;
-    return 0;
-}
 
 u64 sys_pipe(void) {
     u64 fdarray;  // user pointer to array of two integers

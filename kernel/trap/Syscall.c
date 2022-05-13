@@ -31,7 +31,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_TIME]          syscallGetTime,
     [SYSCALL_SLEEP_TIME]        syscallSleepTime,
     [SYSCALL_DUP3]              syscallDupAndSet,
-    [SYSCALL_CHDIR]             syscallChdir,
+    [SYSCALL_CHDIR]             syscallChangeDir,
     [SYSCALL_CWD]               syscallGetWorkDir,
     [SYSCALL_MKDIRAT]           syscallMakeDirAt,
     [SYSCALL_BRK]               syscallBrk,
@@ -174,11 +174,6 @@ void syscallSleepTime() {
     myproc()->awakeTime = r_time() +  ts.second * 1000000 + ts.microSecond;
     kernelProcessCpuTimeEnd();
     yield();
-}
-
-void syscallChdir() {
-    Trapframe *trapframe = getHartTrapFrame();
-    trapframe->a0 = sys_chdir();
 }
 
 void syscallGetWorkDir() {

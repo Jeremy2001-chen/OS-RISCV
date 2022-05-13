@@ -29,10 +29,8 @@ void syscallClose(void);
 void syscallGetFileState(void);
 void syscallOpenAt(void);
 void syscallMakeDirAt(void);
+void syscallChangeDir(void);
 
-u64 sys_open(void);
-u64 sys_mkdir(void);
-u64 sys_chdir(void);
 u64 sys_dev(void);
 u64 sys_pipe(void);
 int sys_cwd(void);
