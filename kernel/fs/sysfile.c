@@ -290,7 +290,6 @@ void syscallChangeDir(void) {
 }
 
 //todo: support alloc addr
-//maybe not absolute name
 void syscallGetWorkDir(void) {
     Trapframe* tf = getHartTrapFrame();
     u64 uva = tf->a0;
@@ -430,15 +429,14 @@ u64 sys_getcwd(void) {
 */
 
 // Is the directory dp empty except for "." and ".." ?
-static int isdirempty(struct dirent* dp) {
+static int isDirEmpty(struct dirent* dp) {
     struct dirent ep;
     int count;
-    int ret;
     ep.valid = 0;
-    ret = enext(dp, &ep, 2 * 32, &count);  // skip the "." and ".."
-    return ret == -1;
+    return enext(dp, &ep, 2 * 32, &count) == -1; // skip the "." and ".."
 }
 
+/*
 u64 sys_remove(void) {
     char path[FAT32_MAX_PATH];
     struct dirent* ep;
@@ -458,7 +456,7 @@ u64 sys_remove(void) {
         return -1;
     }
     elock(ep);
-    if ((ep->attribute & ATTR_DIRECTORY) && !isdirempty(ep)) {
+    if ((ep->attribute & ATTR_DIRECTORY) && !isDirEmpty(ep)) {
         eunlock(ep);
         eput(ep);
         return -1;
@@ -470,7 +468,7 @@ u64 sys_remove(void) {
     eput(ep);
 
     return 0;
-}
+} */
 
 // Must hold too many locks at a time! It's possible to raise a deadlock.
 // Because this op takes some steps, we can't promise
@@ -508,7 +506,7 @@ u64 sys_rename(void) {
             goto fail;
         } else if (src->attribute & dst->attribute & ATTR_DIRECTORY) {
             elock(dst);
-            if (!isdirempty(dst)) {  // it's ok to overwrite an empty dir
+            if (!isDirEmpty(dst)) {  // it's ok to overwrite an empty dir
                 eunlock(dst);
                 goto fail;
             }

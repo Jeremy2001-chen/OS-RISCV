@@ -40,10 +40,6 @@ u64 sys_remove(void);
 // Because this op takes some steps, we can't promise
 u64 sys_rename(void);
 
-int sysDupAndSet(void);
-int sysOpenAt(int fd, char* path, int flags, int mode);
-int sysMkdirAt(int dirFd, char* path, int mode);
-
 #define AT_FDCWD -100
 
 #endif
