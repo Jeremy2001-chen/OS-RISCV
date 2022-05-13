@@ -238,11 +238,6 @@ void syscallSetBrk() {
     trapframe->a0 = sys_sbrk(len);
 }
 
-void syscallGetFileState() {
-    Trapframe *trapframe = getHartTrapFrame();
-    trapframe->a0 = sys_fstat();
-}
-
 void syscallMapMemory() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2;

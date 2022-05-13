@@ -139,13 +139,18 @@ void syscallClose(void) {
     tf->a0 = 0;
 }
 
-u64 sys_fstat(void) {
+void syscallGetFileState(void) {
+    Trapframe* tf = getHartTrapFrame();
     struct file* f;
-    u64 st;  // user pointer to struct stat
+    int fd = tf->a0;
+    u64 uva = tf->a1; 
 
-    if (argfd(0, 0, &f) < 0 || argaddr(1, &st) < 0)
-        return -1;
-    return filestat(f, st);
+    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+
+    tf->a0 = filestat(f, uva);
 }
 
 //todo: support the mode

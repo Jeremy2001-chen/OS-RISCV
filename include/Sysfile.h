@@ -26,9 +26,8 @@ void syscallDupAndSet(void);
 void syscallRead(void);
 void syscallWrite(void);
 void syscallClose(void);
+void syscallGetFileState(void);
 
-
-u64 sys_fstat(void);
 u64 sys_open(void);
 u64 sys_mkdir(void);
 u64 sys_chdir(void);
