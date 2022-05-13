@@ -139,11 +139,6 @@ void syscallPutString() {
     releaseLock(&printLock);
 }
 
-void syscallPipe() {
-    Trapframe* trapframe = getHartTrapFrame();
-    trapframe->a0 = sys_pipe();
-}
-
 void syscallGetCpuTimes() {
     Trapframe *tf = getHartTrapFrame();
     // printf("addr : %lx\n", tf->a0);

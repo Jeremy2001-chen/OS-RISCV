@@ -31,9 +31,9 @@ void syscallOpenAt(void);
 void syscallMakeDirAt(void);
 void syscallChangeDir(void);
 void syscallGetWorkDir(void);
+void syscallPipe(void);
 
 u64 sys_dev(void);
-u64 sys_pipe(void);
 // To support ls command
 u64 sys_readdir(void);
 u64 sys_remove(void);

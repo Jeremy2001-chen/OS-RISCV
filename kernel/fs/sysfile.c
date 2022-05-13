@@ -307,24 +307,26 @@ void syscallGetWorkDir(void) {
     tf->a0 = uva;
 }
 
-u64 sys_pipe(void) {
-    u64 fdarray;  // user pointer to array of two integers
+void syscallPipe(void) {
+    Trapframe* tf = getHartTrapFrame();
+    u64 fdarray = tf->a0;  // user pointer to array of two integers
     struct file *rf, *wf;
     int fd0, fd1;
     struct Process* p = myproc();
 
-    if (argaddr(0, &fdarray) < 0)
-        return -1;
-    if (pipealloc(&rf, &wf) < 0)
-        return -1;
+    if (pipealloc(&rf, &wf) < 0) {
+        goto bad;
+    }
+
     fd0 = -1;
     if ((fd0 = fdalloc(rf)) < 0 || (fd1 = fdalloc(wf)) < 0) {
         if (fd0 >= 0)
             p->ofile[fd0] = 0;
         fileclose(rf);
         fileclose(wf);
-        return -1;
+        goto bad;
     }
+    
     if (copyout(p->pgdir, fdarray, (char*)&fd0, sizeof(fd0)) < 0 ||
         copyout(p->pgdir, fdarray + sizeof(fd0), (char*)&fd1, sizeof(fd1)) <
             0) {
@@ -332,9 +334,14 @@ u64 sys_pipe(void) {
         p->ofile[fd1] = 0;
         fileclose(rf);
         fileclose(wf);
-        return -1;
+        goto bad;
     }
-    return 0;
+    
+    tf->a0 = 0;
+    return;
+
+bad:
+    tf->a0 = -1;
 }
 
 u64 sys_dev(void) {
