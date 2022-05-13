@@ -22,6 +22,8 @@ int argfd(int n, int* pfd, struct file** pf);
 int fdalloc(struct file* f);
 
 void syscallDup(void);
+void syscallDupAndSet(void);
+
 u64 sys_read(void);
 u64 sys_write(void);
 u64 sys_close(void);

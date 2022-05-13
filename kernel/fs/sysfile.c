@@ -66,19 +66,24 @@ void syscallDup(void) {
     tf->a0 = fd;
 }
 
-int sysDupAndSet(void) {
+void syscallDupAndSet(void) {
+    Trapframe* tf = getHartTrapFrame();
     struct file* f;
-    int fdnew;
+    int fd = tf->a0, fdnew = tf->a1;
 
-    if (argfd(0, 0, &f) < 0)
-        return -1;
-    if (argint(1, &fdnew) < 0)
-        return -1;
-    if (myproc()->ofile[fdnew] != NULL)
-        return -1;
+    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+
+    if (fdnew < 0 || fdnew >= NOFILE || myproc()->ofile[fdnew] != NULL) {
+        tf->a0 = -1;
+        return;
+    }
+
     myproc()->ofile[fdnew] = f;
     filedup(f);
-    return fdnew;
+    tf->a0 = fdnew;
 }
 
 u64 sys_read(void) {

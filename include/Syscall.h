@@ -23,7 +23,6 @@ void syscallOpen();
 void syscallGetCpuTimes();
 void syscallGetTime();
 void syscallSleepTime();
-void syscallSetDup();
 void syscallChdir();
 void syscallGetWorkDir();
 void syscallMakeDir();
