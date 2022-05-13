@@ -28,6 +28,7 @@ void syscallWrite(void);
 void syscallClose(void);
 void syscallGetFileState(void);
 void syscallOpenAt(void);
+void syscallMakeDirAt(void);
 
 u64 sys_open(void);
 u64 sys_mkdir(void);

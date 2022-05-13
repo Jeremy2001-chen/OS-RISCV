@@ -33,7 +33,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_DUP3]              syscallDupAndSet,
     [SYSCALL_CHDIR]             syscallChdir,
     [SYSCALL_CWD]               syscallGetWorkDir,
-    [SYSCALL_MKDIRAT]           syscallMakeDir,
+    [SYSCALL_MKDIRAT]           syscallMakeDirAt,
     [SYSCALL_BRK]               syscallBrk,
     [SYSCALL_SBRK]              syscallSetBrk,
     [SYSCALL_FSTAT]             syscallGetFileState,
@@ -143,25 +143,6 @@ void syscallPutString() {
 void syscallPipe() {
     Trapframe* trapframe = getHartTrapFrame();
     trapframe->a0 = sys_pipe();
-}
-
-void syscallOpen() {
-    Trapframe* trapframe = getHartTrapFrame();
-    trapframe->a0 = sys_open();       
-}
-
-void syscallMakeDir() {
-    Trapframe* trapframe = getHartTrapFrame();
-    int dirFd, mode;
-    char path[FAT32_MAX_PATH];
-
-    if (argint(0, &dirFd) < 0 || 
-        argstr(1, path, FAT32_MAX_PATH) < 0 || 
-        argint(2, &mode) < 0) {
-            panic("syscall mkdirat arg error!\n");
-        }
-
-    trapframe->a0 = sysMkdirAt(dirFd, path, mode);    
 }
 
 void syscallGetCpuTimes() {

@@ -228,61 +228,17 @@ bad:
     tf->a0 = -1;
 }
 
-u64 sys_open(void) {
-    char path[FAT32_MAX_PATH];
-    int fd, omode;
-    struct file* f;
-    struct dirent* ep;
-
-    if (argstr(0, path, FAT32_MAX_PATH) < 0 || argint(1, &omode) < 0)
-        return -1;
-    
-
-    if (omode & O_CREATE) {
-        ep = create(path, T_FILE, omode);
-        if (ep == NULL) {
-            return -1;
-        }
-    } else {
-        if ((ep = ename(path)) == NULL) {
-            return -1;
-        }
-        elock(ep);
-        if ((ep->attribute & ATTR_DIRECTORY) && omode != O_RDONLY) {
-            eunlock(ep);
-            eput(ep);
-            return -1;
-        }
-    }
-
-    if ((f = filealloc()) == NULL || (fd = fdalloc(f)) < 0) {
-        if (f) {
-            fileclose(f);
-        }
-        eunlock(ep);
-        eput(ep);
-        return -1;
-    }
-
-    if (!(ep->attribute & ATTR_DIRECTORY) && (omode & O_TRUNC)) {
-        etrunc(ep);
-    }
-
-    f->type = FD_ENTRY;
-    f->off = (omode & O_APPEND) ? ep->file_size : 0;
-    f->ep = ep;
-    f->readable = !(omode & O_WRONLY);
-    f->writable = (omode & O_WRONLY) || (omode & O_RDWR);
-
-    eunlock(ep);
-
-    DEC_PRINT(fd);
-    return fd;
-}
-
 //todo: support the mode
 //todo: change the directory? whether we should add the ref(eput)
-int sysMkdirAt(int dirFd, char* path, int mode) {
+void syscallMakeDirAt(void) {
+    Trapframe* tf = getHartTrapFrame();
+    int dirFd = tf->a0, mode = tf->a2;
+    char path[FAT32_MAX_PATH];
+    if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+
     bool absolutePath = (path[0] == '/');
     struct dirent* entryPoint, *startEntry;
 
@@ -297,13 +253,14 @@ int sysMkdirAt(int dirFd, char* path, int mode) {
 
     eunlock(entryPoint);
     eput(entryPoint);
-    return 0;
+    tf->a0 = 0;
+    return;
 
 bad:  
     if (!absolutePath && dirFd != AT_FDCWD) {
         myproc()->cwd = startEntry;
     }
-    return -1;
+    tf->a0 = -1;
 }
 
 u64 sys_mkdir(void) {
