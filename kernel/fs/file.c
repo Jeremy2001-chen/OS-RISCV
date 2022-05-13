@@ -9,7 +9,7 @@
 #include <Spinlock.h>
 #include <defs.h>
 #include <pipe.h>
-#include <debug.h>
+#include <Debug.h>
 
 struct devsw devsw[NDEV];
 struct {

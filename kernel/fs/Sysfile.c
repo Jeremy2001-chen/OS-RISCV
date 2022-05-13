@@ -11,7 +11,7 @@
 #include <string.h>
 #include <Sysarg.h>
 #include <file.h>
-#include <debug.h>
+#include <Debug.h>
 #include <string.h>
 #include <Page.h>
 #include <pipe.h>

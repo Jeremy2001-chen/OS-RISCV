@@ -2,7 +2,7 @@
 #include <SyscallLib.h>
 #include <Printf.h>
 #include <userfile.h>
-#include <../include/debug.h>
+#include <../include/Debug.h>
 
 char buf[2000];
 int pipe1(char* s) {

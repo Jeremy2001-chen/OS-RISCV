@@ -6,7 +6,7 @@
 #include <file.h>
 #include <string.h>
 #include <Sysarg.h>
-#include <debug.h>
+#include <Debug.h>
 #include <Trap.h>
 #define MAXARG 32  // max exec arguments
 

@@ -4,7 +4,7 @@
 #include "Process.h"
 #include "Spinlock.h"
 #include "Driver.h"
-#include <debug.h>
+#include <Debug.h>
 // #define SINGLE_PROCESS
 
 #ifdef SINGLE_PROCESS //

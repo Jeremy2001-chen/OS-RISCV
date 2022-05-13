@@ -1,7 +1,7 @@
 #include <defs.h>
 #include <string.h>
 #include <Sysfile.h>
-#include <debug.h>
+#include <Debug.h>
 
 char test_content_to_write[10] = "abcdefghi";
 char test_content_to_read[10] = {0};

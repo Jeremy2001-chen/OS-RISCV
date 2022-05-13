@@ -7,7 +7,7 @@
 #include <string.h>
 #include <Spinlock.h>
 #include <Interrupt.h>
-#include <debug.h>
+#include <Debug.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;

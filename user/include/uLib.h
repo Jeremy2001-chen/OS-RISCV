@@ -2,7 +2,7 @@
 #define __ULIB_H
 
 #include "../../include/Type.h"
-#include "../../include/debug.h"
+#include "../../include/Debug.h"
 #include <Syscall.h>
 #include <userfile.h>
 

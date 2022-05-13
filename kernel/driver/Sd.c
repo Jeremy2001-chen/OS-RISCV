@@ -3,7 +3,7 @@
 #include <Uart.h>
 #include <Driver.h>
 #include <MemoryConfig.h>
-#include <debug.h>
+#include <Debug.h>
 
 //#include "common.h"
 

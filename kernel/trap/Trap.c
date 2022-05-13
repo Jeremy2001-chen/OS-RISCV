@@ -7,7 +7,7 @@
 #include <Syscall.h>
 #include <Hart.h>
 #include <Sysfile.h>
-#include <debug.h>
+#include <Debug.h>
 #include <defs.h>
 #include <exec.h>
 

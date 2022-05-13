@@ -1,4 +1,4 @@
-#include <debug.h>
+#include <Debug.h>
 #include <pipe.h>
 #include "Page.h"
 #include "Process.h"
