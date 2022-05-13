@@ -289,20 +289,23 @@ void syscallChangeDir(void) {
     tf->a0 = 0;
 }
 
-int sys_cwd(void) {
-    u64 addr;
-    int n;
-    if (argaddr(0,  &addr) < 0 || argint(1, &n) < 0)
-        return -1;
-    if (addr == 0) {
-        panic("Alloc addr not support for cwd\n");
-    }
-    if(copyout(myproc()->pgdir, addr, myproc()->cwd->filename, n) < 0) {
-        return -1;
-    }
-    return addr;
-}
+//todo: support alloc addr
+void syscallGetWorkDir(void) {
+    Trapframe* tf = getHartTrapFrame();
+    u64 uva = tf->a0;
+    int n = tf->a1;
 
+    if (uva == 0) {
+        panic("Alloc addr not implement for cwd\n");
+    }
+
+    if (copyout(myproc()->pgdir, uva, myproc()->cwd->filename, n) < 0) {
+        tf->a0 = -1;
+        return;
+    } 
+    
+    tf->a0 = uva;
+}
 
 u64 sys_pipe(void) {
     u64 fdarray;  // user pointer to array of two integers
