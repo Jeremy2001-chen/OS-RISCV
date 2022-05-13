@@ -105,15 +105,23 @@ void syscallRead(void) {
     tf->a0 = fileread(f, uva, len);
 }
 
-u64 sys_write(void) {
+void syscallWrite(void) {
+    Trapframe* tf = getHartTrapFrame();
     struct file* f;
-    int n;
-    u64 p;
+    int len = tf->a2, fd = tf->a0;
+    u64 uva = tf->a1;
 
-    if (argfd(0, 0, &f) < 0 || argint(2, &n) < 0 || argaddr(1, &p) < 0)
-        return -1;
+    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+        tf->a0 = -1;
+        return;
+    }
 
-    return filewrite(f, p, n);
+    if (len < 0) {
+        tf->a0 = -1;
+        return;
+    }
+
+    tf->a0 = filewrite(f, uva, len);
 }
 
 u64 sys_close(void) {

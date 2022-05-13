@@ -13,7 +13,6 @@ void syscallGetProcessId();
 void syscallGetParentProcessId();
 void syscallWait();
 void syscallDev();
-void syscallWrite();
 void syscallExit();
 void syscallPipe();
 void syscallClose();
