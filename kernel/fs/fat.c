@@ -166,7 +166,8 @@ static uint32 read_fat(FileSystem *fs, uint32 cluster) {
     }
     uint32 fat_sec = fat_sec_of_clus(fs, cluster, 1);
     // here should be a cache layer for FAT table, but not implemented yet.
-    struct buf* b = bread(0, fat_sec);
+    struct buf* b;
+    fs->read(&b, fat_sec, fs->image);
     uint32 next_clus = *(uint32*)(b->data + fat_offset_of_clus(fs, cluster));
     brelse(b);
     return next_clus;
@@ -183,7 +184,8 @@ static int write_fat(FileSystem *fs, uint32 cluster, uint32 content) {
         return -1;
     }
     uint32 fat_sec = fat_sec_of_clus(fs, cluster, 1);
-    struct buf* b = bread(0, fat_sec);
+    struct buf* b;
+    fs->read(&b, fat_sec, fs->image);
     uint off = fat_offset_of_clus(fs, cluster);
     *(uint32*)(b->data + off) = content;
     bwrite(b);
@@ -985,6 +987,9 @@ static struct dirent* lookup_path(char* path, int parent, char* name) {
             eunlock(entry);
             eput(entry);
             return NULL;
+        }
+        if (entry->head != NULL) {
+            entry = &entry->head->root;
         }
         if (parent && *path == '\0') {
             eunlock(entry);

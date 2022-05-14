@@ -55,20 +55,22 @@ void binit(void) {
 // Look through buffer cache for block on device dev.
 // If not found, allocate a buffer.
 // In either case, return locked buffer.
-static struct buf* bget(uint dev, uint blockno) {
+static struct buf* bget(int dev, uint blockno) {
     struct buf* b;
 
     acquireLock(&bcache.lock);
 
-    // Is the block already cached?
-    for (b = bcache.head.next; b != &bcache.head; b = b->next) {
-        if (b->dev == dev && b->blockno == blockno) {
-            b->refcnt++;
-            releaseLock(&bcache.lock);
-            acquiresleep(&b->lock);
-            return b;
+    if (dev >= 0) {
+        for (b = bcache.head.next; b != &bcache.head; b = b->next) {
+            if (b->dev == dev && b->blockno == blockno) {
+                b->refcnt++;
+                releaseLock(&bcache.lock);
+                acquiresleep(&b->lock);
+                return b;
+            }
         }
     }
+    // Is the block already cached?    
 
     // Not cached.
     // Recycle the least recently used (LRU) unused buffer.
@@ -86,8 +88,14 @@ static struct buf* bget(uint dev, uint blockno) {
     panic("bget: no buffers");
 }
 
-int blockRead(struct buf **buf, u64 startSector, u32 sectorNumber, struct dirent *mountPoint) {
-    *buf = bread(0, sectorNumber);
+struct buf buffer;
+int fileBlockRead(struct buf **buf, u64 startSector, struct dirent *image) {
+    *buf = &buffer;
+    return eread(image, 0, &(*buf)->data, startSector << 9, 512);
+}
+
+int blockRead(struct buf **buf, u64 startSector, struct dirent *image) {
+    *buf = bread(0, startSector);
     return 0;
 }
 

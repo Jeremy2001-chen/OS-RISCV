@@ -21,7 +21,7 @@ DirentCache direntCache;
 int fatInit(FileSystem *fs) {
     printf("[FAT32 init]fat init begin\n");
     struct buf *b;
-    if (fs->read(&b, 0, 0, fs->mountPoint) < 0) {
+    if (fs->read(&b, 0, fs->image) < 0) {
         panic("");
     }
     if (strncmp((char const*)(b->data + 82), "FAT32", 5)) {

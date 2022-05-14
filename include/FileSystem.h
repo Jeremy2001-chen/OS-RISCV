@@ -11,8 +11,9 @@ typedef struct FileSystem {
     char name[MAX_NAME_LENGTH];
     struct superblock superBlock;
     struct dirent root;
-    struct dirent *mountPoint;
-    int (*read)(struct buf **buf, u64 startSector, u32 sectorNumber, struct dirent *mountPoint);
+    struct dirent *image;
+    FileSystem *next;
+    int (*read)(struct buf **buf, u64 startSector, struct dirent *image);
 } FileSystem;
 
 typedef struct DirentCache {

@@ -22,7 +22,8 @@ struct buf {
 };
 
 void binit(void);
-int blockRead(struct buf **buf, u64 startSector, u32 sectorNumber, struct dirent *mountPoint);
+int blockRead(struct buf **buf, u64 startSector, struct dirent *image);
+int fileBlockRead(struct buf **buf, u64 startSector, struct dirent *image);
 struct buf* bread(uint dev, uint blockno);
 void bwrite(struct buf* b);
 void brelse(struct buf* b);

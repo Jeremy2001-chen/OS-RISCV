@@ -63,6 +63,7 @@ struct dirent {
     uint8 dev;
     uint8 dirty;
     short valid;
+    FileSystem *head;
     int ref;
     uint32 off;  // offset in the parent dir entry, for writing convenience
     struct dirent* parent;  // because FAT32 doesn't have such thing like inum,

@@ -15,6 +15,7 @@
 #define SYSCALL_DUP3 24
 
 #define SYSCALL_MKDIRAT 34
+#define SYSCALL_MOUNT 40
 #define SYSCALL_CHDIR 49
 
 #define SYSCALL_OPEN 55
