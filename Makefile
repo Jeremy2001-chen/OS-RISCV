@@ -68,7 +68,7 @@ umount:
 	sudo umount $(dst)
 
 mount:
-	sudo mount $(fs_img) $(dst)
+	sudo mount -t vfat $(fs_img) $(dst)
 	
 $(modules):
 	$(MAKE) build --directory=$@

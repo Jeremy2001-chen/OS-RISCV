@@ -1,9 +1,14 @@
+#ifndef _BIO_H_
+#define _BIO_H_
+
 #include "Sleeplock.h"
 #include "Type.h"
+#include <FileSystem.h>
 
 #define BSIZE 512
 #define NBUF 128
 
+struct dirent;
 struct buf {
     int valid;  // has data been read from disk?
     int disk;   // does disk "own" buf?
@@ -17,8 +22,11 @@ struct buf {
 };
 
 void binit(void);
+int blockRead(struct buf **buf, u64 startSector, u32 sectorNumber, struct dirent *mountPoint);
 struct buf* bread(uint dev, uint blockno);
 void bwrite(struct buf* b);
 void brelse(struct buf* b);
 void bpin(struct buf* b);
 void bunpin(struct buf* b);
+
+#endif

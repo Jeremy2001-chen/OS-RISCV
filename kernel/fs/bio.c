@@ -23,6 +23,7 @@
 #include "Driver.h"
 #include "Sd.h"
 #include "bio.h"
+#include <FileSystem.h>
 
 struct {
     struct Spinlock lock;
@@ -83,6 +84,11 @@ static struct buf* bget(uint dev, uint blockno) {
         }
     }
     panic("bget: no buffers");
+}
+
+int blockRead(struct buf **buf, u64 startSector, u32 sectorNumber, struct dirent *mountPoint) {
+    *buf = bread(0, sectorNumber);
+    return 0;
 }
 
 // Return a locked buf with the contents of the indicated block.

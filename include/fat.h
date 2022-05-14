@@ -24,6 +24,7 @@
 #define FAT32_MAX_PATH 260
 #define ENTRY_CACHE_NUM 50
 
+typedef struct FileSystem FileSystem;
 struct superblock {
     uint32 first_data_sec;
     uint32 data_sec_cnt;
@@ -57,6 +58,7 @@ struct dirent {
     uint32 cur_clus;
     uint clus_cnt;
 
+    FileSystem *fileSystem;
     /* for OS */
     uint8 dev;
     uint8 dirty;
@@ -65,8 +67,8 @@ struct dirent {
     uint32 off;  // offset in the parent dir entry, for writing convenience
     struct dirent* parent;  // because FAT32 doesn't have such thing like inum,
                             // use this for cache trick
-    struct dirent* next;
-    struct dirent* prev;
+    // struct dirent* next;
+    // struct dirent* prev;
     struct Sleeplock lock;
 };
 
