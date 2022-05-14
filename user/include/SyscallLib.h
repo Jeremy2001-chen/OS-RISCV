@@ -77,4 +77,8 @@ static inline int open(const char* path, int flags) {
 static inline int mkdir(const char* path, int mode) {
     return msyscall(SYSCALL_MKDIRAT, AT_FDCWD, (u64)path, (u64)mode, 0, 0, 0);
 }
+
+static inline int getdirent(int fd, char * buf, int n) {
+    return msyscall(SYSCALL_GET_DIRENT, (u64)fd, (u64)buf, (u64)n, 0, 0, 0);
+}
 #endif

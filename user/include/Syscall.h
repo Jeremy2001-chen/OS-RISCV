@@ -36,7 +36,7 @@ inline void syscallPutString(const char* buffer, u64 len) {
 inline int syscallOpen(const char *path, int omode) {
     register long a0 asm ("a0") = (long) path;
     register long a1 asm ("a1") = (long) omode;
-    register long a7 asm ("a7") = SYSCALL_OPEN;
+    register long a7 asm ("a7") = SYSCALL_OPENAT;
     asm volatile ("ecall": "+r"(a0): "r"(a7), "r"(a1), "r"(a0));
     return a0;
 
@@ -67,13 +67,6 @@ inline int syscallClose(int fd) {
     return a0;
 }
 
-inline int syscallReaddir(int fd, struct stat *stat) {
-    register long a0 asm("a0") = (long)fd;
-    register long a1 asm("a1") = (long)stat;
-    register long a7 asm("a7") = SYSCALL_READDIR;
-    asm volatile("ecall" : "+r"(a0) : "r"(a7), "r"(a0), "r"(a1));
-    return a0;
-}
 
 inline int syscallFstat(int fd, struct stat *stat) {
     register long a0 asm("a0") = (long)fd;
