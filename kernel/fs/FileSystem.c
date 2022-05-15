@@ -9,6 +9,7 @@ int fsAlloc(FileSystem **fs) {
     for (int i = 0; i < 32; i++) {
         if (!fileSystem[i].valid) {
             *fs = &fileSystem[i];
+            memset(*fs, 0, sizeof(FileSystem));
             fileSystem[i].valid = true;
             return 0;
         }

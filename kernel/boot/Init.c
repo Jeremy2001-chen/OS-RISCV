@@ -73,8 +73,8 @@ void main(u64 hartId) {
         // PROCESS_CREATE_PRIORITY(PipeTest, 1);
         // PROCESS_CREATE_PRIORITY(ExecTest,1);
         // PROCESS_CREATE_PRIORITY(ExecToLs, 1);
-        // PROCESS_CREATE_PRIORITY(SyscallTest, 1);
-        PROCESS_CREATE_PRIORITY(MountTest, 1);
+        PROCESS_CREATE_PRIORITY(SyscallTest, 1);
+        // PROCESS_CREATE_PRIORITY(MountTest, 1);
         // PROCESS_CREATE_PRIORITY(WaitTest, 1);
 
     } else {

@@ -594,3 +594,40 @@ void syscallMount() {
     dp->head = fs;
     tf->a0 = 0;
 }
+
+void syscallUmount() {
+    Trapframe *tf = getHartTrapFrame();
+    u64 mountPathUva = tf->a0;
+    int flag = tf->a1;
+    char mountPath[FAT32_MAX_FILENAME];
+    struct dirent *ep;
+
+    if (fetchstr(mountPathUva, mountPath, FAT32_MAX_PATH) < 0 || (ep = ename(mountPath)) == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+
+    assert(flag == 0);
+
+    if (ep->head == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+
+    extern DirentCache direntCache;
+    acquireLock(&direntCache.lock);
+    // bool canUmount = true;
+    for(int i = 0; i < ENTRY_CACHE_NUM; i++) {
+        struct dirent* entry = &direntCache.entries[i];
+        elock(entry);
+        if (entry->fileSystem == ep->head) {
+            eput(entry);
+        }
+        eunlock(entry);
+    }
+
+    ep->head->valid = 0;
+    ep->head = ep->head->next;
+
+    tf->a0 = 0;
+}

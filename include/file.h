@@ -35,6 +35,7 @@ typedef struct file {
 struct devsw {
     int (*read)(int isUser, u64 dst, u64 start, u64 len);
     int (*write)(int isUser, u64 src, u64 start, u64 len);
+    struct dirent column;
 };
 
 extern struct devsw devsw[];
