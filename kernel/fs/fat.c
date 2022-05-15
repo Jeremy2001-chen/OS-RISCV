@@ -166,8 +166,7 @@ static uint32 read_fat(FileSystem *fs, uint32 cluster) {
     }
     uint32 fat_sec = fat_sec_of_clus(fs, cluster, 1);
     // here should be a cache layer for FAT table, but not implemented yet.
-    struct buf* b;
-    fs->read(&b, fat_sec, fs->image);
+    struct buf* b = fs->read(fs, fat_sec);
     uint32 next_clus = *(uint32*)(b->data + fat_offset_of_clus(fs, cluster));
     brelse(b);
     return next_clus;
@@ -184,8 +183,7 @@ static int write_fat(FileSystem *fs, uint32 cluster, uint32 content) {
         return -1;
     }
     uint32 fat_sec = fat_sec_of_clus(fs, cluster, 1);
-    struct buf* b;
-    fs->read(&b, fat_sec, fs->image);
+    struct buf* b = fs->read(fs, fat_sec);
     uint off = fat_offset_of_clus(fs, cluster);
     *(uint32*)(b->data + off) = content;
     bwrite(b);
@@ -197,7 +195,7 @@ static void zero_clus(FileSystem *fs, uint32 cluster) {
     uint32 sec = first_sec_of_clus(fs, cluster);
     struct buf* b;
     for (int i = 0; i < fs->superBlock.bpb.sec_per_clus; i++) {
-        b = bread(0, sec++);
+        b = fs->read(fs, sec++);
         memset(b->data, 0, BSIZE);
         bwrite(b);
         brelse(b);
@@ -210,7 +208,7 @@ static uint32 alloc_clus(FileSystem *fs, uint8 dev) {
     uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt;
     uint32 const ent_per_sec = fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
     for (uint32 i = 0; i < fs->superBlock.bpb.fat_sz; i++, sec++) {
-        b = bread(dev, sec);
+        b = fs->read(fs, sec);
         for (uint32 j = 0; j < ent_per_sec; j++) {
             if (((uint32*)(b->data))[j] == 0) {
                 ((uint32*)(b->data))[j] = FAT32_EOC + 7;
@@ -287,7 +285,7 @@ static uint rw_clus(FileSystem *fs, uint32 cluster,
 
     int bad = 0;
     for (tot = 0; tot < n; tot += m, off += m, data += m, sec++) {
-        bp = bread(0, sec);
+        bp = fs->read(fs, sec);
         m = BSIZE - off % BSIZE;
         if (n - tot < m) {
             m = n - tot;
@@ -344,6 +342,18 @@ static int reloc_clus(FileSystem *fs, struct dirent* entry, uint off, int alloc)
         }
     }
     return off % fs->superBlock.byts_per_clus;
+}
+
+int getBlockNumber(struct dirent* entry, int dataBlockNum) {
+    int offset = (dataBlockNum << 9);
+    if (offset > entry->file_size) {
+        return -1;
+    }
+    
+    FileSystem *fs = entry->fileSystem;
+    reloc_clus(fs, entry, offset, 0);
+    
+    return first_sec_of_clus(fs, entry->cur_clus) + offset % fs->superBlock.byts_per_clus / fs->superBlock.bpb.byts_per_sec;
 }
 
 /* like the original readi, but "reade" is odd, let alone "writee" */

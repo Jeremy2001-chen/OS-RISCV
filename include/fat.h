@@ -76,6 +76,7 @@ struct dirent {
 int fat32_init(void);
 struct dirent* dirlookup(struct dirent* entry, char* filename, uint* poff);
 char* formatname(char* name);
+int getBlockNumber(struct dirent* entry, int dataBlockNum);
 void emake(struct dirent* dp, struct dirent* ep, uint off);
 struct dirent* ealloc(struct dirent* dp, char* name, int attr);
 struct dirent* edup(struct dirent* entry);

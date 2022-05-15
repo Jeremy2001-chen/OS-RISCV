@@ -13,7 +13,8 @@ typedef struct FileSystem {
     struct dirent root;
     struct dirent *image;
     FileSystem *next;
-    int (*read)(struct buf **buf, u64 startSector, struct dirent *image);
+    int deviceNumber;
+    struct buf* (*read)(struct FileSystem *fs, u64 blockNum);
 } FileSystem;
 
 typedef struct DirentCache {

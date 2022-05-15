@@ -8,6 +8,7 @@
 #define BSIZE 512
 #define NBUF 128
 
+typedef struct FileSystem FileSystem;
 struct dirent;
 struct buf {
     int valid;  // has data been read from disk?
@@ -22,8 +23,10 @@ struct buf {
 };
 
 void binit(void);
-int blockRead(struct buf **buf, u64 startSector, struct dirent *image);
-int fileBlockRead(struct buf **buf, u64 startSector, struct dirent *image);
+
+struct buf* mountBlockRead(FileSystem* fs, u64 blockNum);
+struct buf* blockRead(FileSystem* fs, u64 blockNum);
+
 struct buf* bread(uint dev, uint blockno);
 void bwrite(struct buf* b);
 void brelse(struct buf* b);

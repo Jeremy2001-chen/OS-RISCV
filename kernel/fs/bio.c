@@ -88,15 +88,18 @@ static struct buf* bget(int dev, uint blockno) {
     panic("bget: no buffers");
 }
 
-struct buf buffer;
-int fileBlockRead(struct buf **buf, u64 startSector, struct dirent *image) {
-    *buf = &buffer;
-    return eread(image, 0, &(*buf)->data, startSector << 9, 512);
+struct buf* mountBlockRead(FileSystem* fs, u64 blockNum) {
+    struct dirent* image = fs->image;
+    FileSystem* parentFs = image->fileSystem;
+    int parentBlockNum = getBlockNumber(image, blockNum); 
+    if (parentBlockNum < 0) {
+        return 0;
+    }
+    return parentFs->read(parentFs, parentBlockNum);
 }
 
-int blockRead(struct buf **buf, u64 startSector, struct dirent *image) {
-    *buf = bread(0, startSector);
-    return 0;
+struct buf* blockRead(FileSystem* fs, u64 blockNum) {
+    return bread(fs->deviceNumber, blockNum);
 }
 
 // Return a locked buf with the contents of the indicated block.

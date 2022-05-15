@@ -20,8 +20,8 @@ DirentCache direntCache;
 // fs's read, name, mount_point should be inited
 int fatInit(FileSystem *fs) {
     printf("[FAT32 init]fat init begin\n");
-    struct buf *b;
-    if (fs->read(&b, 0, fs->image) < 0) {
+    struct buf *b = fs->read(fs, 0);
+    if (b == 0) {
         panic("");
     }
     if (strncmp((char const*)(b->data + 82), "FAT32", 5)) {
@@ -61,6 +61,7 @@ int fatInit(FileSystem *fs) {
     fs->root.first_clus = fs->root.cur_clus = fs->superBlock.bpb.root_clus;
     fs->root.valid = 1;
     fs->root.filename[0]='/';
+    fs->root.fileSystem = fs;
     
     printf("[FAT32 init]fat init end\n");
     return 0;
@@ -68,7 +69,6 @@ int fatInit(FileSystem *fs) {
 
 FileSystem rootFileSystem;
 void initDirentCache() {
-    rootFileSystem.root.fileSystem = &rootFileSystem;
     initLock(&direntCache.lock, "ecache");
    // fs->root.prev = &fs->root;
    // fs->root.next = &fs->root;
