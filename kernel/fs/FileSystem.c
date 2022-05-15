@@ -62,6 +62,7 @@ int fatInit(FileSystem *fs) {
     fs->root.valid = 1;
     fs->root.filename[0]='/';
     fs->root.fileSystem = fs;
+    fs->root.ref = 1;
     
     printf("[FAT32 init]fat init end\n");
     return 0;

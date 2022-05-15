@@ -104,6 +104,8 @@ struct buf* blockRead(FileSystem* fs, u64 blockNum) {
 
 // Return a locked buf with the contents of the indicated block.
 struct buf* bread(uint dev, uint blockno) {
+    // static int cnt = 0;
+    // printf("[Bread] %d\n", cnt++);
     struct buf* b;
     b = bget(dev, blockno);
     if (!b->valid) {

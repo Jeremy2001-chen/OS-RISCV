@@ -557,47 +557,40 @@ fail:
     return -1;
 }
 
-
-
 void syscallMount() {
     Trapframe *tf = getHartTrapFrame();
     u64 imagePathUva = tf->a0, mountPathUva = tf->a1, typeUva = tf->a2, dataUva = tf->a4;
     int flag = tf->a3;
     char imagePath[FAT32_MAX_FILENAME], mountPath[FAT32_MAX_FILENAME], type[10], data[10];
-    printf("%s %d\n", __FILE__, __LINE__);
     if (fetchstr(typeUva, type, 10) < 0 || strncmp(type, "vfat", 4)) {
         tf->a0 = -1;
         return;
     }
-    printf("%s %d\n", __FILE__, __LINE__);
     struct dirent *ep, *dp;
     if (fetchstr(imagePathUva, imagePath, FAT32_MAX_PATH) < 0 || (ep = ename(imagePath)) == NULL) {
-        printf("%s %d\n", __FILE__, __LINE__);
         tf->a0 = -1;
         return;
     }
     if (fetchstr(mountPathUva, mountPath, FAT32_MAX_PATH) < 0 || (dp = ename(mountPath)) == NULL) {
-        printf("%s %d\n", __FILE__, __LINE__);
         tf->a0 = -1;
         return;
     }
     if (dataUva && fetchstr(dataUva, data, 10) < 0) {
-        printf("%s %d\n", __FILE__, __LINE__);
         tf->a0 = -1;
         return;
     }
     assert(flag == 0);
     FileSystem *fs;
     if (fsAlloc(&fs) < 0) {
-        printf("%s %d\n", __FILE__, __LINE__);
         tf->a0 = -1;
         return;
     }
-    printf("%s %d\n", __FILE__, __LINE__);
     fs->name[0] = 'm';
     fs->name[1] = 0;
     fs->image = ep;
     fs->read = mountBlockRead;
     fatInit(fs);
-    printf("MOUNT FIRST OK!\n");
+    fs->next = dp->head;
+    dp->head = fs;
+    tf->a0 = 0;
 }

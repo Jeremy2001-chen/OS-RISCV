@@ -998,9 +998,14 @@ static struct dirent* lookup_path(char* path, int parent, char* name) {
             eput(entry);
             return NULL;
         }
+        
         if (entry->head != NULL) {
-            entry = &entry->head->root;
+            struct dirent* mountDirent = &entry->head->root;
+            eunlock(entry);
+            elock(mountDirent);
+            entry = edup(mountDirent);
         }
+
         if (parent && *path == '\0') {
             eunlock(entry);
             return entry;
@@ -1010,9 +1015,11 @@ static struct dirent* lookup_path(char* path, int parent, char* name) {
             eput(entry);
             return NULL;
         }
+
         eunlock(entry);
         eput(entry);
         entry = next;
+
     }
     if (parent) {
         eput(entry);
