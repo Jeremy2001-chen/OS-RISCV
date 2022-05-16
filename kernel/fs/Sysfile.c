@@ -585,9 +585,21 @@ void syscallMount() {
         tf->a0 = -1;
         return;
     }
+
+    struct file *file = filealloc();
+    file->off = 0;
+    file->readable = true;
+    file->writable = true;
+    if (ep->head) {
+        file->type = ep->head->image->type;
+        file->ep = ep->head->image->ep;
+    } else {
+        file->type = FD_ENTRY;
+        file->ep = ep;
+    }
     fs->name[0] = 'm';
     fs->name[1] = 0;
-    fs->image = ep;
+    fs->image = file;
     fs->read = mountBlockRead;
     fatInit(fs);
     fs->next = dp->head;
@@ -619,12 +631,12 @@ void syscallUmount() {
     // bool canUmount = true;
     for(int i = 0; i < ENTRY_CACHE_NUM; i++) {
         struct dirent* entry = &direntCache.entries[i];
-        elock(entry);
         if (entry->fileSystem == ep->head) {
             eput(entry);
         }
-        eunlock(entry);
     }
+
+    releaseLock(&direntCache.lock);
 
     ep->head->valid = 0;
     ep->head = ep->head->next;

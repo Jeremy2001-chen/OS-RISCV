@@ -11,7 +11,7 @@ typedef struct FileSystem {
     char name[MAX_NAME_LENGTH];
     struct superblock superBlock;
     struct dirent root;
-    struct dirent *image;
+    struct file *image;
     FileSystem *next;
     int deviceNumber;
     struct buf* (*read)(struct FileSystem *fs, u64 blockNum);

@@ -24,6 +24,7 @@
 #include "Sd.h"
 #include "bio.h"
 #include <FileSystem.h>
+#include <file.h>
 
 struct {
     struct Spinlock lock;
@@ -89,7 +90,12 @@ static struct buf* bget(int dev, uint blockno) {
 }
 
 struct buf* mountBlockRead(FileSystem* fs, u64 blockNum) {
-    struct dirent* image = fs->image;
+    struct file* file = fs->image;
+    if (file->type == FD_DEVICE) {
+        return bread(file->major, blockNum);
+    }
+    assert(file->type == FD_ENTRY);
+    struct dirent *image = fs->image->ep;
     FileSystem* parentFs = image->fileSystem;
     int parentBlockNum = getBlockNumber(image, blockNum); 
     if (parentBlockNum < 0) {

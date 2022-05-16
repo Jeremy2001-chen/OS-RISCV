@@ -3,6 +3,7 @@
 #include <Queue.h>
 #include <string.h>
 #include <Driver.h>
+#include <file.h>
 FileSystem fileSystem[32];
 
 int fsAlloc(FileSystem **fs) {
@@ -72,6 +73,12 @@ int fatInit(FileSystem *fs) {
 FileSystem rootFileSystem;
 void initDirentCache() {
     initLock(&direntCache.lock, "ecache");
+    struct file* file = filealloc();
+    rootFileSystem.image = file;
+    file->type = FD_DEVICE;
+    file->major = 0;
+    file->readable = true;
+    file->writable = true;
    // fs->root.prev = &fs->root;
    // fs->root.next = &fs->root;
     for (struct dirent* de = direntCache.entries;

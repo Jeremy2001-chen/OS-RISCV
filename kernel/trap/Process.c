@@ -298,16 +298,13 @@ void processRun(Process* p) {
             printf("init dirent end\n");
             void testfat();
             testfat();
-
-            printf("%s %d\n", __FILE__, __LINE__);            
+          
             struct dirent* ep = create("/dev", T_DIR, O_RDONLY);
             eunlock(ep);
             eput(ep);
-            printf("%s %d\n", __FILE__, __LINE__);
             ep = create("/dev/vda2", T_DIR, O_RDONLY);
-            ep->head = &rootFileSystem;
+            ep->head = &rootFileSystem;            
             eunlock(ep);
-            eput(ep);
         }
         bcopy(&(currentProcess[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
         u64 sp = getHartKernelTopSp(p);
