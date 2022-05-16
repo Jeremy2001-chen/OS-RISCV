@@ -21,7 +21,7 @@ int fsAlloc(FileSystem **fs) {
 DirentCache direntCache;
 // fs's read, name, mount_point should be inited
 int fatInit(FileSystem *fs) {
-    printf("[FAT32 init]fat init begin\n");
+    // printf("[FAT32 init]fat init begin\n");
     struct buf *b = fs->read(fs, 0);
     if (b == 0) {
         panic("");
@@ -44,7 +44,7 @@ int fatInit(FileSystem *fs) {
     fs->superBlock.byts_per_clus = fs->superBlock.bpb.sec_per_clus * fs->superBlock.bpb.byts_per_sec;
     brelse(b);
 
-    printf("[FAT32 init]read fat s\n");
+    // printf("[FAT32 init]read fat s\n");
 #ifdef ZZY_DEBUG
     printf("[FAT32 init]byts_per_sec: %d\n", fat.bpb.byts_per_sec);
     printf("[FAT32 init]root_clus: %d\n", fat.bpb.root_clus);
@@ -66,7 +66,7 @@ int fatInit(FileSystem *fs) {
     fs->root.fileSystem = fs;
     fs->root.ref = 1;
     
-    printf("[FAT32 init]fat init end\n");
+    // printf("[FAT32 init]fat init end\n");
     return 0;
 }
 

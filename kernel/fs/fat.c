@@ -780,13 +780,13 @@ void estat(struct dirent* de, struct stat* st) {
     // st->type = (de->attribute & ATTR_DIRECTORY) ? T_DIR : T_FILE;
     st->st_dev = de->dev;
     st->st_size = de->file_size;
-    st->st_ino = (de - ecache.entries);
+    st->st_ino = (de - direntCache.entries);
     st->st_mode = de->attribute;
     st->st_nlink = 1;
     st->st_uid = 0;
     st->st_gid = 0;
     st->st_rdev = 0;  // What's this?
-    st->st_blksize = fat.bpb.byts_per_sec;
+    st->st_blksize = de->fileSystem->superBlock.bpb.byts_per_sec;
     st->st_blocks = st->st_size / st->st_blksize;
     st->st_atime_sec = 0;
     st->st_atime_nsec = 0;
