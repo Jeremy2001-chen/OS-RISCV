@@ -4,6 +4,9 @@
 #include <Driver.h>
 #include <MemoryConfig.h>
 #include <Debug.h>
+#include <file.h>
+#include <Process.h>
+#include <Page.h>
 
 //#include "common.h"
 
@@ -456,6 +459,66 @@ retry:
 	goto start;
 }
 
+int sdCardRead(int isUser, u64 dst, u64 startAddr, u64 n) {
+	if (n & ((1 << 9) - 1)) {
+		printf("[SD] Card Read error\n");
+		return -1;
+	}
+	if (startAddr & ((1 << 9) - 1)) {
+		printf("[SD] Card Read error\n");
+		return -1;	
+	}
+
+	if (isUser) {
+		char buf[512];
+		int st = (startAddr) >> 9;
+		for (int i = 0; i < n; i++) {
+			sdRead((u8*)buf, st, 1);
+			copyout(myproc()->pgdir, dst, buf, 512);
+			dst += 512;
+			st++;
+		}
+		return 0;
+	}
+	int st = (startAddr) >> 9;
+	for (int i = 0; i < n; i++) {
+		sdRead((u8*)dst, st, 1);
+		dst += 512;
+		st++;
+	}
+	return 0;
+}
+
+int sdCardWrite(int isUser, u64 src, u64 startAddr, u64 n) {
+	if (n & ((1 << 9) - 1)) {
+		printf("[SD] Card Write error\n");
+		return -1;
+	}
+	if (startAddr & ((1 << 9) - 1)) {
+		printf("[SD] Card Write error\n");
+		return -1;	
+	}
+
+	if (isUser) {
+		char buf[512];
+		int st = (startAddr) >> 9;
+		for (int i = 0; i < n; i++) {
+        	copyin(myproc()->pgdir, buf, src, 512);
+			sdWrite((u8*)buf, st, 1);
+			src += 512;
+			st++;
+		}
+		return 0;
+	}
+	int st = (startAddr) >> 9;
+	for (int i = 0; i < n; i++) {
+		sdWrite((u8*)src, st, 1);
+		src += 512;
+		st++;
+	}
+	return 0;
+}
+
 
 int sdInit(void) {
 	REG32(uart, UART_REG_TXCTRL) = UART_TXEN;
@@ -491,6 +554,9 @@ int sdInit(void) {
 
 	REG32(spi, SPI_REG_SCKDIV) = (F_CLK / 16666666UL);
 	__asm__ __volatile__ ("fence.i" : : : "memory");
+	
+	devsw[DEV_SD].read = sdCardRead;
+	devsw[DEV_SD].write = sdCardWrite;
 	return 0;
 }
 

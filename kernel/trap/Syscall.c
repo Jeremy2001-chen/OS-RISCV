@@ -41,7 +41,9 @@ void (*syscallVector[])(void) = {
     [SYSCALL_UNMAP_MEMORY]      syscallUnMapMemory,
     [SYSCALL_READDIR]           syscallReadDir,
     [SYSCALL_EXEC]              syscallExec,
-    [SYSCALL_GET_DIRENT]        syscallGetDirent
+    [SYSCALL_GET_DIRENT]        syscallGetDirent,
+    [SYSCALL_MOUNT]             syscallMount,
+    [SYSCALL_UMOUNT]            syscallUmount
 };
 
 extern struct Spinlock printLock;

@@ -23,9 +23,6 @@ void fileinit(void) {
     for (f = ftable.file; f < ftable.file + NFILE; f++) {
         memset(f, 0, sizeof(struct file));
     }
-#ifdef ZZY_DEBUG
-    printf("fileinit\n");
-#endif
 }
 
 // Allocate a file structure.
@@ -112,7 +109,7 @@ int fileread(struct file* f, u64 addr, int n) {
         case FD_DEVICE:
             if (f->major < 0 || f->major >= NDEV || !devsw[f->major].read)
                 return -1;
-            r = devsw[f->major].read(1, addr, n);
+            r = devsw[f->major].read(1, addr, 0, n);
             break;
         case FD_ENTRY:
             elock(f->ep);
@@ -141,7 +138,7 @@ int filewrite(struct file* f, u64 addr, int n) {
     } else if (f->type == FD_DEVICE) {
         if (f->major < 0 || f->major >= NDEV || !devsw[f->major].write)
             return -1;
-        ret = devsw[f->major].write(1, addr, n);
+        ret = devsw[f->major].write(1, addr, 0, n);
     } else if (f->type == FD_ENTRY) {
         elock(f->ep);
         if (ewrite(f->ep, 1, addr, f->off, n) == n) {

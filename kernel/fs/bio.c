@@ -23,6 +23,8 @@
 #include "Driver.h"
 #include "Sd.h"
 #include "bio.h"
+#include <FileSystem.h>
+#include <file.h>
 
 struct {
     struct Spinlock lock;
@@ -54,20 +56,22 @@ void binit(void) {
 // Look through buffer cache for block on device dev.
 // If not found, allocate a buffer.
 // In either case, return locked buffer.
-static struct buf* bget(uint dev, uint blockno) {
+static struct buf* bget(int dev, uint blockno) {
     struct buf* b;
 
     acquireLock(&bcache.lock);
 
-    // Is the block already cached?
-    for (b = bcache.head.next; b != &bcache.head; b = b->next) {
-        if (b->dev == dev && b->blockno == blockno) {
-            b->refcnt++;
-            releaseLock(&bcache.lock);
-            acquiresleep(&b->lock);
-            return b;
+    if (dev >= 0) {
+        for (b = bcache.head.next; b != &bcache.head; b = b->next) {
+            if (b->dev == dev && b->blockno == blockno) {
+                b->refcnt++;
+                releaseLock(&bcache.lock);
+                acquiresleep(&b->lock);
+                return b;
+            }
         }
     }
+    // Is the block already cached?    
 
     // Not cached.
     // Recycle the least recently used (LRU) unused buffer.
@@ -85,8 +89,29 @@ static struct buf* bget(uint dev, uint blockno) {
     panic("bget: no buffers");
 }
 
+struct buf* mountBlockRead(FileSystem* fs, u64 blockNum) {
+    struct file* file = fs->image;
+    if (file->type == FD_DEVICE) {
+        return bread(file->major, blockNum);
+    }
+    assert(file->type == FD_ENTRY);
+    struct dirent *image = fs->image->ep;
+    FileSystem* parentFs = image->fileSystem;
+    int parentBlockNum = getBlockNumber(image, blockNum); 
+    if (parentBlockNum < 0) {
+        return 0;
+    }
+    return parentFs->read(parentFs, parentBlockNum);
+}
+
+struct buf* blockRead(FileSystem* fs, u64 blockNum) {
+    return bread(fs->deviceNumber, blockNum);
+}
+
 // Return a locked buf with the contents of the indicated block.
 struct buf* bread(uint dev, uint blockno) {
+    // static int cnt = 0;
+    // printf("[Bread] %d\n", cnt++);
     struct buf* b;
     b = bget(dev, blockno);
     if (!b->valid) {

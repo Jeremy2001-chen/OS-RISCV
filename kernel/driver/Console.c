@@ -54,7 +54,7 @@ inline int getchar(void)
     return ret & UART_RXFIFO_DATA;
 }
 
-int consoleWrite(int user_src, u64 src, int n) {
+int consoleWrite(int user_src, u64 src, u64 start, u64 n) {
     int i;
     for (i = 0; i < n; i++) {
         char c;
@@ -71,13 +71,13 @@ int consoleWrite(int user_src, u64 src, int n) {
 //没有回显
 #define GET_BUF_LEN 64
 char buf[GET_BUF_LEN];
-int consoleRead(int user_src, u64 dst, int n) {
+int consoleRead(int isUser, u64 dst, u64 start, u64 n) {
     int i;
     for (i = 0; i < n; i++) {
         char c = getchar();
         if (c == '\n')
             putchar('\r');
-        if (either_copyout(1, dst + i, &c, 1) == -1)
+        if (either_copyout(isUser, dst + i, &c, 1) == -1)
             break;
     }
     return i;
@@ -86,6 +86,6 @@ int consoleRead(int user_src, u64 dst, int n) {
 void consoleInit() {
     initLock(&consoleLock, "console");
 
-    devsw[CONSOLE].read = consoleRead;
-    devsw[CONSOLE].write = consoleWrite;
+    devsw[DEV_CONSOLE].read = consoleRead;
+    devsw[DEV_CONSOLE].write = consoleWrite;
 }

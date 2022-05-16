@@ -7,9 +7,7 @@ char test_content_to_write[10] = "abcdefghi";
 char test_content_to_read[10] = {0};
 
 void testfat() {
-#ifdef ZZY_DEBUG
     printf("[testfat] testing fat.......\n");
-#endif
     struct dirent* testfile = create("/testfile", T_FILE, O_CREATE | O_RDWR);
     if (testfile == NULL) {
         panic("[testfat] create file error\n");

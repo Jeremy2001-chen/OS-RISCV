@@ -33,13 +33,14 @@ typedef struct file {
 
 // map major device number to device functions.
 struct devsw {
-    int (*read)(int, u64, int);
-    int (*write)(int, u64, int);
+    int (*read)(int isUser, u64 dst, u64 start, u64 len);
+    int (*write)(int isUser, u64 src, u64 start, u64 len);
 };
 
 extern struct devsw devsw[];
 
-#define CONSOLE 1
+#define DEV_SD 0
+#define DEV_CONSOLE 1
 
 struct file* filealloc(void);
 void fileclose(struct file*);

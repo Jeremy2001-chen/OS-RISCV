@@ -35,6 +35,9 @@ void syscallPipe(void);
 void syscallDevice(void);
 void syscallReadDir(void);
 void syscallGetDirent();
+void syscallMount(void);
+void syscallUmount(void);
+
 u64 sys_remove(void);
 // Must hold too many locks at a time! It's possible to raise a deadlock.
 // Because this op takes some steps, we can't promise

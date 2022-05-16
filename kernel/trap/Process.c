@@ -1,4 +1,5 @@
 #include <Process.h>
+#include <bio.h>
 #include <Page.h>
 #include <Error.h>
 #include <Elf.h>
@@ -8,6 +9,7 @@
 #include <Spinlock.h>
 #include <Interrupt.h>
 #include <Debug.h>
+#include <FileSystem.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
@@ -127,8 +129,8 @@ int pid2Process(u32 processId, struct Process **process, int checkPerm) {
     return 0;
 }
 
+extern FileSystem rootFileSystem;
 extern void userVector();
-extern struct dirent root;
 int setup(Process *p) {
     int r;
     PhysicalPage *page;
@@ -145,7 +147,7 @@ int setup(Process *p) {
     p->parentId = 0;
     p->heapBottom = USER_HEAP_BOTTOM;
     p->awakeTime = 0;
-    p->cwd = &root;
+    p->cwd = &rootFileSystem.root;
 
     r = pageAlloc(&page);
     extern u64 kernelPageDirectory[];
@@ -285,9 +287,25 @@ void processRun(Process* p) {
             // regular process (e.g., because it calls sleep), and thus cannot
             // be run from main().
             first = 1;
-            fat32_init();
+            rootFileSystem.name[0] = 'f';
+            rootFileSystem.name[1] = 'a';
+            rootFileSystem.name[2] = 't';
+            rootFileSystem.name[3] = '3';
+            rootFileSystem.name[4] = '2';
+            
+            rootFileSystem.read = blockRead;
+            fatInit(&rootFileSystem);
+            initDirentCache();
+            printf("init dirent end\n");
             void testfat();
             testfat();
+          
+            struct dirent* ep = create("/dev", T_DIR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
+            ep = create("/dev/vda2", T_DIR, O_RDONLY);
+            ep->head = &rootFileSystem;            
+            eunlock(ep);
         }
         bcopy(&(currentProcess[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
         u64 sp = getHartKernelTopSp(p);

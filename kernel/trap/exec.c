@@ -90,12 +90,14 @@ int exec(char* path, char** argv) {
     
     MSG_PRINT("setup");
 
+    
     if ((de = ename(path)) == 0) {
         MSG_PRINT("find file error\n");
         return -1;
     }
     elock(de);
 
+    
     MSG_PRINT("lock file success");
     // Check ELF header
     if (eread(de, 0, (u64)&elf, 0, sizeof(elf)) != sizeof(elf)){
