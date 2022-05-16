@@ -77,4 +77,16 @@ static inline int open(const char* path, int flags) {
 static inline int mkdir(const char* path, int mode) {
     return msyscall(SYSCALL_MKDIRAT, AT_FDCWD, (u64)path, (u64)mode, 0, 0, 0);
 }
+
+static inline int mount(const char *special, const char *dir, const char *fstype, unsigned long flags, const void *data) {
+    return msyscall(SYSCALL_MOUNT, (u64)special, (u64)dir, (u64)fstype, flags, (u64)data, 0);
+}
+
+static inline int umount(const char *special, unsigned long flags) {
+    return msyscall(SYSCALL_UMOUNT, (u64)special, flags, 0, 0, 0, 0);
+}
+
+static inline int read(int fd, const char *buf, int n) {
+    return msyscall(SYSCALL_READ, fd, (u64)buf, n, 0, 0, 0);
+}
 #endif

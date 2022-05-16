@@ -15,6 +15,7 @@
 #include <string.h>
 #include <Page.h>
 #include <pipe.h>
+#include <FileSystem.h>
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -554,4 +555,91 @@ fail:
     if (src)
         eput(src);
     return -1;
+}
+
+void syscallMount() {
+    Trapframe *tf = getHartTrapFrame();
+    u64 imagePathUva = tf->a0, mountPathUva = tf->a1, typeUva = tf->a2, dataUva = tf->a4;
+    int flag = tf->a3;
+    char imagePath[FAT32_MAX_FILENAME], mountPath[FAT32_MAX_FILENAME], type[10], data[10];
+    if (fetchstr(typeUva, type, 10) < 0 || strncmp(type, "vfat", 4)) {
+        tf->a0 = -1;
+        return;
+    }
+    struct dirent *ep, *dp;
+    if (fetchstr(imagePathUva, imagePath, FAT32_MAX_PATH) < 0 || (ep = ename(imagePath)) == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+    if (fetchstr(mountPathUva, mountPath, FAT32_MAX_PATH) < 0 || (dp = ename(mountPath)) == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+    if (dataUva && fetchstr(dataUva, data, 10) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+    assert(flag == 0);
+    FileSystem *fs;
+    if (fsAlloc(&fs) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+
+    struct file *file = filealloc();
+    file->off = 0;
+    file->readable = true;
+    file->writable = true;
+    if (ep->head) {
+        file->type = ep->head->image->type;
+        file->ep = ep->head->image->ep;
+    } else {
+        file->type = FD_ENTRY;
+        file->ep = ep;
+    }
+    fs->name[0] = 'm';
+    fs->name[1] = 0;
+    fs->image = file;
+    fs->read = mountBlockRead;
+    fatInit(fs);
+    fs->next = dp->head;
+    dp->head = fs;
+    tf->a0 = 0;
+}
+
+void syscallUmount() {
+    Trapframe *tf = getHartTrapFrame();
+    u64 mountPathUva = tf->a0;
+    int flag = tf->a1;
+    char mountPath[FAT32_MAX_FILENAME];
+    struct dirent *ep;
+
+    if (fetchstr(mountPathUva, mountPath, FAT32_MAX_PATH) < 0 || (ep = ename(mountPath)) == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+
+    assert(flag == 0);
+
+    if (ep->head == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+
+    extern DirentCache direntCache;
+    acquireLock(&direntCache.lock);
+    // bool canUmount = true;
+    for(int i = 0; i < ENTRY_CACHE_NUM; i++) {
+        struct dirent* entry = &direntCache.entries[i];
+        if (entry->fileSystem == ep->head) {
+            eput(entry);
+        }
+    }
+
+    releaseLock(&direntCache.lock);
+
+    ep->head->valid = 0;
+    ep->head = ep->head->next;
+
+    tf->a0 = 0;
 }
