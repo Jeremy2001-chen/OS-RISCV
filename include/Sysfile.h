@@ -34,6 +34,7 @@ void syscallGetWorkDir(void);
 void syscallPipe(void);
 void syscallDevice(void);
 void syscallReadDir(void);
+void syscallGetDirent();
 void syscallMount(void);
 void syscallUmount(void);
 

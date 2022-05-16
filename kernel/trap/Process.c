@@ -172,6 +172,7 @@ int processAlloc(Process **new, u64 parentId) {
     }
     p = LIST_FIRST(&freeProcesses);
     LIST_REMOVE(p, link);
+    // printf("[Process Alloc] alloc an process %d, next : %x\n", (u32)(p - processes), (u32)(LIST_FIRST(&freeProcesses) - processes));
     releaseLock(&freeProcessesLock);
     if ((r = setup(p)) < 0) {
         return r;
@@ -386,7 +387,9 @@ int wait(int targetProcessId, u64 addr) {
                     }
                     acquireLock(&freeProcessesLock);
                     updateAncestorsCpuTime(np);
+                    np->state = UNUSED;
                     LIST_INSERT_HEAD(&freeProcesses, np, link); //test pipe
+                    // printf("[Process Free] Free an process %d\n", (u32)(np - processes));
                     releaseLock(&freeProcessesLock);
                     releaseLock(&np->lock);
                     releaseLock(&waitLock);

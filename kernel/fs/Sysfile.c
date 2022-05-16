@@ -154,6 +154,84 @@ void syscallGetFileState(void) {
     tf->a0 = filestat(f, uva);
 }
 
+extern struct entry_cache* ecache;
+void syscallGetDirent() {
+    struct file* f;
+    int fd, n;
+    u64 addr;
+
+    if (argfd(0, &fd, &f) < 0 || argaddr(1, &addr) < 0 || argint(2, &n) < 0) {
+        getHartTrapFrame()->a0 = -2;
+        return;
+    }
+    struct Process* p = myproc();
+    static char buf[512];
+    struct linux_dirent64* dir64 = (struct linux_dirent64*)buf;
+
+    if (f->type == FD_ENTRY) {
+        int count = 0;
+        int ret;
+        struct dirent de;
+        int nread=0;
+        elock(f->ep);
+        for (;;) {
+            while ((ret = enext(f->ep, &de, f->off, &count)) ==
+                   0) {  // skip empty entry
+                f->off += count * 32;
+            }
+            if (ret == -1)
+                break;
+            f->off += count * 32;
+
+            int len = strlen(de.filename);
+            int prefix = ((u64)dir64->d_name - (u64)dir64);
+
+            dir64->d_ino = 0;
+            dir64->d_off = 0;  // This maybe wrong;
+            dir64->d_reclen = len + prefix + 1;
+            dir64->d_type = (de.attribute & ATTR_DIRECTORY) ? DT_DIR : DT_REG;
+            if (copyout(p->pgdir, addr, (char*)dir64, prefix) != 0) {
+                getHartTrapFrame()->a0 = -4;
+                return;
+            }
+            if (copyout(p->pgdir, addr + prefix, de.filename, len) != 0) {
+                getHartTrapFrame()->a0 = -114;
+                return;
+            }
+            addr += prefix + len + 1;
+            nread += prefix + len + 1;
+        }
+        eunlock(f->ep);
+
+        // elock(f->ep);
+        // dir64->d_ino = f->ep - ecache->entries;
+        // dir64->d_off = f->ep->off;
+        // dir64->d_reclen = 0;  // What's this?
+        // dir64->d_type = f->ep->attribute;
+        // int len = strlen(f->ep->filename);
+        // int prefix = ((u64)dir64->d_name - (u64)dir64);
+        // if (len + prefix + 1 > n) {
+        //     getHartTrapFrame()->a0 = -1;
+        //     eunlock(f->ep);
+        //     return; 
+        // }
+        // if (copyout(p->pgdir, addr, (char*)dir64, prefix) != 0) {
+        //     getHartTrapFrame()->a0 = -4;
+        //     eunlock(f->ep);
+        //     return;
+        // }
+        // if (copyout(p->pgdir, addr + prefix, f->ep->filename, len) != 0) {
+        //     getHartTrapFrame()->a0 = -114;
+        //     eunlock(f->ep);
+        //     return;
+        // }
+        getHartTrapFrame()->a0 = nread;
+        return;
+    }
+    getHartTrapFrame()->a0 = -5;
+    return;
+}
+
 //todo: support the mode
 //todo: change the directory? whether we should add the ref(eput)
 void syscallOpenAt(void) {

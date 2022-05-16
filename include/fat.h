@@ -73,6 +73,18 @@ struct dirent {
     struct Sleeplock lock;
 };
 
+struct entry_cache {
+    struct Spinlock lock;
+    struct dirent entries[ENTRY_CACHE_NUM];
+};
+struct linux_dirent64 {
+    u64 d_ino;               /* 64-bit inode number */
+    u64 d_off;               /* 64-bit offset to next structure */
+    unsigned short d_reclen; /* Size of this dirent */
+    unsigned char d_type;    /* File type */
+    char d_name[];           /* Filename (null-terminated) */
+};
+
 int fat32_init(void);
 struct dirent* dirlookup(struct dirent* entry, char* filename, uint* poff);
 char* formatname(char* name);
