@@ -378,10 +378,12 @@ void syscallGetWorkDir(void) {
         panic("Alloc addr not implement for cwd\n");
     }
 
-    if (copyout(myproc()->pgdir, uva, myproc()->cwd->filename, n) < 0) {
+    int len = getAbsolutePath(myproc()->cwd, 1, uva, n);
+
+    if (len < 0) {
         tf->a0 = -1;
         return;
-    } 
+    }
     
     tf->a0 = uva;
 }
@@ -720,4 +722,110 @@ void syscallUmount() {
     ep->head = ep->head->next;
 
     tf->a0 = 0;
+}
+
+void syscallLinkAt() {
+    Trapframe *tf = getHartTrapFrame();
+    int oldDirFd = tf->a0, newDirFd = tf->a2, flags = tf->a4;
+    
+    assert(flags == 0);
+    char oldPath[FAT32_MAX_PATH], newPath[FAT32_MAX_PATH];
+    if (fetchstr(tf->a1, oldPath, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+    if (fetchstr(tf->a3, newPath, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+
+    bool absolutePath = (oldPath[0] == '/');
+    struct dirent* startEntry = myproc()->cwd, *entryPoint, *targetPoint;
+
+    if (!absolutePath && oldDirFd != AT_FDCWD) {
+        myproc()->cwd = myproc()->ofile[oldDirFd]->ep;
+    }
+
+    if((entryPoint = ename(oldPath)) == NULL) {
+        goto bad;
+    }
+
+    absolutePath = (newPath[0] == '/');
+    if (!absolutePath && newDirFd != AT_FDCWD) {
+        myproc()->cwd = myproc()->ofile[newDirFd]->ep;
+    }
+
+    if ((targetPoint = create(newPath, T_FILE, O_RDWR)) == NULL) {
+        goto bad;
+    }
+
+    char buf[FAT32_MAX_PATH];
+    if (getAbsolutePath(entryPoint, 0, (u64)buf, FAT32_MAX_PATH) < 0) {
+        goto bad;
+    }
+    int len = strlen(buf);
+    if (ewrite(targetPoint, 0, (u64)buf, 0, strlen(buf) != len)) {
+        goto bad;
+    }
+
+    myproc()->cwd = startEntry;
+    tf->a0 = 0;
+    return;
+bad:
+    myproc()->cwd = startEntry;
+    tf->a0 = -1;
+}
+
+void syscallUnlinkAt() {
+    Trapframe *tf = getHartTrapFrame();
+    int dirFd = tf->a0, flags = tf->a2;
+    
+    assert(flags == 0);
+    char path[FAT32_MAX_PATH];
+    if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+
+    bool absolutePath = (path[0] == '/');
+    struct dirent* startEntry = myproc()->cwd, *entryPoint;
+
+    if (!absolutePath && dirFd != AT_FDCWD) {
+        myproc()->cwd = myproc()->ofile[dirFd]->ep;
+    }
+
+    if((entryPoint = ename(path)) == NULL) {
+        goto bad;
+    }
+
+    entryPoint->_nt_res = 0;
+    eremove(entryPoint);
+
+    myproc()->cwd = startEntry;
+    tf->a0 = 0;
+    return;
+bad:
+    myproc()->cwd = startEntry;
+    tf->a0 = -1;
+}
+
+extern FileSystem rootFileSystem;
+int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen) {
+    char path[FAT32_MAX_PATH];
+    
+    if (d->parent == NULL) {
+        return either_copyout(isUser, buf, "/", 2);
+    }
+    char *s = path + FAT32_MAX_PATH - 1;
+    *s = '\0';
+    while (d->parent) {
+        int len = strlen(d->filename);
+        s -= len;
+        if (s <= path || s - path <= FAT32_MAX_PATH - maxLen)  // can't reach root "/"
+            return -1;
+        strncpy(s, d->filename, len);
+        *--s = '/';
+        d = d->parent;
+    }
+    return either_copyout(isUser, buf, (void*)s, strlen(s) + 1);
 }

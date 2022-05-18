@@ -232,7 +232,9 @@ struct dirent* create(char* path, short type, int mode) {
 
     if (type == T_DIR) {
         mode = ATTR_DIRECTORY;
-    } else if (mode & O_RDONLY) {
+    }  else if (type == T_LINK) {
+        mode = ATTR_LINK;
+    }  else if (mode & O_RDONLY) {
         mode = ATTR_READ_ONLY;
     } else {
         mode = 0;
@@ -555,6 +557,7 @@ void emake(struct dirent* dp, struct dirent* ep, uint off) {
             (uint16)(ep->first_clus >> 16);  // first clus high 16 bits
         de.sne.fst_clus_lo = (uint16)(ep->first_clus & 0xffff);  // low 16 bits
         de.sne.file_size = 0;  // filesize is updated in eupdate()
+        de.sne._nt_res = ep->_nt_res;
         off = reloc_clus(fs, dp, off, 1);
         rw_clus(fs, dp->cur_clus, 1, 0, (u64)&de, off, sizeof(de));
     } else {
@@ -602,6 +605,7 @@ void emake(struct dirent* dp, struct dirent* ep, uint off) {
             (uint16)(ep->first_clus >> 16);  // first clus high 16 bits
         de.sne.fst_clus_lo = (uint16)(ep->first_clus & 0xffff);  // low 16 bits
         de.sne.file_size = ep->file_size;  // filesize is updated in eupdate()
+        de.sne._nt_res = ep->_nt_res;
         off = reloc_clus(fs, dp, off, 1);
         rw_clus(fs, dp->cur_clus, 1, 0, (u64)&de, off, sizeof(de));
     }
@@ -628,7 +632,13 @@ struct dirent* ealloc(struct dirent* dp, char* name, int attr) {
     
     ep = eget(dp, name);
     elock(ep);
-    ep->attribute = attr;
+    if (attr == ATTR_LINK) {
+        ep->attribute = 0;
+        ep->_nt_res = DT_LNK;
+    } else {
+        ep->attribute = attr;
+        ep->_nt_res = 0;
+    }
     ep->file_size = 0;
     ep->first_clus = 0;
     ep->parent = edup(dp);
@@ -681,6 +691,7 @@ void eupdate(struct dirent* entry) {
     de.sne.fst_clus_hi = (uint16)(entry->first_clus >> 16);
     de.sne.fst_clus_lo = (uint16)(entry->first_clus & 0xffff);
     de.sne.file_size = entry->file_size;
+    de.sne._nt_res = entry->_nt_res;
     rw_clus(fs, entry->parent->cur_clus, 1, 0, (u64)&de, off, sizeof(de));
     entry->dirty = 0;
 }
@@ -841,6 +852,7 @@ static void read_entry_info(struct dirent* entry, union dentry* d) {
     entry->file_size = d->sne.file_size;
     entry->cur_clus = entry->first_clus;
     entry->clus_cnt = 0;
+    entry->_nt_res = d->sne._nt_res;
 }
 
 /**
@@ -986,6 +998,16 @@ static char* skipelem(char* path, char* name) {
     return path;
 }
 
+static struct dirent* jumpToLinkDirent(struct dirent* link) {
+    char buf[FAT32_MAX_FILENAME];
+    while (link && link->_nt_res == DT_LNK) {
+        eread(link, 0, (u64)buf, 0, FAT32_MAX_FILENAME);
+        link = ename(buf);
+    }
+    assert(link != NULL);
+    return link;
+}
+
 // FAT32 version of namex in xv6's original file system.
 static struct dirent* lookup_path(char* path, int parent, char* name) {
     struct dirent *entry, *next;
@@ -999,6 +1021,7 @@ static struct dirent* lookup_path(char* path, int parent, char* name) {
     }
     
     while ((path = skipelem(path, name)) != 0) {
+        entry = jumpToLinkDirent(entry);
         elock(entry);
         if (!(entry->attribute & ATTR_DIRECTORY)) {
             eunlock(entry);

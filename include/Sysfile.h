@@ -37,6 +37,10 @@ void syscallReadDir(void);
 void syscallGetDirent();
 void syscallMount(void);
 void syscallUmount(void);
+void syscallUnlinkAt(void);
+void syscallLinkAt(void);
+
+int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen);
 
 u64 sys_remove(void);
 // Must hold too many locks at a time! It's possible to raise a deadlock.

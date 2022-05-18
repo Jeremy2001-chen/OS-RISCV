@@ -12,6 +12,7 @@
 #define ATTR_DIRECTORY 0x10
 #define ATTR_ARCHIVE 0x20
 #define ATTR_LONG_NAME 0x0F
+#define ATTR_LINK   0x40
 
 #define LAST_LONG_ENTRY 0x40
 #define FAT32_EOC 0x0ffffff8
@@ -58,6 +59,7 @@ struct dirent {
     uint32 cur_clus;
     uint clus_cnt;
 
+    u8 _nt_res;
     FileSystem *fileSystem;
     /* for OS */
     uint8 dev;
