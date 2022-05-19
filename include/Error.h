@@ -1,0 +1,15 @@
+#ifndef _ERROR_H_
+#define _ERROR_H_
+
+enum ErrorCode {
+    UNKNOWN_ERROR = 1,
+    BAD_PROCESS,
+    INVALID_PARAM,
+    NO_FREE_MEMORY,
+    NO_FREE_PROCESS,
+    NOT_ELF_FILE,
+    INVALID_PROCESS_STATUS,
+    INVALID_PERM
+};
+
+#endif

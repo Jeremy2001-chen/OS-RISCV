@@ -1,0 +1,25 @@
+driver_dir	:= driver
+memory_dir	:= memory
+boot_dir	:= boot
+trap_dir	:= trap
+lock_dir    := lock
+system_dir  := system
+utility_dir	:= utility
+fs_dir		:= fs
+modules		:= 	$(driver_dir) $(memory_dir) $(boot_dir) $(trap_dir) $(lock_dir) $(system_dir) $(utility_dir) $(fs_dir)
+
+.PHONY:	build clean $(modules)
+
+build: $(modules)
+
+$(modules):
+	$(MAKE) build --directory=$@
+
+clean:
+	for d in $(modules); \
+		do \
+			$(MAKE) --directory=$$d clean; \
+		done
+	rm -rf *.o *~
+
+include ../include.mk
