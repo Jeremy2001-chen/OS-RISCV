@@ -175,9 +175,11 @@ void syscallGetDirent() {
         int nread=0;
         elock(f->ep);
         for (;;) {
+            de.valid = 0;
             while ((ret = enext(f->ep, &de, f->off, &count)) ==
                    0) {  // skip empty entry
                 f->off += count * 32;
+                de.valid = 0;
             }
             if (ret == -1)
                 break;
@@ -185,6 +187,12 @@ void syscallGetDirent() {
 
             int len = strlen(de.filename);
             int prefix = ((u64)dir64->d_name - (u64)dir64);
+
+            if (n < prefix + len + 1) {
+                eunlock(f->ep);
+                getHartTrapFrame()->a0 = nread;
+                return;
+            }            
 
             dir64->d_ino = 0;
             dir64->d_off = 0;  // This maybe wrong;
@@ -200,6 +208,7 @@ void syscallGetDirent() {
             }
             addr += prefix + len + 1;
             nread += prefix + len + 1;
+            n -= prefix + len + 1;
         }
         eunlock(f->ep);
 

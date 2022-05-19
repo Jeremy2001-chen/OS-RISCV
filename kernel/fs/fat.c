@@ -867,7 +867,7 @@ static void read_entry_info(struct dirent* entry, union dentry* d) {
  *          1       find a file with all its entries
  */
 int enext(struct dirent* dp, struct dirent* ep, uint off, int* count) {
-    assert(dp->fileSystem == ep->fileSystem);
+    // assert(dp->fileSystem == ep->fileSystem);
     if (!(dp->attribute & ATTR_DIRECTORY))
         panic("enext not dir");
     if (ep->valid)
@@ -881,7 +881,7 @@ int enext(struct dirent* dp, struct dirent* ep, uint off, int* count) {
     union dentry de;
     int cnt = 0;
     memset(ep->filename, 0, FAT32_MAX_FILENAME + 1);
-    FileSystem *fs = ep->fileSystem;
+    FileSystem *fs = dp->fileSystem;
     for (int off2; (off2 = reloc_clus(fs, dp, off, 0)) != -1; off += 32) {
         if (rw_clus(fs, dp->cur_clus, 0, 0, (u64)&de, off2, 32) != 32 ||
             de.lne.order == END_OF_ENTRY) {

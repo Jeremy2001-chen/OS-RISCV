@@ -64,6 +64,7 @@ void kernelTrap() {
     u64 scause = r_scause();
     u64 hartId = r_hartid();
     extern Process *currentProcess[HART_TOTAL_NUMBER];
+    printf("[Kernel Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
 
 #ifdef CJY_DEBUG
     printf("[Kernel Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
