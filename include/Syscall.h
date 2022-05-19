@@ -21,6 +21,7 @@ void syscallSetBrk();
 void syscallMapMemory();
 void syscallUnMapMemory();
 void syscallExec();
+void syscallUname();
 
 extern void (*syscallVector[])(void);
 

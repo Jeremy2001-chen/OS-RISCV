@@ -45,7 +45,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_MOUNT]             syscallMount,
     [SYSCALL_UMOUNT]            syscallUmount,
     [SYSCALL_LINKAT]            syscallLinkAt,
-    [SYSCALL_UNLINKAT]          syscallUnlinkAt
+    [SYSCALL_UNLINKAT]          syscallUnlinkAt,
+    [SYSCALL_UNAME]             syscallUname
 };
 
 extern struct Spinlock printLock;
@@ -243,4 +244,23 @@ void syscallUnMapMemory() {
 void syscallExec() {
     Trapframe *tf = getHartTrapFrame();
     tf->a0 = sys_exec();
+}
+
+void syscallUname() {
+    struct utsname {
+	    char sysname[65];
+	    char nodename[65];
+	    char release[65];
+	    char version[65];
+	    char machine[65];
+	    char domainname[65];
+    } uname;
+    strncpy(uname.sysname, "my_linux", 65);
+    strncpy(uname.nodename, "my_node", 65);
+    strncpy(uname.release, "MIPS-OS", 65);
+    strncpy(uname.version, "0.0.0", 65);
+    strncpy(uname.machine, "Risc-V sifive_u", 65);
+    strncpy(uname.domainname, "Beijing", 65);
+    Trapframe *tf = getHartTrapFrame();
+    copyout(myproc()->pgdir, tf->a0, (char*)&uname, sizeof(struct utsname));
 }
