@@ -12,13 +12,13 @@
 // * Do not use the buffer after calling brelse.
 // * Only one process at a time can use a buffer,
 //     so do not keep them longer than necessary.
-#include "defs.h"
+#include "Defs.h"
 #include "Type.h"
 // #include "param.h"
 #include "Sleeplock.h"
 #include "Spinlock.h"
 // #include "riscv.h"
-// #include "defs.h"
+// #include "Defs.h"
 // #include "fs.h"
 #include "Driver.h"
 #include "Sd.h"

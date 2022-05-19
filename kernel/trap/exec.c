@@ -189,7 +189,7 @@ int exec(char* path, char** argv) {
 
     //free old pagetable
     pgdirFree(oldpagetable);
-	asm volatile("fence.i");
+    asm volatile("fence.i");
     MSG_PRINT("out exec");
     return argc;  // this ends up in a0, the first argument to main(argc, argv)
 

@@ -7,7 +7,7 @@
 #include <Page.h>
 #include <string.h>
 #include <Spinlock.h>
-#include <defs.h>
+#include <Defs.h>
 #include <pipe.h>
 #include <Debug.h>
 
