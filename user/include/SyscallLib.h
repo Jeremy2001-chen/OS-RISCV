@@ -93,4 +93,9 @@ static inline int umount(const char *special, unsigned long flags) {
 static inline int read(int fd, const char *buf, int n) {
     return msyscall(SYSCALL_READ, fd, (u64)buf, n, 0, 0, 0);
 }
+
+static inline int exec(const char *path, char **argv){
+    return msyscall(SYSCALL_EXEC, (u64)path, (u64)argv,0,0,0,0);
+}
+
 #endif

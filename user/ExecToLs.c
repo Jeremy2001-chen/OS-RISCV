@@ -3,7 +3,7 @@
 #include <userfile.h>
 #include <uLib.h>
 
-char *__argv[]={"ls.b", "/", "/", 0};
+char *__argv[]={"ls", "/", "/", 0};
 
 int userMain(int argc, char **argv) {
     dev(1, O_RDWR); //stdin

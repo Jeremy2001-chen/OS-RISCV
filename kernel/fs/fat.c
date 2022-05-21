@@ -229,7 +229,7 @@ struct dirent* create(char* path, short type, int mode) {
         return NULL;
     }
     
-
+    //TODO 虚拟文件权限mode转fat格式的权限mode
     if (type == T_DIR) {
         mode = ATTR_DIRECTORY;
     }  else if (type == T_LINK) {
