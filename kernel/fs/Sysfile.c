@@ -202,7 +202,7 @@ void syscallGetDirent() {
                 getHartTrapFrame()->a0 = -4;
                 return;
             }
-            if (copyout(p->pgdir, addr + prefix, de.filename, len) != 0) {
+            if (copyout(p->pgdir, addr + prefix, de.filename, len+1) != 0) {
                 getHartTrapFrame()->a0 = -114;
                 return;
             }
