@@ -10,6 +10,7 @@
 #include <Interrupt.h>
 #include <Debug.h>
 #include <FileSystem.h>
+#include <Sysfile.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
@@ -299,11 +300,11 @@ void processRun(Process* p) {
             printf("init dirent end\n");
             void testfat();
             testfat();
-          
-            struct dirent* ep = create("/dev", T_DIR, O_RDONLY);
+
+            struct dirent* ep = create(AT_FDCWD, "/dev", T_DIR, O_RDONLY);
             eunlock(ep);
             eput(ep);
-            ep = create("/dev/vda2", T_DIR, O_RDONLY);
+            ep = create(AT_FDCWD, "/dev/vda2", T_DIR, O_RDONLY);
             ep->head = &rootFileSystem;            
             eunlock(ep);
         }

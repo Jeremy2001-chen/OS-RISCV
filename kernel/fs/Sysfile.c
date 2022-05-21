@@ -251,21 +251,15 @@ void syscallOpenAt(void) {
         tf->a0 = -1;
         return;
     }
-    bool absolutePath = (path[0] == '/');
-    struct dirent* entryPoint, *startEntry;
-
-    if (!absolutePath && startFd != AT_FDCWD) {
-        startEntry = myproc()->cwd;
-        myproc()->cwd = myproc()->ofile[startFd]->ep;
-    }
+    struct dirent* entryPoint;
 
     if (flags & O_CREATE) {
-        entryPoint = create(path, T_FILE, mode);
+        entryPoint = create(startFd, path, T_FILE, mode);
         if (entryPoint == NULL) {
             goto bad;
         }
     } else {
-        if ((entryPoint = ename(path)) == NULL) {
+        if ((entryPoint = ename(startFd, path)) == NULL) {
             goto bad;
         }
         elock(entryPoint);
@@ -303,16 +297,10 @@ void syscallOpenAt(void) {
     file->writable = (flags & O_WRONLY) || (flags & O_RDWR);
 
     eunlock(entryPoint);
-    if (!absolutePath && startFd != AT_FDCWD) {
-        myproc()->cwd = startEntry;
-    }
 
     tf->a0 = fd;
     return;
-bad:  
-    if (!absolutePath && startFd != AT_FDCWD) {
-        myproc()->cwd = startEntry;
-    }
+bad:
     tf->a0 = -1;
 }
 
@@ -327,15 +315,9 @@ void syscallMakeDirAt(void) {
         return;
     }
 
-    bool absolutePath = (path[0] == '/');
-    struct dirent* entryPoint, *startEntry;
+    struct dirent* entryPoint;
 
-    if (!absolutePath && dirFd != AT_FDCWD) {
-        startEntry = myproc()->cwd;
-        myproc()->cwd = myproc()->ofile[dirFd]->ep;    
-    }
-
-    if ((entryPoint = create(path, T_DIR, mode)) == 0) {
+    if ((entryPoint = create(dirFd, path, T_DIR, mode)) == 0) {
         goto bad;
     }
 
@@ -344,10 +326,7 @@ void syscallMakeDirAt(void) {
     tf->a0 = 0;
     return;
 
-bad:  
-    if (!absolutePath && dirFd != AT_FDCWD) {
-        myproc()->cwd = startEntry;
-    }
+bad:
     tf->a0 = -1;
 }
 
@@ -358,7 +337,7 @@ void syscallChangeDir(void) {
 
     struct Process* p = myproc();
     
-    if (fetchstr(tf->a0, path, FAT32_MAX_PATH) < 0 || (ep = ename(path)) == NULL) {
+    if (fetchstr(tf->a0, path, FAT32_MAX_PATH) < 0 || (ep = ename(AT_FDCWD, path)) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -572,7 +551,7 @@ u64 sys_rename(void) {
     struct dirent *src = NULL, *dst = NULL, *pdst = NULL;
     int srclock = 0;
     char* name;
-    if ((src = ename(old)) == NULL || (pdst = enameparent(new, old)) == NULL ||
+    if ((src = ename(AT_FDCWD, old)) == NULL || (pdst = enameparent(AT_FDCWD, new, old)) == NULL ||
         (name = formatname(old)) == NULL) {
         goto fail;  // src doesn't exist || dst parent doesn't exist || illegal
                     // new name
@@ -656,11 +635,11 @@ void syscallMount() {
         return;
     }
     struct dirent *ep, *dp;
-    if (fetchstr(imagePathUva, imagePath, FAT32_MAX_PATH) < 0 || (ep = ename(imagePath)) == NULL) {
+    if (fetchstr(imagePathUva, imagePath, FAT32_MAX_PATH) < 0 || (ep = ename(AT_FDCWD, imagePath)) == NULL) {
         tf->a0 = -1;
         return;
     }
-    if (fetchstr(mountPathUva, mountPath, FAT32_MAX_PATH) < 0 || (dp = ename(mountPath)) == NULL) {
+    if (fetchstr(mountPathUva, mountPath, FAT32_MAX_PATH) < 0 || (dp = ename(AT_FDCWD, mountPath)) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -703,7 +682,7 @@ void syscallUmount() {
     char mountPath[FAT32_MAX_FILENAME];
     struct dirent *ep;
 
-    if (fetchstr(mountPathUva, mountPath, FAT32_MAX_PATH) < 0 || (ep = ename(mountPath)) == NULL) {
+    if (fetchstr(mountPathUva, mountPath, FAT32_MAX_PATH) < 0 || (ep = ename(AT_FDCWD, mountPath)) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -748,23 +727,13 @@ void syscallLinkAt() {
         return;
     }
 
-    bool absolutePath = (oldPath[0] == '/');
-    struct dirent* startEntry = myproc()->cwd, *entryPoint, *targetPoint;
+    struct dirent* entryPoint, *targetPoint;
 
-    if (!absolutePath && oldDirFd != AT_FDCWD) {
-        myproc()->cwd = myproc()->ofile[oldDirFd]->ep;
-    }
-
-    if((entryPoint = ename(oldPath)) == NULL) {
+    if((entryPoint = ename(oldDirFd, oldPath)) == NULL) {
         goto bad;
     }
 
-    absolutePath = (newPath[0] == '/');
-    if (!absolutePath && newDirFd != AT_FDCWD) {
-        myproc()->cwd = myproc()->ofile[newDirFd]->ep;
-    }
-
-    if ((targetPoint = create(newPath, T_FILE, O_RDWR)) == NULL) {
+    if ((targetPoint = create(newDirFd, newPath, T_FILE, O_RDWR)) == NULL) {
         goto bad;
     }
 
@@ -772,16 +741,15 @@ void syscallLinkAt() {
     if (getAbsolutePath(entryPoint, 0, (u64)buf, FAT32_MAX_PATH) < 0) {
         goto bad;
     }
+
     int len = strlen(buf);
-    if (ewrite(targetPoint, 0, (u64)buf, 0, strlen(buf) != len)) {
+    if (ewrite(targetPoint, 0, (u64)buf, 0, strlen(buf)) != len) {
         goto bad;
     }
 
-    myproc()->cwd = startEntry;
     tf->a0 = 0;
     return;
 bad:
-    myproc()->cwd = startEntry;
     tf->a0 = -1;
 }
 
@@ -795,26 +763,18 @@ void syscallUnlinkAt() {
         tf->a0 = -1;
         return;
     }
+    struct dirent* entryPoint;
 
-    bool absolutePath = (path[0] == '/');
-    struct dirent* startEntry = myproc()->cwd, *entryPoint;
-
-    if (!absolutePath && dirFd != AT_FDCWD) {
-        myproc()->cwd = myproc()->ofile[dirFd]->ep;
-    }
-
-    if((entryPoint = ename(path)) == NULL) {
+    if((entryPoint = ename(dirFd, path)) == NULL) {
         goto bad;
     }
 
     entryPoint->_nt_res = 0;
     eremove(entryPoint);
 
-    myproc()->cwd = startEntry;
     tf->a0 = 0;
     return;
 bad:
-    myproc()->cwd = startEntry;
     tf->a0 = -1;
 }
 

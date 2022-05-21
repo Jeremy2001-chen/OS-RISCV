@@ -10,6 +10,8 @@
 #include <Process.h>
 #include <Debug.h>
 #include <FileSystem.h>
+#include <Sysfile.h>
+
 /* fields that start with "_" are something we don't use */
 
 typedef struct short_name_entry {
@@ -221,11 +223,11 @@ static void free_clus(FileSystem *fs, uint32 cluster) {
     write_fat(fs, cluster, 0);
 }
 
-struct dirent* create(char* path, short type, int mode) {
+struct dirent* create(int fd, char* path, short type, int mode) {
     struct dirent *ep, *dp;
     char name[FAT32_MAX_FILENAME + 1];
 
-    if ((dp = enameparent(path, name)) == NULL) {
+    if ((dp = enameparent(fd, path, name)) == NULL) {
         return NULL;
     }
     
@@ -1002,17 +1004,18 @@ static struct dirent* jumpToLinkDirent(struct dirent* link) {
     char buf[FAT32_MAX_FILENAME];
     while (link && link->_nt_res == DT_LNK) {
         eread(link, 0, (u64)buf, 0, FAT32_MAX_FILENAME);
-        link = ename(buf);
+        link = ename(AT_FDCWD, buf);
     }
     assert(link != NULL);
     return link;
 }
 
-// FAT32 version of namex in xv6's original file system.
-static struct dirent* lookup_path(char* path, int parent, char* name) {
+static struct dirent* lookup_path(int fd, char* path, int parent, char* name) {
     struct dirent *entry, *next;
     
-    if (*path == '/') {
+    if (*path != '/' && fd != AT_FDCWD) {
+        entry = edup(myproc()->ofile[fd]->ep);
+    } else if (*path == '/') {
         entry = edup(&rootFileSystem.root);
     } else if (*path != '\0') {
         entry = edup(myproc()->cwd);
@@ -1058,11 +1061,11 @@ static struct dirent* lookup_path(char* path, int parent, char* name) {
     return entry;
 }
 
-struct dirent* ename(char* path) {
+struct dirent* ename(int fd, char* path) {
     char name[FAT32_MAX_FILENAME + 1];
-    return lookup_path(path, 0, name);
+    return lookup_path(fd, path, 0, name);
 }
 
-struct dirent* enameparent(char* path, char* name) {
-    return lookup_path(path, 1, name);
+struct dirent* enameparent(int fd, char* path, char* name) {
+    return lookup_path(fd, path, 1, name);
 }
