@@ -25,8 +25,10 @@ const char* stat_map[] =
 void ls(char *path){
     static char buf[1024];
     int fd = open(path, O_RDONLY | O_DIRECTORY);
-    if (fd == -1)
+    if (fd == -1){
         printf("open error\n");
+        return;
+    }
 
     for (;;) {
         int nread = getdirent(fd, buf, 1024);
