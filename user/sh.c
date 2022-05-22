@@ -125,10 +125,8 @@ void runcmd(struct cmd* cmd) {
 
         case BACK:
             bcmd = (struct backcmd*)cmd;
-            if (fork1() == 0) {
+            if (fork1() == 0)
                 runcmd(bcmd->cmd);
-                exit(0);
-            }
             wait(0);
             break;
     }

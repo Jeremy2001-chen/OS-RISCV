@@ -95,11 +95,14 @@ void processFree(Process *p) {
     if (p->parentId > 0) {
         Process* parentProcess;
         int r = pid2Process(p->parentId, &parentProcess, 0);
-        if (r < 0) {
-            panic("Can't get parent process, current process is %x, parent is %x\n", p->id, p->parentId);
-        }
+        // if (r < 0) {
+        //     panic("Can't get parent process, current process is %x, parent is %x\n", p->id, p->parentId);
+        // }
         // printf("[Free] process %x wake up %x\n", p->id, parentProcess);
-        wakeup(parentProcess);
+        // The parent process may die before the child process
+        if (r == 0) {
+            wakeup(parentProcess);
+        }
     }
 }
 
