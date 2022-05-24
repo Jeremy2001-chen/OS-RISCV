@@ -34,8 +34,6 @@ FAT 簇层的函数主要是解析 FAT 簇结构。包括以下函数
 
 ## 文件层
 
-文件层
-
 > `eread(struct dirent* entry, int user_dst, u64 dst, uint off, uint n)`
 
 > `ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n)`
