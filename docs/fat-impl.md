@@ -58,17 +58,37 @@ FAT 文件系统的实现，分为了磁盘层，数据层，簇层，文件层�
 
 > `ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n)`
 
+将 `src` 写入文件 `entry` 的 `off` 偏移往后长度为 `n` 的内容。如果 `user` 为真，则为用户地址，否则为内核地址。
+
+调用 `reloc_clus` 和 `rw_clus` 函数即可。
+
 > `struct dirent* eget(struct dirent* parent, char* name)`
+
+在 `direntCache` 里找到 `parent` 下名为 `name` 的文件。如果不存在或没有传名称，则返回一个未被使用的 dirent。
 
 > `void emake(struct dirent* dp, struct dirent* ep, uint off)`
 
+在目录 `dp` 的 `off` 偏移开始生成文件 `ep` 的目录项信息。其中 `off` 一定是 32 的倍数。当 off = 0 时，创建的文件为 `.`，当 off = 32 时，创建的文件为 `..`。
+
+注意 ep 可能是长名字。
+
 > `struct dirent* ealloc(struct dirent* dp, char* name, int attr)`
+
+在目录 `dp` 下创建名称为 `name`，属性为 `attr` 的文件。如果新文件为目录，则在目录下创建 `.` 和 `..` 文件。
+
+调用 `dirlookup` 函数查询 `dp` 下原本是否存在 `name`。如果不存在，则调用 `eget` 获取一个空闲的 dirent。使用 `emake` 将新文件的 FAT 项添加到 `dp` 中。
 
 > `void eupdate(struct dirent* entry)`
 
+根据文件 `entry` 的大小和首簇，更新 `entry` 所在目录的 FAT 项中大小和首簇的信息。
+
 > `void eremove(struct dirent* entry)`
 
+从
+
 > `void etrunc(struct dirent* entry)`
+
+将文件 `entry` 的大小改为 0。通过不断 `read_fat` 和 `free_clus`，将文件清空。
 
 > `void eput(struct dirent* entry)`
 
