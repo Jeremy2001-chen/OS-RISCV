@@ -101,4 +101,22 @@ static inline int exec(const char* path, char** argv) {
 static inline int unlink(const char* path) {
     return msyscall(SYSCALL_UNLINKAT, AT_FDCWD, (u64)path, 0, 0, 0, 0);
 }
+
+static inline int fstat(int fd, struct stat *st) {
+    return msyscall(SYSCALL_FSTAT, fd, (u64)st, 0, 0, 0, 0);
+}
+
+static inline u64 sbrk(int size)
+{
+    return msyscall(SYSCALL_SBRK, size, 0, 0, 0, 0, 0);
+}
+
+static inline int chdir(const char* path) {
+    return msyscall(SYSCALL_CHDIR, (u64)path, 0, 0, 0, 0, 0);
+}
+
+static inline int cwd(char *buf, int n) {
+    return msyscall(SYSCALL_CWD, (u64)buf, n, 0, 0, 0, 0);
+}
+
 #endif

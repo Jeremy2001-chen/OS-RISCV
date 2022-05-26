@@ -7,7 +7,7 @@
 #define SYSCALL_PUT_STRING 5
 #define SYSCALL_READDIR 10
 
-#define SYSCALL_SBRK 13 // TODO , this id is wrong
+#define SYSCALL_SBRK 13 // TODO
 
 #define SYSCALL_CWD 17
 #define SYSCALL_DEV 20

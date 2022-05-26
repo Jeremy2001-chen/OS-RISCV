@@ -16,7 +16,7 @@ void userMain() {
     for (int i = 0; i < sizeof(syscallList) / sizeof(char*); i++) {
         int pid = fork();
         if (pid == 0) {
-            syscallExec(syscallList[i], argv);
+            exec(syscallList[i], argv);
         } else {
             wait(0);
         }

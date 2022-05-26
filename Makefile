@@ -2,22 +2,22 @@ kernel_dir	:= 	kernel
 linker_dir	:= 	linkscript
 user_dir	:= 	user
 target_dir	:= 	target
-utility_dir	:=  utility
+utility_dir	:=	utility
 driver_dir	:= 	$(kernel_dir)/driver
 memory_dir	:= 	$(kernel_dir)/memory
 boot_dir	:=	$(kernel_dir)/boot
 trap_dir	:=	$(kernel_dir)/trap
-lock_dir    :=  $(kernel_dir)/lock
-system_dir  :=  $(kernel_dir)/system
+lock_dir	:= 	$(kernel_dir)/lock
+system_dir	:= 	$(kernel_dir)/system
 utility_dir	:=	$(kernel_dir)/utility
 fs_dir 		:=	$(kernel_dir)/fs
 
 linkscript	:= 	$(linker_dir)/Qemu.ld
 vmlinux_img	:=	$(target_dir)/vmlinux.img
-vmlinux_bin :=  os.bin
+vmlinux_bin	:=	os.bin
 vmlinux_asm	:= 	$(target_dir)/vmlinux_asm.txt
-dst			:= /mnt
-fs_img		:= fs.img
+dst			:=	/mnt
+fs_img		:=	fs.img
 
 modules := 	$(kernel_dir) $(user_dir)
 objects	:=	$(boot_dir)/*.o \
@@ -46,8 +46,6 @@ build: $(modules)
 
 sifive: clean build
 	$(OBJCOPY) -O binary $(vmlinux_img) /srv/tftp/vm.bin
-
-fs:
 	
 fat: $(user_dir)
 	if [ ! -f "$(fs_img)" ]; then \
