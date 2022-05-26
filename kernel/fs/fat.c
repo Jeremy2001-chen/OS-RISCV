@@ -1054,6 +1054,9 @@ static struct dirent* lookup_path(int fd, char* path, int parent, char* name) {
         entry = next;
 
     }
+
+    entry = jumpToLinkDirent(entry);
+
     if (parent) {
         eput(entry);
         return NULL;

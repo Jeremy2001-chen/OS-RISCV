@@ -727,7 +727,7 @@ void syscallLinkAt() {
         return;
     }
 
-    struct dirent* entryPoint, *targetPoint;
+    struct dirent* entryPoint, *targetPoint = NULL;
 
     if((entryPoint = ename(oldDirFd, oldPath)) == NULL) {
         goto bad;
@@ -747,9 +747,16 @@ void syscallLinkAt() {
         goto bad;
     }
 
+    targetPoint->_nt_res = DT_LNK;
+    eupdate(targetPoint);
+
     tf->a0 = 0;
+    eunlock(targetPoint);
     return;
 bad:
+    if (targetPoint) {
+        eunlock(targetPoint);
+    }
     tf->a0 = -1;
 }
 

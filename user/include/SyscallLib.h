@@ -119,4 +119,9 @@ static inline int cwd(char *buf, int n) {
     return msyscall(SYSCALL_CWD, (u64)buf, n, 0, 0, 0, 0);
 }
 
+static inline int link(const char *old_path, const char *new_path)
+{
+    return msyscall(SYSCALL_LINKAT, AT_FDCWD, (u64)old_path, AT_FDCWD, (u64)new_path, 0, 0);
+}
+
 #endif
