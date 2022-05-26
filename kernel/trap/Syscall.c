@@ -149,7 +149,7 @@ void syscallGetCpuTimes() {
         cowHandler(myproc()->pgdir, tf->a0);
     }
     *ct = myproc()->cpuTime;
-    tf->a0 = 19260817;
+    tf->a0 = (r_cycle() & 0x3FFFFFFF);
 }
 
 void syscallGetTime() {
