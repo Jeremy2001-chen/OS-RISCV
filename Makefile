@@ -16,19 +16,19 @@ linkscript	:= 	$(linker_dir)/Qemu.ld
 vmlinux_img	:=	$(target_dir)/vmlinux.img
 vmlinux_bin	:=	os.bin
 vmlinux_asm	:= 	$(target_dir)/vmlinux_asm.txt
-dst			:=	/mnt
+dst		:=	/mnt
 fs_img		:=	fs.img
 
 modules := 	$(kernel_dir) $(user_dir)
 objects	:=	$(boot_dir)/*.o \
-			$(driver_dir)/*.o \
-			$(memory_dir)/*.o \
-			$(trap_dir)/*.o \
-			$(lock_dir)/*.o \
-			$(system_dir)/*.o \
-			$(utility_dir)/*.o \
-			$(fs_dir)/*.o \
-			$(user_dir)/*.x
+		$(driver_dir)/*.o \
+		$(memory_dir)/*.o \
+		$(trap_dir)/*.o \
+		$(lock_dir)/*.o \
+		$(system_dir)/*.o \
+		$(utility_dir)/*.o \
+		$(fs_dir)/*.o \
+		$(user_dir)/*.x
 
 .PHONY: build clean $(modules) run
 
