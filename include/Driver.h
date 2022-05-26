@@ -42,6 +42,10 @@ inline void setMode(int hartId) {
 	asm volatile ("ecall" : "+r" (a0) : "r"(a0), "r"(a1), "r"(a2), "r"(a6), "r" (a7) : "memory");
 }
 
+void printChar(char *buf, char c, int length, int ladjust);
+void printString(char * buf, char* s, int length, int ladjust);
+void printNum(char * buf, unsigned long u, int base, int negFlag, 
+	 int length, int ladjust, char padc, int upcase);
 void printf(const char *fmt, ...);
 void _panic_(const char*, int, const char*, const char *, ...)__attribute__((noreturn));
 void _assert_(const char*, int, const char *, int);
