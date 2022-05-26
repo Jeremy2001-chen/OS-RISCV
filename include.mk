@@ -1,5 +1,5 @@
 CROSS_COMPILE	:= riscv64-unknown-elf-
-GCC				:= $(CROSS_COMPILE)gcc
+GCC		:= $(CROSS_COMPILE)gcc
 CFLAGS 	= -Wall -Werror -O -fno-omit-frame-pointer -ggdb -g
 CFLAGS 	+= -MD
 CFLAGS 	+= -mcmodel=medany
