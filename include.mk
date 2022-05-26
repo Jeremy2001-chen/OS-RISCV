@@ -9,10 +9,10 @@ CFLAGS 	+= $(shell $(GCC) -fno-stack-protector -E -x c /dev/null >/dev/null 2>&1
 
 OBJDUMP := $(CROSS_COMPILE)objdump
 OBJCOPY	:= $(CROSS_COMPILE)objcopy
-LD		:= $(CROSS_COMPILE)ld
+LD 		:= $(CROSS_COMPILE)ld
 LDFLAGS	:= -z max-page-size=4096
 QEMU	:= qemu-system-riscv64
-OPENSBI	:=	./bootloader/dynamic.bin
+OPENSBI	:=./bootloader/dynamic.bin
 CPUS 	:= 5
 OPTS 	= -machine sifive_u -m 1G -nographic
 OPTS 	+= -smp $(CPUS)
