@@ -10,7 +10,7 @@ int userMain(int argc, char **argv) {
     dup(0); //stdout
     dup(0); //stderr
     printf("exec to ls.b\n");
-    syscallExec("/sh.b", __argv);
+    exec("/sh.b", __argv);
     printf("exec error\n");
     return -1;
 }

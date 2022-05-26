@@ -81,19 +81,19 @@ int pipe2(char* s) {
     int seq, i, n, cc, total, ret;
     enum { N = 5, SZ = 1033 };
 
-    if (syscallPipe(fds) != 0) {
-        printf("%s: syscallPipe() failed\n", s);
+    if (pipe(fds) != 0) {
+        printf("%s: Pipe alloc failed\n", s);
         return 1;
     }
     pid = fork();
     seq = 0;
     if (pid == 0) {
-        syscallClose(fds[0]);
+        close(fds[0]);
         for (n = 0; n < N; n++) {
             for (i = 0; i < SZ; i++)
                 buf[i] = seq++;
             int r;
-            if ((r=syscallWrite(fds[1], buf, SZ)) != SZ) {
+            if ((r=write(fds[1], buf, SZ)) != SZ) {
                 printf("%s: pipe1 oops 1\n", s);
                 return 1;
             }
@@ -101,10 +101,10 @@ int pipe2(char* s) {
         printf("child finish\n");
         return 0;
     } else if (pid > 0) {
-        syscallClose(fds[1]);
+        close(fds[1]);
         total = 0;
         cc = 1;
-        while ((n = syscallRead(fds[0], buf, cc)) > 0) {
+        while ((n = read(fds[0], buf, cc)) > 0) {
             for (i = 0; i < n; i++) {
                 if ((buf[i] & 0xff) != (seq++ & 0xff)) {
                     printf("%s: pipe1 oops 2 %d\n", s, n);
@@ -150,23 +150,23 @@ int pipe2(char* s) {
 
 ```c
 int userMain(int argc, char **argv) {
-    int fd = syscallOpen("/testfile", O_RDONLY);
+    int fd = open("/testfile", O_RDONLY);
     printf("fd1=%d\n", fd);
     char buf[10]={0};
-    int n = syscallRead(fd, buf, sizeof(buf));
+    int n = read(fd, buf, sizeof(buf));
     printf("[reading file %d bytes]: %s\n", n, buf);
 
-    int fd2 = syscallOpen("/createfile", O_WRONLY|O_CREATE);
+    int fd2 = open("/createfile", O_WRONLY|O_CREATE);
     printf("fd2=%d\n", fd2);
     char to_write[]="testcreatefile";
-    n = syscallWrite(fd2, "testcreatefile", sizeof(to_write));
+    n = write(fd2, "testcreatefile", sizeof(to_write));
     printf("[writing file %d bytes]\n", n);
 
-    syscallClose(fd2);
+    close(fd2);
 
-    fd2 = syscallOpen("/createfile", O_RDONLY);
+    fd2 = open("/createfile", O_RDONLY);
     char to_read[sizeof(to_write)+1];
-    n =  syscallRead(fd2, to_read, sizeof(to_read));
+    n =  read(fd2, to_read, sizeof(to_read));
     printf("[reading file %d bytes]: %s\n", n, to_read);
     for(;;);
 }
@@ -293,7 +293,7 @@ void userMain() {
     for (int i = 0; i < sizeof(syscallList) / sizeof(char*); i++) {
         int pid = fork();
         if (pid == 0) {
-            syscallExec(syscallList[i], argv);
+            exec(syscallList[i], argv);
         } else {
             wait(0);
         }
