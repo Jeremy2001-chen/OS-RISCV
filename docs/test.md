@@ -6,9 +6,9 @@
 
 ## 测试程序
 
-测试程序包括驱动测试、进程调度测试、管道测试、基础文件系统测试、虚拟文件系统测试、Fork 测试、进程编号测试程序。
+测试程序包括驱动测试、进程调度测试、管道测试、基础文件系统测试、虚拟文件系统测试、Fork 测试、进程编号测试程序、软连接测试程序。
 
-同时我们编写了可以通过大赛测试点的程序。
+同时我们编写了可以通过初赛测试点的程序。
 
 ### 驱动测试
 
@@ -17,25 +17,25 @@
 测试的方法如下面的代码所示：
 
 ```c
+for (int i = 0; i < 1024; i++) {
+    binary[i] = i & 7;
+    sdWrite(binary, j, 2);
     for (int i = 0; i < 1024; i++) {
-        binary[i] = i & 7;
-        sdWrite(binary, j, 2);
-        for (int i = 0; i < 1024; i++) {
-            binary[i] = 0;
-        }
-        sdRead(binary, j, 2);
-        for (int i = 0; i < 1024; i++) {
-            if (binary[i] != (i & 7)) {
-                panic("gg: %d ", j);
-                break;
-            }
+        binary[i] = 0;
+    }
+    sdRead(binary, j, 2);
+    for (int i = 0; i < 1024; i++) {
+        if (binary[i] != (i & 7)) {
+            panic("gg: %d ", j);
+            break;
         }
     }
+}
 ```
 
 方法比较简单，首先往磁盘块内写数据，之后再从中拿出数据。
 
-如果得到的结果并不一样，会触发第27行的 panic，表明驱动存在问题。
+如果得到的结果并不一样，会触发 panic 表明驱动存在问题。
 
 这一部分测试程序放在了 `Sd.c` 文件内，并没有放在用户态进程，因为考虑到我们的驱动是放在内核态的，并不向用户暴露这个接口。
 
@@ -275,7 +275,82 @@ int userMain(int argc, char **argv) {
 
 该测试程序放在用户态下 `ProcessIdTest.c` 文件中，测试了进程编号系统调用和 Fork 结合是否正确。
 
-该程序在**多核**下也能正常工作，证明 Fork 基本没有并发问题。
+该程序在**多核**下也能正常工作，证明 Fork 没有并发问题。
+
+### 链接测试程序
+
+本次大赛的测试点中并没有软链接的系统调用测试点，因此我们编写了相应测试程序。
+
+```c
+int userMain(int argc, char **argv) {
+    printf("start link test....\n");
+    char buf[300];
+    int fd;
+    if (!cwd(buf, 100)) {
+        printf("1 get current work directory error!\n");
+        exit(1);
+    }
+
+    if (mkdir("test", 0777) < 0) {
+        printf("2 make dir error\n");
+        exit(1);
+    }
+
+    if (chdir("./test") < 0) {
+        printf("3 change dir error\n");
+        exit(1);
+    }
+
+    if ((fd = open("testfile", O_CREATE)) < 0) {
+        printf("4 create testfile\n");
+        exit(1);
+    }
+
+    if (close(fd) < 0) {
+        printf("5 close file\n");
+        exit(1);
+    }
+
+    if (chdir("..") < 0) {
+        printf("6 change dir error\n");
+        exit(1);
+    }
+
+    if (link("test", "ret") < 0) {
+        printf("7 link error\n");
+        exit(1);        
+    }
+
+    if (chdir("/ret") < 0) {
+        printf("8 change dir error\n");
+        exit(1);
+    }
+
+    if ((fd = open("testfile", O_RDWR) < 0)) {
+        printf("9 open dir error\n");
+        exit(1);
+    }
+
+    if (close(fd) < 0) {
+        printf("10 close file\n");
+        exit(1);
+    }
+
+    printf("finish link test....\n");
+    return 0;
+}
+```
+
+测试流程如下所示：
+
+* 首先在当前工作目录（根目录）创建文件夹 `test`
+* 切换到 `test` 目录内创建文件 `testfile`
+* 回到根目录，创建软链接 `test` 链接到 `ret`
+* 进入 `ret` 目录，尝试打开 `testfile` 文件
+
+如果能正常打开说明链接正常实现。
+
+该测试程序放在用户态下 `LinkTest.c` 文件中，验证了链接的正确实现。
 
 ## 大赛测试点程序
 
