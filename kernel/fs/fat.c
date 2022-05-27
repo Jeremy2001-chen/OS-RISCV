@@ -719,7 +719,7 @@ void eremove(struct dirent* entry) {
 }
 
 // truncate a file
-// caller must hold entry->lock
+// caller must hold entry->lock*全部文件名目录项
 void etrunc(struct dirent* entry) {
     FileSystem *fs = entry->fileSystem;
     for (uint32 clus = entry->first_clus; clus >= 2 && clus < FAT32_EOC;) {

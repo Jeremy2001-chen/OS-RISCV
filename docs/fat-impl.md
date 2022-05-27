@@ -84,35 +84,51 @@ FAT 文件系统的实现，分为了磁盘层，数据层，簇层，文件层�
 
 > `void eremove(struct dirent* entry)`
 
-从
+删除文件 `entry` 所在的目录中关于它的全部文件名目录项。
+
+根据 `entry->off` 读到 `entry->parent` 
 
 > `void etrunc(struct dirent* entry)`
 
 将文件 `entry` 的大小改为 0。通过不断 `read_fat` 和 `free_clus`，将文件清空。
 
-> `void eput(struct dirent* entry)`
-
-> `void estat(struct dirent* de, struct stat* st)`
-
 > `int enext(struct dirent* dp, struct dirent* ep, uint off, int* count)`
+
+将目录 `dp` 的 `off` 偏移开始的文件的文件名信息读到 `ep` 中。如果 `off` 偏移开始的目录项是不是该文件名的首项，则不会读到完整的文件名。通过 `count` 返回从 `off` 开始的目录项到该文件结束的目录项个数。如果 `off` 开始的目录项为空，则 `count` 返回从 `off` 偏移开始的空目录项的个数。
 
 ## 应用层
 
 > `struct dirent* dirlookup(struct dirent* dp, char* filename, uint* poff)`
 
+在目录 `dp` 下找文件名为 `filename` 的文件。如果不存在该文件，则通过 `poff` 记录足够分配该 `filename` 的空闲目录项偏移。
+
 > `struct dirent* lookup_path(char* path, int parent, char* name)`
+
+查找路径为 `path` 的文件。如果 `parent` 为 true，则返回路径为 `path` 的文件所在的目录。`name` 记录文件名。
 
 > `struct dirent* ename(char* path)`
 
+返回路径 `path` 的文件。
+
 > `struct dirent* enameparent(char* path, char* name)`
+
+返回路径 `path` 的文件所属的目录。通过 `name` 返回目录名。
 
 > `struct file* filealloc(void)`
 
+分配一个空闲的文件描述符。
+
 > `void fileclose(struct file* f)`
+
+关闭文件。如果 `f` 是管道，则执行 `pipeclose`。如果 `f` 是文件，则修改文件的引用计数。
 
 > `int filestat(struct file* f, u64 addr)`
 
+查询文件信息。将信息填到用户态的 `addr` 地址。要求 `f` 必须是普通文件，不能是管道或设备。
+
 > `int fileread(struct file* f, u64 addr, int n)`
+
+如果是管道，则执行 `piperead`；如果是文件，则将 `f->off` 开始长度为 `n` 的内容复制到用户的 `addr`。
 
 > `int filewrite(struct file* f, u64 addr, int n)`
 
