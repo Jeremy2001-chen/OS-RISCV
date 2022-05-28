@@ -9,11 +9,11 @@
 ```c
 TRAMPOLINE_TOP -----> +----------------------------+----0x0000 0040 0000 0000-------
                       |                            |                          /|\
-                      |        Trampoline          |    8192 Byte         trampoline
+                      |         Trampoline         |    8192 Byte         trampoline
                       |                            |                          \|/
    U_STACK_TOP -----> +----------------------------+----0x0000 003f ffff 7ed4-----
                       |                            |                          /|\
-                      |        User Stack          |    1 GB                   |
+                      |         User Stack         |    1 GB                   |
                       |                            |                           |
     U_HEAP_TOP -----> +----------------------------+----0x0000 003e ffff 7ed4  |
                       |                            |                           |
@@ -44,7 +44,7 @@ TRAMPOLINE_TOP -----> +----------------------------+----0x0000 0040 0000 0000---
 
 * `U_DATA` 是用户进程数据段
 
-* `U_BUFFER` 是用户进程缓冲区
+* `U_BUFFER` 是用户进程输出缓冲区
 
 * `U_HEAP` 是用户堆区
 
