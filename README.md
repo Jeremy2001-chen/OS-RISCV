@@ -12,13 +12,31 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 
 ## 文档
 
-* [大赛第一阶段文档]()
+### 基本功能
+
 * [内存管理](docs/mm.md)
 * [进程管理](docs/schedule.md)
 * [异常和系统调用](docs/trap.md)
+
+### 外设
+
 * [驱动](docs/driver.md)
+
+### 文件系统
+
 * [文件系统]()
+
+### 多核
+
+* [多核启动](docs/multicore.md)
+* [锁](docs/lock.md)
+
+### 用户程序
+
 * [用户程序和 Shell](docs/shell.md)
+
+### 测试程序
+
 * [测试程序](docs/test.md)
 
 ## 编译内核和镜像

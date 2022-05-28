@@ -2,7 +2,7 @@
 
 ## 启动
 
-对于每个CPU启动时，他们处在M级别。在将控制权交给操作系统时，转换为S级别。
+对于每个 CPU 启动时，他们处在 M 级别。在将控制权交给操作系统时，转换为 S 级别。
 
 在 `Init.c` 中我们会对内核页表进行初始化，并且开启页表映射。
 
@@ -12,7 +12,7 @@
 - 构造内核页表。
 - 开启三级页表映射。
 
-物理地址分配关系：在物理地址空间中，位于0x8000_0000下方的一些是专门用于与外设交互的内存。OpenSBI与U-Boot位于0x8000_0000处，即内存的开始位置。内核则位于0x8020_0000处，在启动时U-Boot会将内核加载到0x8020_0000这个物理地址处。
+物理地址分配关系：在物理地址空间中，位于 0x8000_0000 下方的一些是专门用于与外设交互的内存。 OpenSBI 与 U-Boot 位于 0x8000_0000 处，即内存的开始位置。内核则位于 0x8020_0000 处，在启动时 U-Boot 会将内核加载到 0x8020_0000 这个物理地址处。
 
 在 `kernelEnd` 到 `PHYSICAL_MEMORY_TOP` 之间的这一部分物理内存，则被用来分配给用户程序，或者申请作为页表等其它用处。
 
@@ -23,7 +23,7 @@ PHYSICAL_MEMORY_TOP-> +----------------------------+----
                       |                            |                         
    kernelEnd   -----> +----------------------------+----
                       |                            |                         
-                      |          Kernel 	       |    
+                      |          Kernel            |    
                       |                            |                           
  0x8020 0000   -----> +----------------------------+----
                       |                            |                           
@@ -79,9 +79,9 @@ PhysicalPage pages[PHYSICAL_PAGE_NUM];
 
 ### 内核态地址空间
 
-我们设置内核页表，使得内核可以访问物理地址和各种MMIO外设。对于RISC-V的开发板，RAM（physical memory）开始在0x8000_0000处，并且对于unmatched 开发板拥有16G的内存。同时开发板上还有很多MMIO接口，这些外设的物理地址在0x8000_0000以下。内核可以通过读写这些特殊的物理内存来与外设交互。
+我们设置内核页表，使得内核可以访问物理地址和各种 MMIO 外设。对于 RISC-V 的开发板，RAM（physical memory）开始在 0x8000_0000 处，并且对于 unmatched 开发板拥有 16G 的内存。同时开发板上还有很多 MMIO 接口，这些外设的物理地址在 0x8000_0000 以下。内核可以通过读写这些特殊的物理内存来与外设交互。
 
-我们的内核访问内存和外设时用“直接映射”，将RAM和外设的虚拟地址设为和它的虚拟地址相同。例如，无论启不启用也表，访问0x8000_0000时都会访问到物理内存的最开始位置。“直接映射”简化了内核访问内存和外设的代码。
+我们的内核访问内存和外设时用“直接映射”，将 RAM 和外设的虚拟地址设为和它的虚拟地址相同。例如，无论启不启用也表，访问 0x8000_0000 时都会访问到物理内存的最开始位置。“直接映射”简化了内核访问内存和外设的代码。
 
 同时，我们有一些没采用“直接映射”的虚拟地址。
 
@@ -90,28 +90,28 @@ PhysicalPage pages[PHYSICAL_PAGE_NUM];
 
 我们在 `virtualMemory()` 中构造了内核态页表，其中
 
-- 将0x8000_0000 ~ PHYSICAL_MEMORY_TOP的地址映射到真正的物理地址，这使得在内核态下也可以访问内存的物理地址和虚拟地址相同。
-- SPI、UART的虚拟地址和物理地址相等。
-- 将用于错误处理的页TRAMPOLINE，从虚拟地址TRAMPOLINE_BASE映射到物理地址的trampoline。
+- 将 0x8000_0000 ~ PHYSICAL_MEMORY_TOP的地址映射到真正的物理地址，这使得在内核态下也可以访问内存的物理地址和虚拟地址相同。
+- SPI 、UART 的虚拟地址和物理地址相等。
+- 将用于错误处理的页 TRAMPOLINE ，从虚拟地址 TRAMPOLINE_BASE 映射到物理地址的trampoline。
 
 ```c
-	//映射SPI
-	pageInsert(kernelPageDirectory, SPI_CTRL_ADDR, SPI_CTRL_ADDR, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
+    //映射SPI
+    pageInsert(kernelPageDirectory, SPI_CTRL_ADDR, SPI_CTRL_ADDR, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
     //映射UART
-	pageInsert(kernelPageDirectory, UART_CTRL_ADDR, UART_CTRL_ADDR, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
+    pageInsert(kernelPageDirectory, UART_CTRL_ADDR, UART_CTRL_ADDR, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
     extern char textEnd[];
     va = pa = (u64)kernelStart;
     //映射内存
-	for (u64 i = 0; va + i < (u64)textEnd; i += PAGE_SIZE) {
+    for (u64 i = 0; va + i < (u64)textEnd; i += PAGE_SIZE) {
         pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_EXECUTE | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
     }
     va = pa = (u64)textEnd;
     //映射内存
-	for (u64 i = 0; va + i < PHYSICAL_MEMORY_TOP; i += PAGE_SIZE) {
+    for (u64 i = 0; va + i < PHYSICAL_MEMORY_TOP; i += PAGE_SIZE) {
         pageInsert(kernelPageDirectory, va + i, pa + i, PTE_READ | PTE_WRITE | PTE_ACCESSED | PTE_DIRTY);
     }
     extern char trampoline[];
-	//映射trampoline
+    //映射trampoline
     pageInsert(kernelPageDirectory, TRAMPOLINE_BASE, (u64)trampoline, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE | PTE_ACCESSED | PTE_DIRTY);
     pageInsert(kernelPageDirectory, TRAMPOLINE_BASE + PAGE_SIZE, (u64)trampoline + PAGE_SIZE, 
@@ -131,37 +131,37 @@ void startPage() {
 
 `memoryInit(...)` 函数调用 `startPage()` 函数来启用内核页表。它将内核页表的基地址写入 `w_satp` 寄存器，并且刷新缓存（TLB）。
 
-在这一步操作之后，我们的内核将真正使用我们的内核页表，因为物理地址部分我们使用了一一映射（也即物理地址与虚拟地址相同），所以CPU的下一条指令将被映射到正确的物理内存位置。
+在这一步操作之后，我们的内核将真正使用我们的内核页表，因为物理地址部分我们使用了一一映射（也即物理地址与虚拟地址相同），所以 CPU 的下一条指令将被映射到正确的物理内存位置。
 
-每个RISC-V CPU将会把页表缓存进自己的TLB（Translation Look-aside Buffer）之中，当OS切换页表时，也必须用 `sfence_vma` 来刷新TLB。否则在刷新TLB之前，某些虚拟地址将指向其它进程的物理内存，每当执行 `w_satp(...)` 后或者在trampoline中切换页表后都需要调用`sfence_vma` 来刷新TLB。
+每个 RISC-V CPU 将会把页表缓存进自己的 TLB（Translation Look-aside Buffer）之中，当 OS 切换页表时，也必须用 `sfence_vma` 来刷新TLB。否则在刷新TLB之前，某些虚拟地址将指向其它进程的物理内存，每当执行 `w_satp(...)` 后或者在trampoline中切换页表后都需要调用`sfence_vma` 来刷新 TLB。
 
 ## 进程地址空间
 
-每一个进程拥有一个独立的页表，当操作系统切换进程时，同时会切换进程的页表。每个进程的虚拟地址空间从0x0开始，并且最大是 $2^64$。
+每一个进程拥有一个独立的页表，当操作系统切换进程时，同时会切换进程的页表。每个进程的虚拟地址空间从 0x0 开始，并且最大是 $2^64$。
 
-当一个进程向操作系统申请更多的内存空间时，OS将调用 `LIST_REMOVE(...)` 从空闲页链表中取出队首元素，并且调用 `pageInsert(...)` 将虚拟地址映射到该页面对应的物理地址，并且给予权限位`PTE_READ ， PTE_EXECUTE ， PTE_WRITE ， PTE_ACCESSED ， PTE_DIRTY`。
+当一个进程向操作系统申请更多的内存空间时，OS 将调用 `LIST_REMOVE(...)` 从空闲页链表中取出队首元素，并且调用 `pageInsert(...)` 将虚拟地址映射到该页面对应的物理地址，并且给予权限位`PTE_READ ， PTE_EXECUTE ， PTE_WRITE ， PTE_ACCESSED ， PTE_DIRTY`。
 
-首先，每个进程的页表将逻辑地址转化为不同的物理地址，所以每个进程拥有它们自己的地址空间。第二，每个进程在页表的作用下看起来像是拥有从0x0开始的连续的逻辑地址空间，尽管它所占用的物理地址是可能不连续的。第三，我们将所有进程的 `TRAMPOLINE_BASE` 都映射到同一个物理页，所以所有进程都能访问到trampoline页面
+首先，每个进程的页表将逻辑地址转化为不同的物理地址，所以每个进程拥有它们自己的地址空间。第二，每个进程在页表的作用下看起来像是拥有从 0x0 开始的连续的逻辑地址空间，尽管它所占用的物理地址是可能不连续的。第三，我们将所有进程的 `TRAMPOLINE_BASE` 都映射到同一个物理页，所以所有进程都能访问到 trampoline 页面
 
 ## 插入页表
 
 插入页表通过 `pageInsert(pgdir, va, pa, perm)` 函数实现。
 
-该函数首先调用 `pageWalk(...)` 函数，若该函数返回的也表项pte是一个合法的页表项(PTE_V=1)，则调用 `pageRemove(...)` 将pte指向的页移除掉。
+该函数首先调用 `pageWalk(...)` 函数，若该函数返回的也表项 pte 是一个合法的页表项 (PTE_V = 1) ，则调用 `pageRemove(...)` 将 pte 指向的页移除掉。
 
-再次调用 `pageWalk(...)`，找到虚拟地址va对应的页表项pte，并且将pte设置为pa对应的物理页号，并给予相应的权限。
+再次调用 `pageWalk(...)`，找到虚拟地址 va 对应的页表项 pte ，并且将 pte 设置为 pa 对应的物理页号，并给予相应的权限。
 
-将pa对应的物理页的引用计数 `ref` 加1。
+将 pa 对应的物理页的引用计数 `ref` 加 1。
 
 最后调用 `sfence_vma` 刷新缓存（TLB）。
 
 ## 创建页表
 
-对于每一个页表，我们用一个64位unsigned类型的指针 `u64*` 指向页表的基地址。对于每一个指向页表的指针 `u64* pgdir` ，它可能是指向内核页表或某一个用户页表。
+对于每一个页表，我们用一个 64 位unsigned类型的指针 `u64*` 指向页表的基地址。对于每一个指向页表的指针 `u64* pgdir` ，它可能是指向内核页表或某一个用户页表。
 
 核心函数 `int pageWalk(u64 *pgdir, u64 va, bool create, u64 **pte)`，这个函数将在给定的页表 `pgdir` ，寻找虚拟地址 `va` 对应的页表项。
 
-该函数的具体实现，模仿RISC-V硬件根据虚拟地址查找页表项的过程。该函数每次从高向低考虑虚拟地址中的9 bits，根据这9 bits得到下一级也表页对应的也表项，并且找到下一级页表页对应的物理地址。如果在查找的过程中发现页表项不合法，根据 `create` 参数决定是否申请页表页，如果 `create==1`，则会自动申请二级页表和三级页表。最后将 `*pte` 指向对应的页表项。
+该函数的具体实现，模仿 RISC-V 硬件根据虚拟地址查找页表项的过程。该函数每次从高向低考虑虚拟地址中的 9 bits，根据这 9 bits 得到下一级也表页对应的也表项，并且找到下一级页表页对应的物理地址。如果在查找的过程中发现页表项不合法，根据 `create` 参数决定是否申请页表页，如果 `create==1`，则会自动申请二级页表和三级页表。最后将 `*pte` 指向对应的页表项。
 
 `copyout(...)` 函数负责将内核态的数据拷贝到用户态的某个虚拟地址处。
 
