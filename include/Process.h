@@ -79,7 +79,6 @@ typedef struct Process {
     u64 *pgdir;
     u32 id;
     u32 parentId;
-    FileSystem *fileSystem;
     LIST_ENTRY(Process) scheduleLink;
     u32 priority;
     enum ProcessState state;

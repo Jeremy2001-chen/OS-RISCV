@@ -12,7 +12,6 @@ typedef struct Process {
     u64* pgdir;                        //进程页表
     u32 id;                            //进程ID
     u32 parentId;                      //父进程ID
-    FileSystem* fileSystem;            //文件系统
     LIST_ENTRY(Process) scheduleLink;  //调度队列指针
     u32 priority;                      //优先级
     enum ProcessState state;           //进程的状态
