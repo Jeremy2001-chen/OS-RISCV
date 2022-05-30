@@ -24,12 +24,14 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 
 ### 文件系统
 
-* [文件系统]()
+* [FAT32 介绍](docs/fat-design.md)
+* [文件系统实现](docs/fat-impl.md)
+* [文件系统相关系统调用](docs/fat-syscall.md)
 
 ### 多核
 
 * [多核启动](docs/multicore.md)
-* [锁](docs/lock.md)
+* [睡眠锁](docs/sleeplock.md)
 
 ### 用户程序
 
