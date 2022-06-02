@@ -8,7 +8,7 @@
 #include <Hart.h>
 #include <Sysfile.h>
 #include <Debug.h>
-#include <defs.h>
+#include <Defs.h>
 #include <exec.h>
 
 void trapInit() {

@@ -77,15 +77,15 @@ void runcmd(struct cmd* cmd) {
             ecmd = (struct execcmd*)cmd;
             if (ecmd->argv[0] == 0)
                 exit(1);
-            syscallExec(ecmd->argv[0], ecmd->argv);
-            printf("syscallExec %s failed\n", ecmd->argv[0]);
+            exec(ecmd->argv[0], ecmd->argv);
+            printf("exec %s failed\n", ecmd->argv[0]);
             break;
 
         case REDIR:
             rcmd = (struct redircmd*)cmd;
-            syscallClose(rcmd->fd);
-            if (syscallOpen(rcmd->file, rcmd->mode) < 0) {
-                printf("syscallOpen %s failed\n", rcmd->file);
+            close(rcmd->fd);
+            if (open(rcmd->file, rcmd->mode) < 0) {
+                printf("open %s failed\n", rcmd->file);
                 exit(1);
             }
             runcmd(rcmd->cmd);
@@ -101,24 +101,24 @@ void runcmd(struct cmd* cmd) {
 
         case PIPE:
             pcmd = (struct pipecmd*)cmd;
-            if (syscallPipe(p) < 0)
-                panic("syscallPipe");
+            if (pipe(p) < 0)
+                panic("pipe");
             if (fork1() == 0) {
-                syscallClose(1);
+                close(1);
                 dup(p[1]);
-                syscallClose(p[0]);
-                syscallClose(p[1]);
+                close(p[0]);
+                close(p[1]);
                 runcmd(pcmd->left);
             }
             if (fork1() == 0) {
-                syscallClose(0);
+                close(0);
                 dup(p[0]);
-                syscallClose(p[0]);
-                syscallClose(p[1]);
+                close(p[0]);
+                close(p[1]);
                 runcmd(pcmd->right);
             }
-            syscallClose(p[0]);
-            syscallClose(p[1]);
+            close(p[0]);
+            close(p[1]);
             wait(0);
             wait(0);
             break;
@@ -127,6 +127,7 @@ void runcmd(struct cmd* cmd) {
             bcmd = (struct backcmd*)cmd;
             if (fork1() == 0)
                 runcmd(bcmd->cmd);
+            wait(0);
             break;
     }
     exit(0);
@@ -135,8 +136,8 @@ void runcmd(struct cmd* cmd) {
 int getcmd(char* buf, int nbuf) {
     static char cwd_buf[32];
     memset(cwd_buf, 0, sizeof(cwd_buf));
-    if(syscallCwd(cwd_buf, 32) == 0)
-        printf("get cwd error!\n");
+    if(cwd(cwd_buf, 32) == 0)
+        printf("get current work directory error!\n");
     printf("[%s]:$ ", cwd_buf);
     memset(buf, 0, nbuf);
     gets(buf, nbuf);
@@ -148,11 +149,11 @@ int getcmd(char* buf, int nbuf) {
 int userMain(int argc, char **argv) {
     static char buf[100];
 
-    // Ensure that three file descriptors are syscallOpen.
+    // Ensure that three file descriptors are open.
     /*
-    while ((fd = syscallOpen("console", O_RDWR)) >= 0) {
+    while ((fd = open("console", O_RDWR)) >= 0) {
         if (fd >= 3) {
-            syscallClose(fd);
+            close(fd);
             break;
         }
     }*/
@@ -162,7 +163,7 @@ int userMain(int argc, char **argv) {
         if (buf[0] == 'c' && buf[1] == 'd' && buf[2] == ' ') {
             // Chdir must be called by the parent, not the child.
             buf[strlen(buf) - 1] = 0;  // chop \n
-            if (syscallChdir(buf + 3) < 0)
+            if (chdir(buf + 3) < 0)
                 printf("cannot cd %s\n", buf + 3);
             continue;
         }

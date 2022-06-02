@@ -45,17 +45,17 @@ char* gets(char* buf, int max) {
     char c;
     static int backspace = 0x082008;
     for (i = 0; i + 1 < max;) {
-        cc = syscallRead(0, &c, 1);
+        cc = read(0, &c, 1);
         if (cc < 1)
             break;
         if(c==127){
             if(i>0){
                 --i;
-                syscallWrite(1, (char *)&backspace, 3);
+                write(1, (char *)&backspace, 3);
             }
             continue;
         }
-        syscallWrite(1, &c, 1);
+        write(1, &c, 1);
         buf[i++] = c;
         if (c == '\n' || c == '\r')
             break;
@@ -68,11 +68,11 @@ int stat(const char* n, struct stat* st) {
     int fd;
     int r;
 
-    fd = syscallOpen(n, O_RDONLY);
+    fd = open(n, O_RDONLY);
     if (fd < 0)
         return -1;
-    r = syscallFstat(fd, st);
-    syscallClose(fd);
+    r = fstat(fd, st);
+    close(fd);
     return r;
 }
 

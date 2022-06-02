@@ -1,11 +1,13 @@
 INCLUDES	:=	-I./include/
 
-BIN_TOC     := ../utility/BinaryToC.c
+BIN_TOC		:= ../utility/BinaryToC.c
 
 USER_LIB	:= LibMain.o Printf.o uLib.o userHeap.o
 
-USER_TARGET	:= ProcessA.x ProcessB.x ForkTest.x ProcessIdTest.x SysfileTest.x PipeTest.x ExecTest.x ls.x ExecToLs.x sh.x SyscallTest.x WaitTest.x MkdirTest.x MountTest.x\
-	ProcessA.b ProcessB.b ForkTest.b ProcessIdTest.b SysfileTest.b PipeTest.b ExecTest.b ls.b ExecToLs.b sh.b SyscallTest.b WaitTest.b MkdirTest.b
+MOUNT_DIR	:= ./mnt
+
+USER_TARGET	:= ProcessA.x ProcessB.x ForkTest.x ProcessIdTest.x SysfileTest.x PipeTest.x ExecTest.x ExecToLs.x SyscallTest.x WaitTest.x MkdirTest.x MountTest.x LinkTest.x ls.x sh.x echo.x xargs.x cat.x mkdir.x touch.x rm.x\
+		ls sh echo xargs cat mkdir touch rm
 
 .PHONY: bintoc build clean
 
@@ -20,6 +22,10 @@ build: bintoc $(USER_LIB) $(USER_TARGET)
 
 %.b.c: %.b
 	./BinaryToC -f $< -o $@
+
+%: Entry.o %.o $(USER_LIB)
+	$(LD) -o $@ $(LDFLAGS) -G 0 -static -n -nostdlib -T ../linkscript/User.ld $^
+	mv $@ $(MOUNT_DIR)
 
 %.b: Entry.o %.o $(USER_LIB)
 	$(LD) -o $@ $(LDFLAGS) -G 0 -static -n -nostdlib -T ../linkscript/User.ld $^
@@ -36,6 +42,6 @@ clean:
 		do \
 			$(MAKE) --directory=$$d clean; \
 		done
-	rm -rf *.o *~ *.d *.x *.b.txt BinaryToC *.b
+	rm -rf *.o *~ *.d *.x *.b.txt $(MOUNT_DIR)/* BinaryToC *.b
 
 include ../include.mk

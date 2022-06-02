@@ -86,11 +86,42 @@ static inline int mount(const char *special, const char *dir, const char *fstype
     return msyscall(SYSCALL_MOUNT, (u64)special, (u64)dir, (u64)fstype, flags, (u64)data, 0);
 }
 
-static inline int umount(const char *special, unsigned long flags) {
+static inline int umount(const char* special, unsigned long flags) {
     return msyscall(SYSCALL_UMOUNT, (u64)special, flags, 0, 0, 0, 0);
 }
 
-static inline int read(int fd, const char *buf, int n) {
+static inline int read(int fd, const char* buf, int n) {
     return msyscall(SYSCALL_READ, fd, (u64)buf, n, 0, 0, 0);
 }
+
+static inline int exec(const char* path, char** argv) {
+    return msyscall(SYSCALL_EXEC, (u64)path, (u64)argv, 0, 0, 0, 0);
+}
+
+static inline int unlink(const char* path) {
+    return msyscall(SYSCALL_UNLINKAT, AT_FDCWD, (u64)path, 0, 0, 0, 0);
+}
+
+static inline int fstat(int fd, struct stat *st) {
+    return msyscall(SYSCALL_FSTAT, fd, (u64)st, 0, 0, 0, 0);
+}
+
+static inline u64 sbrk(int size)
+{
+    return msyscall(SYSCALL_SBRK, size, 0, 0, 0, 0, 0);
+}
+
+static inline int chdir(const char* path) {
+    return msyscall(SYSCALL_CHDIR, (u64)path, 0, 0, 0, 0, 0);
+}
+
+static inline int cwd(char *buf, int n) {
+    return msyscall(SYSCALL_CWD, (u64)buf, n, 0, 0, 0, 0);
+}
+
+static inline int link(const char *old_path, const char *new_path)
+{
+    return msyscall(SYSCALL_LINKAT, AT_FDCWD, (u64)old_path, AT_FDCWD, (u64)new_path, 0, 0);
+}
+
 #endif

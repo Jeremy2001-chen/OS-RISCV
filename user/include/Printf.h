@@ -16,24 +16,24 @@ static inline void clearBuffer() {
     }
 }
 
-static inline void addCharToBuffer(char c) {
+static inline void appendBuffer(char c) {
     printfBuffer[bufferLen++] = c;
     if (bufferLen == BUFFER_MAX_LEN) {
         clearBuffer();
     }
 }
 
-static inline void uPrintString(const char* s) {
+static inline void appendString(const char* s) {
     while (*s) {
         if (*s == '\n')
-            addCharToBuffer('\r');
-        addCharToBuffer(*s++);
+            appendBuffer('\r');
+        appendBuffer(*s++);
     }
 }
 
 static char digits[] = "0123456789abcdef";
 
-static inline void uPrintInt(i64 xx, int base, bool sign) {
+static inline void printInt(i64 xx, int base, bool sign) {
     char buf[30];
     int i;
     u64 x;
@@ -54,13 +54,17 @@ static inline void uPrintInt(i64 xx, int base, bool sign) {
     }
 
     while (--i >= 0) {
-        addCharToBuffer(buf[i]);
+        appendBuffer(buf[i]);
     }
 }
 
+void printChar(char *buf, char c, int length, int ladjust);
+void printString(char * buf, char* s, int length, int ladjust);
+void printNum(char * buf, unsigned long u, int base, int negFlag, 
+	 int length, int ladjust, char padc, int upcase);
 void printf(const char *fmt, ...);
-void _uPanic_(const char *file, int line, const char *fmt, ...);
-#define uPanic(...) _uPanic_(__FILE__, __LINE__, __VA_ARGS__)
+void _panic_(const char *file, int line, const char *fmt, ...);
+#define uPanic(...) _panic_(__FILE__, __LINE__, __VA_ARGS__)
 void _assert_(const char*, int, const char *, int);
 #define assert(x) _assert_(__FILE__, __LINE__, __func__, x)
 

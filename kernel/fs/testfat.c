@@ -1,4 +1,4 @@
-#include <defs.h>
+#include <Defs.h>
 #include <string.h>
 #include <Sysfile.h>
 #include <Debug.h>
@@ -8,7 +8,7 @@ char test_content_to_read[10] = {0};
 
 void testfat() {
     printf("[testfat] testing fat.......\n");
-    struct dirent* testfile = create("/testfile", T_FILE, O_CREATE | O_RDWR);
+    struct dirent* testfile = create(AT_FDCWD, "/testfile", T_FILE, O_CREATE | O_RDWR);
     if (testfile == NULL) {
         panic("[testfat] create file error\n");
     }
@@ -22,7 +22,7 @@ void testfat() {
     eunlock(testfile);
     eput(testfile);
     MSG_PRINT("eput file finish");
-    testfile = ename("/testfile");
+    testfile = ename(AT_FDCWD, "/testfile");
     if (testfile == NULL) {
         printf("[testfat] open file error\n");
     }

@@ -10,6 +10,7 @@
 #include <Interrupt.h>
 #include <Debug.h>
 #include <FileSystem.h>
+#include <Sysfile.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
@@ -94,11 +95,14 @@ void processFree(Process *p) {
     if (p->parentId > 0) {
         Process* parentProcess;
         int r = pid2Process(p->parentId, &parentProcess, 0);
-        if (r < 0) {
-            panic("Can't get parent process, current process is %x, parent is %x\n", p->id, p->parentId);
-        }
+        // if (r < 0) {
+        //     panic("Can't get parent process, current process is %x, parent is %x\n", p->id, p->parentId);
+        // }
         // printf("[Free] process %x wake up %x\n", p->id, parentProcess);
-        wakeup(parentProcess);
+        // The parent process may die before the child process
+        if (r == 0) {
+            wakeup(parentProcess);
+        }
     }
 }
 
@@ -299,11 +303,11 @@ void processRun(Process* p) {
             printf("init dirent end\n");
             void testfat();
             testfat();
-          
-            struct dirent* ep = create("/dev", T_DIR, O_RDONLY);
+
+            struct dirent* ep = create(AT_FDCWD, "/dev", T_DIR, O_RDONLY);
             eunlock(ep);
             eput(ep);
-            ep = create("/dev/vda2", T_DIR, O_RDONLY);
+            ep = create(AT_FDCWD, "/dev/vda2", T_DIR, O_RDONLY);
             ep->head = &rootFileSystem;            
             eunlock(ep);
         }

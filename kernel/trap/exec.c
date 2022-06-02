@@ -8,6 +8,7 @@
 #include <Sysarg.h>
 #include <Debug.h>
 #include <Trap.h>
+#include <Sysfile.h>
 #define MAXARG 32  // max exec arguments
 
 // Load a program segment into pagetable at virtual address va.
@@ -91,7 +92,7 @@ int exec(char* path, char** argv) {
     MSG_PRINT("setup");
 
     
-    if ((de = ename(path)) == 0) {
+    if ((de = ename(AT_FDCWD, path)) == 0) {
         MSG_PRINT("find file error\n");
         return -1;
     }
@@ -189,7 +190,7 @@ int exec(char* path, char** argv) {
 
     //free old pagetable
     pgdirFree(oldpagetable);
-	asm volatile("fence.i");
+    asm volatile("fence.i");
     MSG_PRINT("out exec");
     return argc;  // this ends up in a0, the first argument to main(argc, argv)
 

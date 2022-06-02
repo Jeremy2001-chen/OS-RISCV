@@ -3,30 +3,28 @@
 #include <userfile.h>
 #include <uLib.h>
 
-char *argv[]={"ls.b", "arg1", "arg2", 0};
+char *argv[]={"ls", "arg1", "arg2", 0};
 
 void userMain() {
     dev(1, O_RDWR); //stdin
     dup(0); //stdout
     dup(0); //stderr
-    // syscallExec("/yield", argv);
 
-    // syscallExec("/exit", argv);
     int pid = fork();
     if (pid == 0) {
         pid = fork();
         if (pid == 0) {
             pid = fork();
             if (pid == 0) {
-                syscallExec("/exit", argv);
+                exec("/exit", argv);
             }
             else
-                syscallExec("/getppid", argv);
+                exec("/getppid", argv);
         }
         else
-            syscallExec("/dup", argv);
+            exec("/dup", argv);
     } else {
-        syscallExec("/getpid", argv);
+        exec("/getpid", argv);
     }
     // yield must test finally!!!
     

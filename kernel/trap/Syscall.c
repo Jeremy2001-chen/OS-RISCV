@@ -149,7 +149,7 @@ void syscallGetCpuTimes() {
         cowHandler(myproc()->pgdir, tf->a0);
     }
     *ct = myproc()->cpuTime;
-    tf->a0 = 19260817;
+    tf->a0 = (r_cycle() & 0x3FFFFFFF);
 }
 
 void syscallGetTime() {
@@ -258,7 +258,7 @@ void syscallUname() {
     strncpy(uname.sysname, "my_linux", 65);
     strncpy(uname.nodename, "my_node", 65);
     strncpy(uname.release, "MIPS-OS", 65);
-    strncpy(uname.version, "0.0.0", 65);
+    strncpy(uname.version, "0.1.0", 65);
     strncpy(uname.machine, "Risc-V sifive_u", 65);
     strncpy(uname.domainname, "Beijing", 65);
     Trapframe *tf = getHartTrapFrame();
