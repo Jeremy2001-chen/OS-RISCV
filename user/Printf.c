@@ -153,7 +153,7 @@ static void print(const char *fmt, va_list ap) {
         }
     }
 
-    putchar('\0');
+    // putchar('\0');
 }
 
 void printf(const char *fmt, ...) {
