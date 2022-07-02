@@ -43,7 +43,6 @@ static int loadseg(u64* pagetable,
 }
 
 static int prepSeg(u64* pagetable, uint va, uint filesz) {
-    assert(va % PGSIZE == 0);
     for (int i = va; i < va + filesz; i += PGSIZE) {
         PhysicalPage* p;
         if (pageAlloc(&p) < 0)
