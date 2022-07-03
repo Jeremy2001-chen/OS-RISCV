@@ -46,6 +46,8 @@ inline u64 page2pa(PhysicalPage *page) {
 }
 
 inline PhysicalPage* pa2page(u64 pa) {
+    if (pa == 0)
+        return NULL;
     return ppn2page((pa - PHYSICAL_ADDRESS_BASE) >> PAGE_SHIFT);
 }
 

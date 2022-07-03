@@ -16,12 +16,12 @@ static int loadSegment(u64* pagetable, u64 va, u64 segmentSize, struct dirent* d
     PhysicalPage* page = NULL;
     u64* entry;
     u64 i;
-    int r = 0;
+    int r = 0;    
     if (offset > 0) {
         page = pa2page(pageLookup(pagetable, va, &entry));
         if (page == NULL) {
             if (pageAlloc(&page) < 0) {
-                panic("load segment error when we need to alloc a page!\n");
+                printf("load segment error when we need to alloc a page!\n");
             }
             pageInsert(pagetable, va, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
         }
@@ -67,7 +67,7 @@ static int loadSegment(u64* pagetable, u64 va, u64 segmentSize, struct dirent* d
 }
 
 int exec(char* path, char** argv) {
-    MSG_PRINT("in exec");
+    MSG_PRINT("in exec");    
     STR_PRINT(path);
     // char **s = argv;
 
@@ -123,6 +123,7 @@ int exec(char* path, char** argv) {
     }
 
     MSG_PRINT("begin map");
+    
     // Load program into memory.
     for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
         if (eread(de, 0, (u64)&ph, off, sizeof(ph)) != sizeof(ph)) {
@@ -135,6 +136,7 @@ int exec(char* path, char** argv) {
         if (loadSegment(pagetable, ph.vaddr, ph.memsz, de, ph.offset, ph.filesz) < 0)
             goto bad;
     }
+    
     eunlock(de);
     eput(de);
     de = 0;
@@ -198,6 +200,7 @@ int exec(char* path, char** argv) {
     pgdirFree(oldpagetable);
     asm volatile("fence.i");
     MSG_PRINT("out exec");
+    printf("OUT EXEC\n");
     return argc;  // this ends up in a0, the first argument to main(argc, argv)
 
 bad:

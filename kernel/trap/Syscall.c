@@ -46,7 +46,9 @@ void (*syscallVector[])(void) = {
     [SYSCALL_UMOUNT]            syscallUmount,
     [SYSCALL_LINKAT]            syscallLinkAt,
     [SYSCALL_UNLINKAT]          syscallUnlinkAt,
-    [SYSCALL_UNAME]             syscallUname
+    [SYSCALL_UNAME]             syscallUname,
+    [SYSCALL_SET_TID_ADDRESS]   syscallSetTidAddress,
+    [SYSCALL_EXIT_GROUP]        syscallExitGroup
 };
 
 extern struct Spinlock printLock;
@@ -263,4 +265,14 @@ void syscallUname() {
     strncpy(uname.domainname, "Beijing", 65);
     Trapframe *tf = getHartTrapFrame();
     copyout(myproc()->pgdir, tf->a0, (char*)&uname, sizeof(struct utsname));
+}
+
+void syscallSetTidAddress() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = myproc()->id;
+}
+
+void syscallExitGroup() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
 }
