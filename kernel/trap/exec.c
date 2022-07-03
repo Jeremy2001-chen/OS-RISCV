@@ -11,44 +11,57 @@
 #include <Sysfile.h>
 #define MAXARG 32  // max exec arguments
 
-// Load a program segment into pagetable at virtual address va.
-// va must be page-aligned
-// and the pages from va to va+sz must already be mapped.
-// Returns 0 on success, -1 on failure.
-static int loadseg(u64* pagetable,
-                   u64 va,
-                   struct dirent* de,
-                   uint offset,
-                   uint sz) {
-    uint i, n;
-    u64 pa;
-    int cow;
-    MSG_PRINT("");
-    for (i = 0; i < sz; i += PGSIZE) {
-        pa = vir2phy(pagetable, va + i, &cow);
-        if (pa == NULL)
-            panic("loadseg: address should exist");
-        if (cow) {
-            cowHandler(pagetable, va + i);
+static int loadSegment(u64* pagetable, u64 va, u64 segmentSize, struct dirent* de, u32 fileOffset, u32 binSize) {
+    u64 offset = va - DOWN_ALIGN(va, PAGE_SIZE);
+    PhysicalPage* page = NULL;
+    u64* entry;
+    u64 i;
+    int r = 0;
+    if (offset > 0) {
+        page = pa2page(pageLookup(pagetable, va, &entry));
+        if (page == NULL) {
+            if (pageAlloc(&page) < 0) {
+                panic("load segment error when we need to alloc a page!\n");
+            }
+            pageInsert(pagetable, va, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
         }
-        if (sz - i < PGSIZE)
-            n = sz - i;
-        else
-            n = PGSIZE;
-        if (eread(de, 0, (u64)pa, offset + i, n) != n)
-            return -1;
+        r = MIN(binSize, PAGE_SIZE - offset);
+        if (eread(de, 0, page2pa(page) + offset, fileOffset, r) != r) {
+            panic("load segment error when eread on offset\n");
+        }
     }
 
-    return 0;
-}
+    for (i = r; i < binSize; i += r) {
+        if (pageAlloc(&page) != 0) {
+            panic("load segment error when we need to alloc a page 1!\n");
+        }
+        pageInsert(pagetable, va + i, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
+        r = MIN(PAGE_SIZE, binSize - i);
+        if (eread(de, 0, page2pa(page), fileOffset + i, r) != r) {
+            panic("load segment error when eread on offset 1\n");
+        }
+    }
 
-static int prepSeg(u64* pagetable, uint va, uint filesz) {
-    for (int i = va; i < va + filesz; i += PGSIZE) {
-        PhysicalPage* p;
-        if (pageAlloc(&p) < 0)
-            return -1;
-        pageInsert(pagetable, i, page2pa(p),
-                   PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
+    offset = va + i - DOWN_ALIGN(va + i, PAGE_SIZE);
+    if (offset > 0) {
+        page = pa2page(pageLookup(pagetable, va + i, &entry));
+        if (page == NULL) {
+            if (pageAlloc(&page) != 0) {
+                panic("load segment error when we need to alloc a page 2!\n");
+            }
+            pageInsert(pagetable, va + i, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
+        }
+        r = MIN(segmentSize - i, PAGE_SIZE - offset);
+        bzero((void*)page2pa(page) + offset, r);
+    }
+
+    for (i += r; i < segmentSize; i += r) {
+        if (pageAlloc(&page) != 0) {
+            panic("load segment error when we need to alloc a page 3!\n");
+        }
+        pageInsert(pagetable, va + i, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
+        r = MIN(PAGE_SIZE, segmentSize - i);
+        bzero((void*)page2pa(page), r);
     }
     return 0;
 }
@@ -109,23 +122,17 @@ int exec(char* path, char** argv) {
         goto bad;
     }
 
-
     MSG_PRINT("begin map");
     // Load program into memory.
     for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
-        if (eread(de, 0, (u64)&ph, off, sizeof(ph)) != sizeof(ph))
+        if (eread(de, 0, (u64)&ph, off, sizeof(ph)) != sizeof(ph)) {
             goto bad;
+        }
         if (ph.type != PT_LOAD)
             continue;
         if (ph.memsz < ph.filesz)
             goto bad;
-        if (ph.vaddr + ph.memsz < ph.vaddr)
-            goto bad;
-        if (prepSeg(pagetable, ph.vaddr, ph.memsz))
-            goto bad;
-        if ((ph.vaddr % PGSIZE) != 0)
-            goto bad;
-        if (loadseg(pagetable, ph.vaddr, de, ph.offset, ph.filesz) < 0)
+        if (loadSegment(pagetable, ph.vaddr, ph.memsz, de, ph.offset, ph.filesz) < 0)
             goto bad;
     }
     eunlock(de);
