@@ -162,9 +162,10 @@ int exec(char* path, char** argv) {
             goto bad;
         if (copyout(pagetable, sp, argv[argc], strlen(argv[argc]) + 1) < 0)
             goto bad;
-        ustack[argc] = sp;
+        ustack[argc + 1] = sp;
     }
-    ustack[argc] = 0;
+    ustack[0] = argc;
+    ustack[argc + 1] = 0;
 
     // push the array of argv[] pointers.
     sp -= (argc + 1) * sizeof(u64);
@@ -179,6 +180,7 @@ int exec(char* path, char** argv) {
     // argc is returned via the system call return
     // value, which goes in a0.
     getHartTrapFrame()->a1 = sp;
+    printf("sp:  %lx\n", sp);
 
     // Save program name for debugging.
     /*
