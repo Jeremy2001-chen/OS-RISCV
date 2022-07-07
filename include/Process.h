@@ -7,6 +7,7 @@
 #include <fat.h>
 #include <Timer.h>
 #include <file.h>
+#include <Signal.h>
 
 #define NOFILE 128  //Number of fds that a process can open
 #define LOG_PROCESS_NUM 10
@@ -90,6 +91,8 @@ typedef struct Process {
     int reason;
     u64 retValue;
     u64 heapBottom;
+    SignalSet blocked;
+    SignalSet pending;
 } Process;
 
 LIST_HEAD(ProcessList, Process);
@@ -97,6 +100,7 @@ LIST_HEAD(ProcessList, Process);
 #define START_FORK 17
 
 u64 getProcessTopSp(Process* p);
+SignalAction *getSignalHandler(Process *p);
 
 Process* myproc();
 void processInit();

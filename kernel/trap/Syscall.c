@@ -8,6 +8,7 @@
 #include <Spinlock.h>
 #include <Sysfile.h>
 #include <exec.h>
+#include <Signal.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
@@ -28,7 +29,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_CLOSE]             syscallClose,
     [SYSCALL_OPENAT]            syscallOpenAt,
     [SYSCALL_GET_CPU_TIMES]     syscallGetCpuTimes,
-    [SYSCALL_GET_TIME]          syscallGetTime,
+    [SYSCALL_GET_TIME_OF_DAY]   syscallGetTime,
     [SYSCALL_SLEEP_TIME]        syscallSleepTime,
     [SYSCALL_DUP3]              syscallDupAndSet,
     [SYSCALL_CHDIR]             syscallChangeDir,
@@ -48,7 +49,13 @@ void (*syscallVector[])(void) = {
     [SYSCALL_UNLINKAT]          syscallUnlinkAt,
     [SYSCALL_UNAME]             syscallUname,
     [SYSCALL_SET_TID_ADDRESS]   syscallSetTidAddress,
-    [SYSCALL_EXIT_GROUP]        syscallExitGroup
+    [SYSCALL_EXIT_GROUP]        syscallExitGroup,
+    [SYSCALL_SIGNAL_PROCESS_MASK] syscallSignProccessMask,
+    [SYSCALL_SIGNAL_ACTION] syscallSignalAction,
+    [SYSCALL_SIGNAL_TIMED_WAIT] syscallSignalTimedWait,
+    [SYSCALL_GET_THREAD_ID] syscallGetTheardId,
+    [SYSCALL_PROCESS_RESOURSE_LIMIT] syscallProcessResourceLimit,
+    [SYSCALL_GET_TIME] syscallGetTime,
 };
 
 extern struct Spinlock printLock;
@@ -273,6 +280,45 @@ void syscallSetTidAddress() {
 }
 
 void syscallExitGroup() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallSignProccessMask() {
+    Trapframe *tf = getHartTrapFrame();
+    u64 how = tf->a0;
+    SignalSet set;
+    copyin(myproc()->pgdir, (char*)&set, tf->a1, sizeof(SignalSet));
+    if (tf->a2 != 0) {
+        copyout(myproc()->pgdir, tf->a2, (char*)(&myproc()->blocked), sizeof(SignalSet));
+    }
+    tf->a0 = signProccessMask(how, &set);
+}
+
+void syscallSignalAction() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = doSignalAction(tf->a0, tf->a1, tf->a2);
+}
+
+void syscallSignalTimedWait() {
+    TimeSpec ts;
+    Trapframe *tf = getHartTrapFrame();
+    if (tf->a2) {
+        copyin(myproc()->pgdir, (char*) &ts, tf->a2, sizeof(TimeSpec));
+    }
+    SignalSet signalSet;
+    copyin(myproc()->pgdir, (char*) &signalSet, tf->a0, sizeof(SignalSet));
+    SignalInfo info;
+    copyin(myproc()->pgdir, (char*) &info, tf->a0, sizeof(SignalInfo));
+    tf->a0 = doSignalTimedWait(&signalSet, &info, tf->a2 ? &ts: 0);
+}
+
+void syscallGetTheardId() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = myproc()->id;
+}
+
+void syscallProcessResourceLimit() {
     Trapframe *tf = getHartTrapFrame();
     tf->a0 = 0;
 }

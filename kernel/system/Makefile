@@ -1,6 +1,6 @@
 INCLUDES := -I../../include
 
-target = Hart.o
+target = Hart.o Signal.o
 
 .PHONY: build clean
 

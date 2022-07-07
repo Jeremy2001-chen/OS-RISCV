@@ -202,7 +202,6 @@ int exec(char* path, char** argv) {
     pgdirFree(oldpagetable);
     asm volatile("fence.i");
     MSG_PRINT("out exec");
-    printf("OUT EXEC\n");
     return argc;  // this ends up in a0, the first argument to main(argc, argv)
 
 bad:

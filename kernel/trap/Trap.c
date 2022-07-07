@@ -106,7 +106,8 @@ void userTrap() {
     u64 scause = r_scause();
     u64 hartId = r_hartid();
 
-    printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
+    //printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx, a7 is %d\n", 
+    //    hartId, sstatus, sepc, scause, r_stval(), getHartTrapFrame()->a7);
 #ifdef CJY_DEBUG
     printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
 #else
@@ -130,6 +131,9 @@ void userTrap() {
         {
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
+            if (!syscallVector[trapframe->a7]) {
+                panic("unknown-syscall: %d\n", trapframe->a7);
+            }
             syscallVector[trapframe->a7]();
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
@@ -155,6 +159,7 @@ void userTrap() {
 }
 
 static inline void userProcessCpuTimeBegin() {
+    //printf("leave kernel %s %d\n", __FILE__, __LINE__);
     Process *p = myproc();
     p->processTime.lastUserTime = r_time();
 }

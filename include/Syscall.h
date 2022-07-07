@@ -24,6 +24,11 @@ void syscallExec();
 void syscallUname();
 void syscallSetTidAddress();
 void syscallExitGroup();
+void syscallSignProccessMask();
+void syscallSignalAction();
+void syscallSignalTimedWait();
+void syscallGetTheardId();
+void syscallProcessResourceLimit();
 
 extern void (*syscallVector[])(void);
 

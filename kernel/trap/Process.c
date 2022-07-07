@@ -11,6 +11,7 @@
 #include <Debug.h>
 #include <FileSystem.h>
 #include <Sysfile.h>
+#include <Signal.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
@@ -33,6 +34,10 @@ struct Spinlock freeProcessesLock, scheduleListLock;
 
 u64 getProcessTopSp(Process* p) {
     return KERNEL_PROCESS_SP_TOP - (u64)(p - processes) * 10 * PAGE_SIZE;
+}
+
+SignalAction *getSignalHandler(Process *p) {
+    return (SignalAction*)(PROCESS_SIGNAL_BASE + (u64)(p - processes) * PAGE_SIZE);
 }
 
 void processInit() {
@@ -156,6 +161,8 @@ int setup(Process *p) {
     r = pageAlloc(&page);
     extern u64 kernelPageDirectory[];
     pageInsert(kernelPageDirectory, getProcessTopSp(p) - PGSIZE, page2pa(page), PTE_READ | PTE_WRITE | PTE_EXECUTE);
+    r = pageAlloc(&page);
+    pageInsert(kernelPageDirectory, (u64)getSignalHandler(p), page2pa(page), PTE_READ | PTE_WRITE);
 
     extern char trampoline[];
     pageInsert(p->pgdir, TRAMPOLINE_BASE, (u64)trampoline, 
@@ -413,8 +420,7 @@ int wait(int targetProcessId, u64 addr) {
     }
 }
 
-void wakeup(void* channel) {  // notifyAll()
-    // printf("hart %x wake up\n", r_hartid());
+void wakeup(void* channel) {
     for (int i = 0; i < PROCESS_TOTAL_NUMBER; ++i) {
         if (&processes[i] != myproc()) {
             acquireLock(&processes[i].lock);
@@ -427,7 +433,6 @@ void wakeup(void* channel) {  // notifyAll()
             releaseLock(&processes[i].lock);
         }
     }
-    // printf("hart %x wake up finish\n", r_hartid());
 }
 
 static int processTimeCount[HART_TOTAL_NUMBER] = {0, 0, 0, 0, 0};
@@ -565,6 +570,7 @@ void processFork(u32 flags, u64 stackVa, u64 parentThreadId, u64 tls, u64 childT
 }
 
 void kernelProcessCpuTimeBegin() {
+    //printf("enter kernel %s %d\n", __FILE__, __LINE__);
     Process *p = myproc();
     long currentTime = r_time();
     p->cpuTime.kernel += currentTime - p->processTime.lastKernelTime;

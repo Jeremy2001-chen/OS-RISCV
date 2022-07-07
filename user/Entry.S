@@ -1,6 +1,7 @@
     .section .text
     .globl _userStart
 _userStart:
+    addi a1, sp, 8
     call libMain
 _userLoop:
     call _userLoop
