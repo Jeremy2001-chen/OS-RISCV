@@ -63,6 +63,11 @@ fat: $(user_dir)
 	# 	sudo cp $$file $(dst)/bin/$${file#$U/_}; done
 	@sudo umount $(dst)
 
+new-lib:
+	cd ../testsuits-for-oskernel/libc-test && make compile
+
+new: clean new-lib fat run
+
 umount:
 	sudo umount $(dst)
 

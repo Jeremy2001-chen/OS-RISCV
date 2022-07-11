@@ -103,14 +103,12 @@ int exec(char* path, char** argv) {
     
     MSG_PRINT("setup");
 
-    
     if ((de = ename(AT_FDCWD, path)) == 0) {
         MSG_PRINT("find file error\n");
         return -1;
     }
     elock(de);
 
-    
     MSG_PRINT("lock file success");
     // Check ELF header
     if (eread(de, 0, (u64)&elf, 0, sizeof(elf)) != sizeof(elf)){
@@ -167,12 +165,25 @@ int exec(char* path, char** argv) {
     ustack[0] = argc;
     ustack[argc + 1] = 0;
 
+    int envCount = 2;
+    char *envVariable[2] = {"va=a", "vb=b"};
+    for (i = 0; i < envCount; i++) {
+        sp -= strlen(envVariable[i]) + 1;
+        sp -= sp % 16;  // riscv sp must be 16-byte aligned
+        if (sp < stackbase)
+            goto bad;
+        if (copyout(pagetable, sp, envVariable[i], strlen(envVariable[i]) + 1) < 0)
+            goto bad;
+        ustack[argc + 2 + i] = sp;
+    }
+    ustack[argc + 2 + envCount] = 0;
+
     // push the array of argv[] pointers.
-    sp -= (argc + 1) * sizeof(u64);
+    sp -= (argc + 3 + envCount) * sizeof(u64);
     sp -= sp % 16;
     if (sp < stackbase)
         goto bad;
-    if (copyout(pagetable, sp, (char*)ustack, (argc + 1) * sizeof(u64)) < 0)
+    if (copyout(pagetable, sp, (char*)ustack, (argc + 3 + envCount) * sizeof(u64)) < 0)
         goto bad;
 
     MSG_PRINT("end push args\n");
