@@ -69,6 +69,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_LISTEN] syscallListen,
     [SYSCALL_CONNECT] syscallConnect,
     [SYSCALL_ACCEPT] syscallAccept,
+    [SYSCALL_WRITE_VECTOR] syscallWriteVector
 };
 
 extern struct Spinlock printLock;
