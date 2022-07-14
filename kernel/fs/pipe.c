@@ -5,11 +5,11 @@
 #include "Sleeplock.h"
 #include "Spinlock.h"
 #include "Type.h"
-#include "file.h"
+#include <file.h>
 #include "string.h"
 #include "Riscv.h"
 
-int pipealloc(struct file** f0, struct file** f1) {
+int pipealloc(struct File** f0, struct File** f1) {
     struct pipe* pi;
 
     pi = 0;

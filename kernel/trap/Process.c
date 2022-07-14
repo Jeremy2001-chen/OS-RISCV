@@ -91,7 +91,7 @@ void processFree(Process *p) {
     p->state = ZOMBIE; // new
     for (int fd = 0; fd < NOFILE; fd++) {
         if (p->ofile[fd]) {
-            struct file* f = p->ofile[fd];
+            struct File* f = p->ofile[fd];
             fileclose(f);
             p->ofile[fd] = 0;
         }

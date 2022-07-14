@@ -85,7 +85,7 @@ typedef struct Process {
     enum ProcessState state;
     struct Spinlock lock;
     struct dirent *cwd;           // Current directory
-    struct file *ofile[NOFILE];
+    struct File *ofile[NOFILE];
     u64 chan;//wait Object
     u64 currentKernelSp;
     int reason;

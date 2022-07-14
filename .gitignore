@@ -1,6 +1,7 @@
 /.idea/
 /.vscode/
 /libc-test/runtest.exe
+/libc-test/entry-static.exe
 fs.img
 os.bin
 sdcard.img

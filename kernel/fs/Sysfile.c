@@ -19,9 +19,9 @@
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
-int argfd(int n, int* pfd, struct file** pf) {
+int argfd(int n, int* pfd, struct File** pf) {
     int fd;
-    struct file* f;
+    struct File* f;
 
     if (argint(n, &fd) < 0)
         return -1;
@@ -36,7 +36,7 @@ int argfd(int n, int* pfd, struct file** pf) {
 
 // Allocate a file descriptor for the given file.
 // Takes over file reference from caller on success.
-int fdalloc(struct file* f) {
+int fdalloc(struct File* f) {
     int fd;
     struct Process* p = myproc();
     
@@ -51,7 +51,7 @@ int fdalloc(struct file* f) {
 
 void syscallDup(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f;
     int fd = tf->a0;
     if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
         tf->a0 = -1;
@@ -69,7 +69,7 @@ void syscallDup(void) {
 
 void syscallDupAndSet(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f;
     int fd = tf->a0, fdnew = tf->a1;
 
     if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
@@ -89,7 +89,7 @@ void syscallDupAndSet(void) {
 
 void syscallRead(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f;
     int len = tf->a2, fd = tf->a0;
     u64 uva = tf->a1;
 
@@ -108,7 +108,7 @@ void syscallRead(void) {
 
 void syscallWrite(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f;
     int len = tf->a2, fd = tf->a0;
     u64 uva = tf->a1;
 
@@ -128,7 +128,7 @@ void syscallWrite(void) {
 void syscallClose(void) {
     Trapframe* tf = getHartTrapFrame();
     int fd = tf->a0;
-    struct file* f;
+    struct File* f;
 
     if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
         tf->a0 = -1;
@@ -142,7 +142,7 @@ void syscallClose(void) {
 
 void syscallGetFileState(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f;
     int fd = tf->a0;
     u64 uva = tf->a1; 
 
@@ -156,7 +156,7 @@ void syscallGetFileState(void) {
 
 extern struct entry_cache* ecache;
 void syscallGetDirent() {
-    struct file* f;
+    struct File* f;
     int fd, n;
     u64 addr;
 
@@ -275,7 +275,7 @@ void syscallOpenAt(void) {
             goto bad;
         }
     }
-    struct file* file;
+    struct File* file;
     int fd;
     if ((file = filealloc()) == NULL || (fd = fdalloc(file)) < 0) {
         if (file) {
@@ -379,7 +379,7 @@ void syscallGetWorkDir(void) {
 void syscallPipe(void) {
     Trapframe* tf = getHartTrapFrame();
     u64 fdarray = tf->a0;  // user pointer to array of two integers
-    struct file *rf, *wf;
+    struct File *rf, *wf;
     int fd0, fd1;
     struct Process* p = myproc();
 
@@ -417,7 +417,7 @@ void syscallDevice(void) {
     Trapframe* tf = getHartTrapFrame();
     int fd, omode = tf->a1;
     int major = tf->a0;
-    struct file* f;
+    struct File* f;
 
     if (omode & O_CREATE) {
         panic("dev file on FAT");
@@ -449,7 +449,7 @@ bad:
 
 void syscallReadDir(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f;
     int fd = tf->a0;
     u64 uva = tf->a1;
 
@@ -654,7 +654,7 @@ void syscallMount() {
         return;
     }
 
-    struct file *file = filealloc();
+    struct File *file = filealloc();
     file->off = 0;
     file->readable = true;
     file->writable = true;
@@ -791,7 +791,7 @@ void syscallLSeek() {
     if (fd < 0 || fd >= NOFILE) {
         goto bad;
     }
-    struct file* file = myproc()->ofile[fd];
+    struct File* file = myproc()->ofile[fd];
     if (file == 0) {
         goto bad;
     }

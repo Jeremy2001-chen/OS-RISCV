@@ -90,7 +90,7 @@ static struct buf* bget(int dev, uint blockno) {
 }
 
 struct buf* mountBlockRead(FileSystem* fs, u64 blockNum) {
-    struct file* file = fs->image;
+    struct File* file = fs->image;
     if (file->type == FD_DEVICE) {
         return bread(file->major, blockNum);
     }

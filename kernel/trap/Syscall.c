@@ -9,6 +9,7 @@
 #include <Sysfile.h>
 #include <exec.h>
 #include <Signal.h>
+#include <Socket.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
@@ -57,7 +58,17 @@ void (*syscallVector[])(void) = {
     [SYSCALL_PROCESS_RESOURSE_LIMIT] syscallProcessResourceLimit,
     [SYSCALL_GET_TIME] syscallGetTime,
     [SYSCALL_LSEEK] syscallLSeek,
-    [SYSCALL_IOCONTROL] syscallIOControl
+    [SYSCALL_IOCONTROL] syscallIOControl,
+    [SYSCALL_SOCKET] syscallSocket,
+    [SYSCALL_BIND] syscallBind,
+    [SYSCALL_GET_SOCKET_NAME] syscallGetSocketName,
+    [SYSCALL_SET_SOCKET_OPTION] syscallSetSocketOption,
+    [SYSCALL_SEND_TO] syscallSendTo,
+    [SYSCALL_RECEIVE_FROM] syscallReceiveFrom,
+    [SYSCALL_FCNTL] syscallFcntl,
+    [SYSCALL_LISTEN] syscallListen,
+    [SYSCALL_CONNECT] syscallConnect,
+    [SYSCALL_ACCEPT] syscallAccept,
 };
 
 extern struct Spinlock printLock;
@@ -225,7 +236,7 @@ void syscallMapMemory() {
         start += PGSIZE;
     }
 
-    struct file* fd;
+    struct File* fd;
     if (argfd(4, 0, &fd)) {
         trapframe->a0 = -1;
         return ;
@@ -328,5 +339,65 @@ void syscallProcessResourceLimit() {
 void syscallIOControl() {
     Trapframe *tf = getHartTrapFrame();
     printf("fd: %d, cmd: %d, argc: %d\n", tf->a0, tf->a1, tf->a2);
+    tf->a0 = 0;
+}
+
+void syscallSocket() {
+    Trapframe *tf = getHartTrapFrame();
+    int domain = tf->a0, type = tf->a1, protocal = tf->a2;
+    tf->a0 = createSocket(domain, type, protocal);
+}
+
+void syscallBind() {
+    Trapframe *tf = getHartTrapFrame();
+    assert(tf->a2 == sizeof(SocketAddr));
+    SocketAddr sa;
+    copyin(myproc()->pgdir, (char*)&sa, tf->a1, tf->a2);
+    tf->a0 = bindSocket(tf->a0, &sa);
+}
+
+void syscallGetSocketName() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = getSocketName(tf->a0, tf->a1);
+}
+
+void syscallSetSocketOption() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallSendTo() {
+    static char buf[PAGE_SIZE];
+    Trapframe *tf = getHartTrapFrame();
+    assert(tf->a5 == sizeof(SocketAddr));
+    SocketAddr sa;
+    copyin(myproc()->pgdir, (char *)&sa, tf->a4, sizeof(SocketAddr));
+    u32 len = MIN(tf->a2, PAGE_SIZE);
+    copyin(myproc()->pgdir, buf, tf->a1, len);
+    tf->a0 = sendTo(tf->a0, buf, tf->a2, tf->a3, &sa);
+}
+
+void syscallReceiveFrom() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = receiveFrom(tf->a0, tf->a1, tf->a2, tf->a3, tf->a4);
+}
+
+void syscallFcntl() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = -1;
+}
+
+void syscallListen() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallConnect() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallAccept() {
+    Trapframe *tf = getHartTrapFrame();
     tf->a0 = 0;
 }

@@ -2,7 +2,7 @@
 // Support functions for system calls that involve file descriptors.
 //
 #include "fat.h"
-#include "file.h"
+#include <file.h>
 #include <Process.h>
 #include <Page.h>
 #include <string.h>
@@ -10,24 +10,25 @@
 #include <Defs.h>
 #include <pipe.h>
 #include <Debug.h>
+#include <Socket.h>
 
 struct devsw devsw[NDEV];
 struct {
     struct Spinlock lock;
-    struct file file[NFILE];
+    struct File file[NFILE];
 } ftable;
 
 void fileinit(void) {
     initLock(&ftable.lock, "ftable");
-    struct file* f;
+    struct File* f;
     for (f = ftable.file; f < ftable.file + NFILE; f++) {
-        memset(f, 0, sizeof(struct file));
+        memset(f, 0, sizeof(struct File));
     }
 }
 
 // Allocate a file structure.
-struct file* filealloc(void) {
-    struct file* f;
+struct File* filealloc(void) {
+    struct File* f;
 
     acquireLock(&ftable.lock);
     for (f = ftable.file; f < ftable.file + NFILE; f++) {
@@ -42,7 +43,7 @@ struct file* filealloc(void) {
 }
 
 // Increment ref count for file f.
-struct file* filedup(struct file* f) {
+struct File* filedup(struct File* f) {
     acquireLock(&ftable.lock);
     if (f->ref < 1)
         panic("filedup");
@@ -52,8 +53,8 @@ struct file* filedup(struct file* f) {
 }
 
 // Close file f.  (Decrement ref count, close when reaches 0.)
-void fileclose(struct file* f) {
-    struct file ff;
+void fileclose(struct File* f) {
+    struct File ff;
 
     // printf("[FILE CLOSE]%x %x\n", f, f->ref);
     acquireLock(&ftable.lock);
@@ -74,12 +75,14 @@ void fileclose(struct file* f) {
     } else if (ff.type == FD_ENTRY) {
         eput(ff.ep);
     } else if (ff.type == FD_DEVICE) {
+    } else if (ff.type == FD_SOCKET) {
+        socketFree(ff.socket);
     }
 }
 
 // Get metadata about file f.
 // addr is a user virtual address, pointing to a struct stat.
-int filestat(struct file* f, u64 addr) {
+int filestat(struct File* f, u64 addr) {
     struct Process *p = myproc();
     struct stat st;
 
@@ -96,7 +99,7 @@ int filestat(struct file* f, u64 addr) {
 
 // Read from file f.
 // addr is a user virtual address.
-int fileread(struct file* f, u64 addr, int n) {
+int fileread(struct File* f, u64 addr, int n) {
     int r = 0;
 
     if (f->readable == 0)
@@ -126,7 +129,7 @@ int fileread(struct file* f, u64 addr, int n) {
 
 // Write to file f.
 // addr is a user virtual address.
-int filewrite(struct file* f, u64 addr, int n) {
+int filewrite(struct File* f, u64 addr, int n) {
     int ret = 0;
 
     if (f->writable == 0)
@@ -157,7 +160,7 @@ int filewrite(struct file* f, u64 addr, int n) {
 
 // Read from dir f.
 // addr is a user virtual address.
-int dirnext(struct file* f, u64 addr) {
+int dirnext(struct File* f, u64 addr) {
     struct Process* p = myproc();
 
     if (f->readable == 0 || !(f->ep->attribute & ATTR_DIRECTORY))

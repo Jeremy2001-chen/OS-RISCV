@@ -10,6 +10,7 @@ trap_dir	:=	$(kernel_dir)/trap
 lock_dir	:= 	$(kernel_dir)/lock
 system_dir	:= 	$(kernel_dir)/system
 utility_dir	:=	$(kernel_dir)/utility
+socket_dir 	:= 	$(kernel_dir)/socket
 fs_dir 		:=	$(kernel_dir)/fs
 
 linkscript	:= 	$(linker_dir)/Qemu.ld
@@ -28,6 +29,7 @@ objects	:=	$(boot_dir)/*.o \
 		$(system_dir)/*.o \
 		$(utility_dir)/*.o \
 		$(fs_dir)/*.o \
+		$(socket_dir)/*.o \
 		$(user_dir)/*.x
 
 .PHONY: build clean $(modules) run
