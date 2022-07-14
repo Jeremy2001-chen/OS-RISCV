@@ -39,6 +39,7 @@ void syscallMount(void);
 void syscallUmount(void);
 void syscallUnlinkAt(void);
 void syscallLinkAt(void);
+void syscallLSeek(void);
 
 int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen);
 
@@ -48,5 +49,9 @@ u64 sys_remove(void);
 u64 sys_rename(void);
 
 #define AT_FDCWD -100
+
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
 
 #endif

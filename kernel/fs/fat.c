@@ -1013,11 +1013,14 @@ static struct dirent* jumpToLinkDirent(struct dirent* link) {
 static struct dirent* lookup_path(int fd, char* path, int parent, char* name) {
     struct dirent *entry, *next;
     
-    if (*path != '/' && fd != AT_FDCWD) {
+    if (*path != '/' && fd != AT_FDCWD && fd >= 0 && fd < NOFILE) {
+        if (myproc()->ofile[fd] == 0) {
+            return NULL;
+        }
         entry = edup(myproc()->ofile[fd]->ep);
     } else if (*path == '/') {
         entry = edup(&rootFileSystem.root);
-    } else if (*path != '\0') {
+    } else if (*path != '\0' && fd == AT_FDCWD) {
         entry = edup(myproc()->cwd);
     } else {
         return NULL;

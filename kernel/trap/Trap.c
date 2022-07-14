@@ -131,6 +131,9 @@ void userTrap() {
         {
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
+            // if (trapframe->a7 != 63 && trapframe->a7 != 64) {
+            //     printf("syscall: %d\n", trapframe->a7);
+            // }
             if (!syscallVector[trapframe->a7]) {
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }

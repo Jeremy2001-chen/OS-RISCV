@@ -196,7 +196,7 @@ int processAlloc(Process **new, u64 parentId) {
     p->state = RUNNABLE;
     p->parentId = parentId;
     p->trapframe.kernelSp = getProcessTopSp(p);
-    p->trapframe.sp = USER_STACK_TOP - 24; //argc = 0, argv = 0, envs = 0
+    p->trapframe.sp = USER_STACK_TOP - 24; //argc = 0, argv = 0, envp = 0
 
     *new = p;
     return 0;

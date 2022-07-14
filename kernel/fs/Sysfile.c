@@ -39,7 +39,7 @@ int argfd(int n, int* pfd, struct file** pf) {
 int fdalloc(struct file* f) {
     int fd;
     struct Process* p = myproc();
-
+    
     for (fd = 0; fd < NOFILE; fd++) {
         if (p->ofile[fd] == 0) {
             p->ofile[fd] = f;
@@ -253,6 +253,7 @@ void syscallOpenAt(void) {
     }
     struct dirent* entryPoint;
 
+    // printf("startFd: %d, flags: %x, mode: %x\n", startFd, flags, mode);
     if (flags & O_CREATE) {
         entryPoint = create(startFd, path, T_FILE, mode);
         if (entryPoint == NULL) {
@@ -274,7 +275,6 @@ void syscallOpenAt(void) {
             goto bad;
         }
     }
-
     struct file* file;
     int fd;
     if ((file = filealloc()) == NULL || (fd = fdalloc(file)) < 0) {
@@ -780,6 +780,36 @@ void syscallUnlinkAt() {
     eremove(entryPoint);
 
     tf->a0 = 0;
+    return;
+bad:
+    tf->a0 = -1;
+}
+
+void syscallLSeek() {
+    Trapframe *tf = getHartTrapFrame();
+    int fd = tf->a0, offset = tf->a1, mode = tf->a2;
+    if (fd < 0 || fd >= NOFILE) {
+        goto bad;
+    }
+    struct file* file = myproc()->ofile[fd];
+    if (file == 0) {
+        goto bad;
+    }
+    int off = offset;
+    switch (mode) {
+        case SEEK_SET:
+            break;
+        case SEEK_CUR:
+            off += file->off;
+            break;
+        case SEEK_END:
+            off += file->ep->file_size;
+            break;
+        default:
+            goto bad;
+    }
+    file->off = off;
+    tf->a0 = file->off;
     return;
 bad:
     tf->a0 = -1;

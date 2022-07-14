@@ -83,7 +83,6 @@ int exec(char* path, char** argv) {
     Phdr ph;
     u64 *pagetable = 0;
     Process* p = myproc();
-
     u64* oldpagetable = p->pgdir;
 
     PhysicalPage *page;

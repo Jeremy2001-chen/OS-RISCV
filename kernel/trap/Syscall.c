@@ -56,6 +56,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_THREAD_ID] syscallGetTheardId,
     [SYSCALL_PROCESS_RESOURSE_LIMIT] syscallProcessResourceLimit,
     [SYSCALL_GET_TIME] syscallGetTime,
+    [SYSCALL_LSEEK] syscallLSeek
 };
 
 extern struct Spinlock printLock;
