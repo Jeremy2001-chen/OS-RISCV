@@ -16,6 +16,7 @@
 #include <Page.h>
 #include <pipe.h>
 #include <FileSystem.h>
+#include <Iovec.h>
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -123,6 +124,38 @@ void syscallWrite(void) {
     }
 
     tf->a0 = filewrite(f, uva, len);
+}
+
+void syscallWriteVector() {
+    Trapframe* tf = getHartTrapFrame();
+    struct file* f;
+    int fd = tf->a0;
+
+    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+        goto bad;
+    }
+
+    int cnt = tf->a2;
+    if (cnt < 0 || cnt >= IOVMAX) {
+        goto bad;
+    }
+
+    struct Iovec vec[IOVMAX];
+    struct Process* p = myproc();
+
+    if (copyin(p->pgdir, (char*)vec, tf->a1, cnt * sizeof(struct Iovec)) != 0) {
+        goto bad;
+    }
+
+    u64 len = 0;
+    for (int i = 0; i < cnt; i++) {
+        len += filewrite(f, (u64)vec[i].iovBase, vec[i].iovLen);
+    }
+    tf->a0 = len;
+    return;
+
+bad:
+    tf->a0 = -1;
 }
 
 void syscallClose(void) {
@@ -787,7 +820,8 @@ bad:
 
 void syscallLSeek() {
     Trapframe *tf = getHartTrapFrame();
-    int fd = tf->a0, offset = tf->a1, mode = tf->a2;
+    int fd = tf->a0, mode = tf->a2;
+    u64 offset = tf->a1;
     if (fd < 0 || fd >= NOFILE) {
         goto bad;
     }
@@ -795,7 +829,7 @@ void syscallLSeek() {
     if (file == 0) {
         goto bad;
     }
-    int off = offset;
+    u64 off = offset;
     switch (mode) {
         case SEEK_SET:
             break;
@@ -808,8 +842,8 @@ void syscallLSeek() {
         default:
             goto bad;
     }
-    file->off = off;
-    tf->a0 = file->off;
+    file->off = (off >= file->off ? file->off : off);
+    tf->a0 = off;
     return;
 bad:
     tf->a0 = -1;
