@@ -190,7 +190,7 @@ int exec(char* path, char** argv) {
     // argc is returned via the system call return
     // value, which goes in a0.
     getHartTrapFrame()->a1 = sp;
-    printf("sp:  %lx\n", sp);
+    // printf("sp:  %lx\n", sp);
 
     // Save program name for debugging.
     /*

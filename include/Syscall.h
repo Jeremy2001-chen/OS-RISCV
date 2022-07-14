@@ -29,6 +29,7 @@ void syscallSignalAction();
 void syscallSignalTimedWait();
 void syscallGetTheardId();
 void syscallProcessResourceLimit();
+void syscallIOControl();
 
 extern void (*syscallVector[])(void);
 
