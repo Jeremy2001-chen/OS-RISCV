@@ -163,6 +163,9 @@ int setup(Process *p) {
     pageInsert(kernelPageDirectory, getProcessTopSp(p) - PGSIZE, page2pa(page), PTE_READ | PTE_WRITE | PTE_EXECUTE);
     r = pageAlloc(&page);
     pageInsert(kernelPageDirectory, (u64)getSignalHandler(p), page2pa(page), PTE_READ | PTE_WRITE);
+    
+    r = pageAlloc(&page);
+    pageInsert(p->pgdir, USER_STACK_TOP - PGSIZE, page2pa(page), PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE); // We must alloc the stack
 
     extern char trampoline[];
     pageInsert(p->pgdir, TRAMPOLINE_BASE, (u64)trampoline, 
@@ -193,7 +196,7 @@ int processAlloc(Process **new, u64 parentId) {
     p->state = RUNNABLE;
     p->parentId = parentId;
     p->trapframe.kernelSp = getProcessTopSp(p);
-    p->trapframe.sp = USER_STACK_TOP;
+    p->trapframe.sp = USER_STACK_TOP - 24; //argc = 0, argv = 0, envs = 0
 
     *new = p;
     return 0;
