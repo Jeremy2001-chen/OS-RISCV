@@ -199,6 +199,8 @@ void userTrapReturn() {
         use(tem);
 #endif
     }
+    
+    // printf("return to user!\n");
     ((void(*)(u64, u64))fn)((u64)trapframe, satp);
 }
 

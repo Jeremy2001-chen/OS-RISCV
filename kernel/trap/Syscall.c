@@ -200,42 +200,17 @@ void syscallSetBrk() {
 }
 
 void syscallMapMemory() {
-    Trapframe *trapframe = getHartTrapFrame();
-    u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2;
-    bool alloc = (start == 0);
-    if (alloc) {
-        myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom, 12);
-        start = myproc()->heapBottom;
-        myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom + len, 12); 
-    }
-    u64 addr = start, end = start + len;
-    start = DOWN_ALIGN(start, 12);
-    while (start < end) {
-        u64* pte;
-        u64 pa = pageLookup(myproc()->pgdir, start, &pte);
-        if (pa > 0 && (*pte & PTE_COW)) {
-            cowHandler(myproc()->pgdir, start);
-        }
-        PhysicalPage* page;
-        if (pageAlloc(&page) < 0) {        
-            trapframe->a0 = -1;
-            return ;
-        }
-        pageInsert(myproc()->pgdir, start, page2pa(page), perm | PTE_USER);
-        start += PGSIZE;
-    }
-
+    Trapframe* trapframe = getHartTrapFrame();
+    u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2,
+        off = trapframe->a5;
     struct file* fd;
     if (argfd(4, 0, &fd)) {
         trapframe->a0 = -1;
-        return ;
+        return;
     }
-    fd->off = trapframe->a5;
-    if (fileread(fd, addr, len)) {
-        trapframe->a0 = addr;
-    } else {
-        trapframe->a0 = -1;
-    }
+    trapframe->a0 =
+        do_mmap(fd, start, len, perm, /*'type' currently not used */ 0, off);
+    return;
 }
 
 void syscallUnMapMemory() {

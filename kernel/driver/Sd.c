@@ -169,7 +169,6 @@ static u16 crc16_round(u16 crc, u8 data) {
 
 
 int sdRead(u8 *buf, u64 startSector, u32 sectorNumber) {
-	DEC_PRINT(sectorNumber);
 	// printf("[SD Read]Read: %x\n", startSector);
 	int readTimes = 0;
 	int tot = 0;
