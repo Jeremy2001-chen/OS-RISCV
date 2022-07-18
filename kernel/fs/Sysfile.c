@@ -128,7 +128,7 @@ void syscallWrite(void) {
 
 void syscallWriteVector() {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f;
     int fd = tf->a0;
 
     if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
