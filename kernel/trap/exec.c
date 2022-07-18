@@ -15,8 +15,8 @@
 
 #define MAXARG 32  // max exec arguments
 
-//AT_VECTOR_SIZE: size of auxiliary table.
-#define AT_VECTOR_SIZE (2*(2+20+1))
+// AT_VECTOR_SIZE: size of auxiliary table.
+#define AT_VECTOR_SIZE (2 * (2 + 20 + 1))
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
 
@@ -94,8 +94,8 @@ static u64 total_mapping_size(const Phdr* phdr, int nr) {
 
     for (i = 0; i < nr; i++) {
         if (phdr[i].type == PT_LOAD) {
-            min_addr = min(min_addr, DOWN_ALIGN(phdr[i].vaddr, PGSIZE));
-            max_addr = max(max_addr, phdr[i].vaddr + phdr[i].memsz);
+            min_addr = min(min_addr, DOWN_ALIGN(phdr[i].vaddr, PGSIZE));//最低虚拟地址
+            max_addr = max(max_addr, phdr[i].vaddr + phdr[i].memsz);//最高虚拟地址
             pt_load = true;
         }
     }
@@ -148,8 +148,9 @@ static inline int make_prot(u32 p_flags) {
         prot |= PTE_WRITE;
     if (p_flags & PF_X)
         prot |= PTE_EXECUTE;
-    return prot;
+    return prot|PTE_USER|PTE_ACCESSED;
 }
+//加载动态链接器
 u64 load_elf_interp(u64* pagetable,
                     Ehdr* interp_elf_ex,
                     struct dirent* interpreter,
@@ -170,7 +171,14 @@ u64 load_elf_interp(u64* pagetable,
 		error = -EINVAL;
 		goto out;
 	}
+/*
 
+| <-----------------total_size------------------> |
+| <------Seg1------>     <---------Seg2-------->  |
+首先申请total_size（这里是不固定的，需要OS来分配）。直接调用 do_mmap();
+然后再把每个段填进去（这里的地址是确定的）
+
+*/
 	eppnt = interp_elf_phdata;
 	for (i = 0; i < interp_elf_ex->phnum; i++, eppnt++) {
 		if (eppnt->type == PT_LOAD) {
@@ -274,7 +282,7 @@ int exec(char* path, char** argv) {
     Ehdr elf;
     struct dirent* de;
     Phdr ph;
-    u64 *pagetable = 0;
+    u64 *pagetable = 0, *old_pagetable = 0;
     Process* p = myproc();
     u64* oldpagetable = p->pgdir;
     u64 phdr_addr = 0; // virtual address in user space, point to the program header. We will pass 'phdr_addr' to ld.so
@@ -285,7 +293,7 @@ int exec(char* path, char** argv) {
         panic("setup page alloc error\n");
         return r;
     }
-
+    
     p->heapBottom = USER_HEAP_BOTTOM;// TODO,these code have writen twice
     printf("heapBottom ? = %lx %lx\n",USER_HEAP_BOTTOM, USER_HEAP_TOP);
     pagetable = (u64*)page2pa(page);
@@ -295,6 +303,9 @@ int exec(char* path, char** argv) {
     pageInsert(pagetable, TRAMPOLINE_BASE + PAGE_SIZE, ((u64)trampoline) + PAGE_SIZE, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE);    
     
+    old_pagetable = p->pgdir;
+    p->pgdir = pagetable;
+
     MSG_PRINT("setup");
 
     if ((de = ename(AT_FDCWD, path)) == 0) {
@@ -453,6 +464,19 @@ int exec(char* path, char** argv) {
 
 /* ============== Dynamic Link, put args passed to ld.so ================ */
 
+/*
+    argc
+    argv[]
+    NULL
+    envp[]
+    NULL
+    AT_HWCAP ELF_HWCAP
+    AT_PAGESZ ELF_EXEC_PAGESIZE
+    NULL NULL
+    "args"
+    "PATH=/usr/lib"
+*/
+
 	/*
 	 * Generate 16 random bytes for userspace PRNG seeding.
 	 */
@@ -493,45 +517,34 @@ int exec(char* path, char** argv) {
 
     printf("before NEW AUX ENT");
     u64 secureexec = 1; // the default value is 1, 但是我不清楚哪些情况会把它变成0
-	NEW_AUX_ENT(AT_HWCAP, ELF_HWCAP);
-	NEW_AUX_ENT(AT_PAGESZ, ELF_EXEC_PAGESIZE);
-	NEW_AUX_ENT(AT_CLKTCK, CLOCKS_PER_SEC);
-	NEW_AUX_ENT(AT_PHDR, phdr_addr);
-	NEW_AUX_ENT(AT_PHENT, sizeof(Phdr));
-	NEW_AUX_ENT(AT_PHNUM, elf.phnum);
+	NEW_AUX_ENT(AT_HWCAP, ELF_HWCAP); //CPU的extension信息
+	NEW_AUX_ENT(AT_PAGESZ, ELF_EXEC_PAGESIZE); //PAGE_SIZE
+	NEW_AUX_ENT(AT_CLKTCK, CLOCKS_PER_SEC);//与时钟相关的，copy linux 100
+	NEW_AUX_ENT(AT_PHDR, phdr_addr);// Phdr * phdr_addr; 指向用户态。
+	NEW_AUX_ENT(AT_PHENT, sizeof(Phdr)); //每个 Phdr 的大小
+	NEW_AUX_ENT(AT_PHNUM, elf.phnum); //phdr的数量
 	NEW_AUX_ENT(AT_BASE, interp_load_addr);
     u64 flags = 0;
 	if (/*bprm->interp_flags & BINPRM_FLAGS_PRESERVE_ARGV0*/true)
-		flags |= AT_FLAGS_PRESERVE_ARGV0;
-    printf("middle NEW AUX ENT");
+		flags |= AT_FLAGS_PRESERVE_ARGV0;//该标志AT_FLAGS_PRESERVE_ARGV0时，argv[0]==程序的路径。
 	NEW_AUX_ENT(AT_FLAGS, flags);
-	NEW_AUX_ENT(AT_ENTRY, elf_entry);
-	NEW_AUX_ENT(AT_UID, from_kuid_munged(cred->user_ns, cred->uid));
-	NEW_AUX_ENT(AT_EUID, from_kuid_munged(cred->user_ns, cred->euid));
-	NEW_AUX_ENT(AT_GID, from_kgid_munged(cred->user_ns, cred->gid));
-	NEW_AUX_ENT(AT_EGID, from_kgid_munged(cred->user_ns, cred->egid));
-	NEW_AUX_ENT(AT_SECURE, secureexec);
-	NEW_AUX_ENT(AT_RANDOM, u_rand_bytes);
+	NEW_AUX_ENT(AT_ENTRY, elf_entry);//源程序的入口
+	NEW_AUX_ENT(AT_UID, from_kuid_munged(cred->user_ns, cred->uid));// 0
+	NEW_AUX_ENT(AT_EUID, from_kuid_munged(cred->user_ns, cred->euid));// 0
+	NEW_AUX_ENT(AT_GID, from_kgid_munged(cred->user_ns, cred->gid));// 0
+	NEW_AUX_ENT(AT_EGID, from_kgid_munged(cred->user_ns, cred->egid));// 0
+	NEW_AUX_ENT(AT_SECURE, secureexec);//安全，默认1
+	NEW_AUX_ENT(AT_RANDOM, u_rand_bytes);//16byte随机数的地址。
 #ifdef ELF_HWCAP2
 	NEW_AUX_ENT(AT_HWCAP2, ELF_HWCAP2);
 #endif
-	NEW_AUX_ENT(AT_EXECFN, ustack[1]); /* ustack[1] is the virtual address of the program name */
-/*
-	if (k_platform) {
-		NEW_AUX_ENT(AT_PLATFORM,
-			    (u64)(u64)u_platform);
-	}
-	if (k_base_platform) {
-		NEW_AUX_ENT(AT_BASE_PLATFORM,
-			    (u64)(u64)u_base_platform);
-	}
-*/
-	if (have_execfd) {
+	NEW_AUX_ENT(AT_EXECFN, ustack[1]/*用户态地址*/); /* 传递给动态连接器该程序的名称 */
+	if (have_execfd) { //exec program，program的fd传给ld.so
 		NEW_AUX_ENT(AT_EXECFD, execfd);
 	}
 	/* And advance past the AT_NULL entry.  */
     NEW_AUX_ENT(0, 0);
-    
+    //auxiliary 辅助数组
 #undef NEW_AUX_ENT
 /* ============= End put args for ld.so =============== */
 
@@ -564,7 +577,7 @@ int exec(char* path, char** argv) {
     HEX_PRINT(getHartTrapFrame()->sp);
     MSG_PRINT("out exec");
     // Commit to the user image.
-    p->pgdir = pagetable;
+
     printf("elf_entry = %lx\n",elf_entry);
     getHartTrapFrame()->epc = elf_entry;  // initial program counter = main
     getHartTrapFrame()->sp = sp;          // initial stack pointer
@@ -576,6 +589,7 @@ int exec(char* path, char** argv) {
     return argc;  // this ends up in a0, the first argument to main(argc, argv)
 
 bad:
+    p->pgdir = old_pagetable;
     if (pagetable)
         pgdirFree((u64*)pagetable);
     if (de) {

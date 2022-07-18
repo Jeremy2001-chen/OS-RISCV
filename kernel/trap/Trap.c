@@ -147,6 +147,7 @@ void userTrap() {
             } else if (*pte & PTE_COW) {
                 cowHandler(currentProcess[hartId]->pgdir, r_stval());
             } else {
+                printf("addr = %lx, pte = %x",r_stval(), (*pte)&1023);
                 panic("unknown");
             }
             break;
