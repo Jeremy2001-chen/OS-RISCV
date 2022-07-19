@@ -130,6 +130,7 @@ void userTrap() {
         switch (scause & SCAUSE_EXCEPTION_CODE)
         {
         case SCAUSE_ENVIRONMENT_CALL:
+            printf("============= sysid: %d=============\n",trapframe->a7);
             trapframe->epc += 4;
             // if (trapframe->a7 != 63 && trapframe->a7 != 64) {
             //     printf("syscall: %d\n", trapframe->a7);
@@ -140,6 +141,7 @@ void userTrap() {
             syscallVector[trapframe->a7]();
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
+            printf("114514");
         case SCAUSE_STORE_PAGE_FAULT:
             pa = pageLookup(currentProcess[hartId]->pgdir, r_stval(), &pte);
             if (pa == 0) {
@@ -147,7 +149,7 @@ void userTrap() {
             } else if (*pte & PTE_COW) {
                 cowHandler(currentProcess[hartId]->pgdir, r_stval());
             } else {
-                printf("addr = %lx, pte = %x",r_stval(), (*pte)&1023);
+                printf("addr = %lx, pte = %x epc = %lx",r_stval(), (*pte)&4095, trapframe->epc);
                 panic("unknown");
             }
             break;

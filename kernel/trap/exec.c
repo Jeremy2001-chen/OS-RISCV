@@ -77,8 +77,9 @@ static int loadSegment(u64* pagetable, u64 va, u64 segmentSize, struct dirent* d
 
 /* for compat with linux interface */
 void* kmalloc(int size, int policy) {
-    if (size > PAGE_SIZE)
+    if (size > PAGE_SIZE){
         panic("Do not support kmalloc a mem which size > PAGE_SIZE");
+    }
 	PhysicalPage* p;
     pageAlloc(&p);
     return (void *)page2pa(p);
@@ -549,7 +550,8 @@ int exec(char* path, char** argv) {
 /* ============= End put args for ld.so =============== */
 
     printf("copy size = %x\n", (u64)(elf_info-ustack));
-
+    for(u64* i=ustack; i < elf_info; ++i)
+        printf("dump_stack:: %lx\n", *i);
     // push the array of argv[] pointers, envp[] pointers, auxv[] array.
     sp -= elf_info - ustack; /* now elf_info is the stack top */
     sp -= sp % 16;
