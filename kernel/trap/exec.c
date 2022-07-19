@@ -129,6 +129,7 @@ static u64 elf_map(struct file* filep,
      * So we first map the 'big' image - and unmap the remainder at
      * the end. (which unmap is needed for ELF images with holes.)
      */
+
     if (total_size) {
         total_size = UP_ALIGN(total_size, PAGE_SIZE);
         map_addr = do_mmap(filep, addr, total_size, prot, type, off);
@@ -549,15 +550,16 @@ int exec(char* path, char** argv) {
 #undef NEW_AUX_ENT
 /* ============= End put args for ld.so =============== */
 
-    printf("copy size = %x\n", (u64)(elf_info-ustack));
-    for(u64* i=ustack; i < elf_info; ++i)
-        printf("dump_stack:: %lx\n", *i);
+    u64 copy_size = (elf_info - ustack) * sizeof(u64);
+    printf("copy size = %x\n", copy_size);
+    // for(u64* i=ustack; i < elf_info; ++i)
+        // printf("dump_stack:: %lx\n", *((u64*)sp+(i-ustack)));
     // push the array of argv[] pointers, envp[] pointers, auxv[] array.
-    sp -= elf_info - ustack; /* now elf_info is the stack top */
+    sp -= copy_size; /* now elf_info is the stack top */
     sp -= sp % 16;
     if (sp < stackbase)
         goto bad;
-    if (copyout(pagetable, sp, (char*)ustack, elf_info - ustack) < 0)
+    if (copyout(pagetable, sp, (char*)ustack, copy_size) < 0)
         goto bad;
 
     printf("end push args\n");
