@@ -11,6 +11,7 @@
 #include <Signal.h>
 #include <Socket.h>
 #include <Mmap.h>
+#include <Futex.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
@@ -70,7 +71,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_LISTEN] syscallListen,
     [SYSCALL_CONNECT] syscallConnect,
     [SYSCALL_ACCEPT] syscallAccept,
-    [SYSCALL_WRITE_VECTOR] syscallWriteVector
+    [SYSCALL_WRITE_VECTOR] syscallWriteVector,
+    [SYSCALL_FUTEX] syscallFutex
 };
 
 extern struct Spinlock printLock;
@@ -409,5 +411,30 @@ void syscallConnect() {
 
 void syscallAccept() {
     Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallFutex() {
+    Trapframe *tf = getHartTrapFrame();
+    int op = tf->a1, val = tf->a2, userVal;
+    u64 uaddr = tf->a0;
+    printf("addr: %lx, op: %d, val: %d\n", uaddr, op, val);
+    op &= (FUTEX_PRIVATE_FLAG - 1);
+    switch (op)
+    {
+        case FUTEX_WAIT:
+            copyin(myproc()->pgdir, (char*)&userVal, uaddr, sizeof(int));
+            if (userVal != val) {
+                tf->a0 = -1;
+                return;
+            }
+            futexWait(uaddr, myproc());
+            break;
+        case FUTEX_WAKE:
+            futexWake(uaddr, val);
+            break;
+        default:
+            panic("Futex type not support!\n");
+    }
     tf->a0 = 0;
 }

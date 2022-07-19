@@ -491,6 +491,7 @@ void yield() {
         }
         releaseLock(&scheduleListLock);
         acquireLock(&scheduleListLock);
+        printf("id: %d, state: %d\n", process->id, process->state);
     }
     releaseLock(&scheduleListLock);
     count--;
@@ -505,10 +506,13 @@ void yield() {
 }
 
 void processFork(u32 flags, u64 stackVa, u64 parentThreadId, u64 tls, u64 childThreadId) {
+    /* todo
     if (flags != START_FORK) {
         currentProcess[r_hartid()]->trapframe.a0 = -1;
+        panic("Fork Error\n");
         return;
     }
+    */
     Process *process;
     int hartId = r_hartid();
     int r = processAlloc(&process, currentProcess[hartId]->id);

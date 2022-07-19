@@ -40,6 +40,7 @@ void syscallFcntl();
 void syscallListen();
 void syscallConnect();
 void syscallAccept();
+void syscallFutex();
 
 extern void (*syscallVector[])(void);
 
