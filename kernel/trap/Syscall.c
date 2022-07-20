@@ -72,7 +72,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_CONNECT] syscallConnect,
     [SYSCALL_ACCEPT] syscallAccept,
     [SYSCALL_WRITE_VECTOR] syscallWriteVector,
-    [SYSCALL_FUTEX] syscallFutex
+    [SYSCALL_FUTEX] syscallFutex,
+    [SYSCALL_THREAD_KILL] syscallThreadKill
 };
 
 extern struct Spinlock printLock;
@@ -424,6 +425,7 @@ void syscallFutex() {
     {
         case FUTEX_WAIT:
             copyin(myproc()->pgdir, (char*)&userVal, uaddr, sizeof(int));
+            printf("val: %d\n", userVal);
             if (userVal != val) {
                 tf->a0 = -1;
                 return;
@@ -436,5 +438,20 @@ void syscallFutex() {
         default:
             panic("Futex type not support!\n");
     }
+    tf->a0 = 0;
+}
+
+void syscallThreadKill() {
+    Trapframe *tf = getHartTrapFrame();
+    int tid = tf->a0, signal = tf->a1;
+    Process* process;
+    int r = pid2Process(tid, &process, 0);
+    if (r < 0) {
+        tf->a0 = r;
+        panic("Can't find thread %lx\n", tid);
+        return;
+    }
+    process->pending |= (1<<signal);
+    printf("tid: %lx, pending: %lx\n", tid, process->pending);
     tf->a0 = 0;
 }

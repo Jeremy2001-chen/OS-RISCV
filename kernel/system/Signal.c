@@ -60,3 +60,21 @@ int doSignalTimedWait(SignalSet *which, SignalInfo *info, TimeSpec *ts) {
     }
     return dequeueSignal(p, which, info);    
 }
+
+void handleSignal(struct Process* process) {
+    while(true) {
+        int signal = dequeueSignal(process, &(process->blocked), NULL);
+        if (!signal) {
+            break;
+        }
+        switch (signal) {
+            case SIGQUIT:
+            case SIGKILL:
+                processDestory(process);
+            default:
+                panic("Can not handle this %d of signal\n", signal);
+                break;
+        }
+        process->pending -= (1 << signal);
+    }
+}

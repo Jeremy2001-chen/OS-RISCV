@@ -41,6 +41,7 @@ void syscallListen();
 void syscallConnect();
 void syscallAccept();
 void syscallFutex();
+void syscallThreadKill();
 
 extern void (*syscallVector[])(void);
 
