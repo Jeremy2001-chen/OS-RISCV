@@ -127,6 +127,7 @@ void userTrap() {
         kernelProcessCpuTimeBegin();
         u64 *pte = NULL;
         u64 pa = -1;
+        printf("sepc:%lx sstatus:%lx scause:%lx \n", sepc, sstatus, scause);
         switch (scause & SCAUSE_EXCEPTION_CODE)
         {
         case SCAUSE_ENVIRONMENT_CALL:
@@ -156,7 +157,8 @@ void userTrap() {
         default:
             trapframeDump(trapframe);
             pageLookup(currentProcess[hartId]->pgdir, r_stval(), &pte);
-            panic("unhandled error %d,  %lx, %lx\n", scause, r_stval(), *pte);
+            printf("pte = %lx\n", (u64)pte);
+            panic("unhandled error %d,  %lx, %lx\n", scause, r_stval(), pte);
             break;
         }
     }
