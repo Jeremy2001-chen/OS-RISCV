@@ -111,7 +111,6 @@ static u64 elf_map(struct file* filep,
     u64 map_addr;
     u64 size = eppnt->filesz + PAGE_OFFSET(eppnt->vaddr, PAGE_SIZE);
     u64 off = eppnt->offset - PAGE_OFFSET(eppnt->vaddr, PAGE_SIZE);
-    printf("\nsize = %x, off = %x size2=%lx off2=%lx\n", eppnt->filesz, eppnt->offset, size, off);
     addr = DOWN_ALIGN(addr, PAGE_SIZE);
     size = UP_ALIGN(size, PGSIZE);
 
@@ -302,7 +301,7 @@ int exec(char* path, char** argv) {
     }
     
     p->heapBottom = USER_HEAP_BOTTOM;// TODO,these code have writen twice
-    printf("heapBottom ? = %lx %lx\n",USER_HEAP_BOTTOM, USER_HEAP_TOP);
+    printf("USER_HEAP_BOTTOM:%lx USER_HEAP_TOP:%lx\n",USER_HEAP_BOTTOM, USER_HEAP_TOP);
     pagetable = (u64*)page2pa(page);
     extern char trampoline[];
     pageInsert(pagetable, TRAMPOLINE_BASE, (u64)trampoline, 
@@ -408,7 +407,6 @@ int exec(char* path, char** argv) {
         if (retval < 0)
             panic("read interpreter file error");
     }
-    printf("end of find interpreter");
     if (interpreter) {
         u64 interp_Phdrs_size = sizeof(Phdr) * interp_elf_ex->phnum;
         Phdr* interp_elf_phdata = kmalloc(interp_Phdrs_size, 0);
@@ -515,7 +513,6 @@ int exec(char* path, char** argv) {
 	#define from_kuid_munged(x, y) (0)
 	#define from_kgid_munged(x,y) (0)
 
-    printf("before NEW AUX ENT");
     u64 secureexec = 1; // the default value is 1, 但是我不清楚哪些情况会把它变成0
 	NEW_AUX_ENT(AT_HWCAP, ELF_HWCAP); //CPU的extension信息
 	NEW_AUX_ENT(AT_PAGESZ, ELF_EXEC_PAGESIZE); //PAGE_SIZE
@@ -556,7 +553,6 @@ int exec(char* path, char** argv) {
         copyin(pagetable, (char*)&ret, (u64)(i), sizeof(u64));
         printf("*%lx = %lx\n", (u64)i, ret);
     }
-    printf("end push args\n");
     // arguments to user main(argc, argv)
     // argc is returned via the system call return
     // value, which goes in a0.
@@ -634,7 +630,6 @@ u64 sys_exec(void) {
     for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)
         pageFree(pa2page((u64)argv[i]));
 
-    printf("out sys_exec \n");
     return ret;
 
 bad:

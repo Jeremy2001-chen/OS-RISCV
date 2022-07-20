@@ -185,7 +185,6 @@ int dirnext(struct file* f, u64 addr) {
 }
 u64 do_mmap(struct file* fd, u64 start, u64 len, int perm, int type, u64 off) {
     bool alloc = (start == 0);
-    printf("heapBottom = %x\n", myproc()->heapBottom);
     if (alloc) {
         myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom, PAGE_SIZE);
         start = myproc()->heapBottom;

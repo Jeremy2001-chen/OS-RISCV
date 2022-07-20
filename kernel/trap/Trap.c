@@ -142,7 +142,6 @@ void userTrap() {
             syscallVector[trapframe->a7]();
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
-            printf("114514");
         case SCAUSE_STORE_PAGE_FAULT:
             pa = pageLookup(currentProcess[hartId]->pgdir, r_stval(), &pte);
             if (pa == 0) {
