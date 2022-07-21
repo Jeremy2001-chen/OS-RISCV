@@ -133,6 +133,7 @@ void userTrap() {
             trapframe->epc += 4;
             if (trapframe->a7 != 63 && trapframe->a7 != 64) {
                 printf("syscall: %d\n", trapframe->a7);
+                printf("sepc: %lx\n", sepc);
             }
             if (!syscallVector[trapframe->a7]) {
                 panic("unknown-syscall: %d\n", trapframe->a7);
@@ -143,6 +144,7 @@ void userTrap() {
         case SCAUSE_STORE_PAGE_FAULT:
             pa = pageLookup(currentProcess[hartId]->pgdir, r_stval(), &pte);
             if (pa == 0) {
+                printf("spec: %lx\n", sepc);
                 pageout(currentProcess[hartId]->pgdir, r_stval());
             } else if (*pte & PTE_COW) {
                 cowHandler(currentProcess[hartId]->pgdir, r_stval());

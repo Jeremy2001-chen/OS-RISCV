@@ -451,7 +451,7 @@ void syscallThreadKill() {
         panic("Can't find thread %lx\n", tid);
         return;
     }
-    process->pending |= (1<<signal);
-    printf("tid: %lx, pending: %lx\n", tid, process->pending);
+    process->pending |= (1ul<<signal);
+    printf("tid: %lx, pending: %lx sign: %d\n", tid, process->pending, signal);
     tf->a0 = 0;
 }

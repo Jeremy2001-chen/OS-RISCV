@@ -125,6 +125,7 @@ LIST_HEAD(ProcessList, Process);
 #define CLONE_IO	0x80000000
 
 u64 getProcessTopSp(Process* p);
+u64 getProcessTLS(Process* p);
 SignalAction *getSignalHandler(Process *p);
 
 Process* myproc();

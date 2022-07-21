@@ -91,4 +91,7 @@ void handleSignal(struct Process* process);
 #define SIGSYS		31
 #define	SIGUNUSED	31
 
+#define SIGTIMER 32
+#define SIGCANCEL 33
+#define SIGSYNCCALL 34
 #endif

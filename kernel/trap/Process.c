@@ -40,6 +40,10 @@ SignalAction *getSignalHandler(Process *p) {
     return (SignalAction*)(PROCESS_SIGNAL_BASE + (u64)(p - processes) * PAGE_SIZE);
 }
 
+u64 getProcessTLS(Process* p) {
+    return THREAD_LOCAL_STORE + (u64)(p - processes) * PAGE_SIZE;
+}
+
 void processInit() {
     printf("Process init start...\n");
     
@@ -513,7 +517,7 @@ void processFork(u32 flags, u64 stackVa, u64 parentThreadId, u64 tls, u64 childT
     //     panic("flags: %lx\n", flags);
     //     return;
     // }
-    printf("CLONE flags: %lx, a3: %lx, a4: %lx\n", flags, tls, childThreadId);
+    printf("CLONE flags: %lx, a1: %lx, a2: %lx, a3: %lx, a4: %lx\n", flags, stackVa, parentThreadId, tls, childThreadId);
     bool cow = ((flags & CLONE_VM) == 0);
     Process *process;
     int hartId = r_hartid();
@@ -535,15 +539,21 @@ void processFork(u32 flags, u64 stackVa, u64 parentThreadId, u64 tls, u64 childT
     if (stackVa != 0) {
         process->trapframe.sp = stackVa;
     }
+
+    if (flags != START_FORK) {
+        process->trapframe.tp = tls;
+    }
+
     if (parentThreadId != NULL) {
         copyout(currentProcess[hartId]->pgdir, parentThreadId, (char*) &process->id, sizeof(u32));
     }
     
     if (childThreadId != NULL) {
-        copyout(currentProcess[hartId]->pgdir, childThreadId, (char*) &currentProcess[hartId]->id, sizeof(u32));
+        copyout(currentProcess[hartId]->pgdir, childThreadId, (char*) &process->id, sizeof(u32));
     }
 
     trapframe->a0 = process->id;
+
     u64 i, j, k;
     for (i = 0; i < 512; i++) {
         if (!(currentProcess[hartId]->pgdir[i] & PTE_VALID)) {
@@ -563,12 +573,12 @@ void processFork(u32 flags, u64 stackVa, u64 parentThreadId, u64 tls, u64 childT
                 if (va == TRAMPOLINE_BASE || va == TRAMPOLINE_BASE + PAGE_SIZE) {
                     continue;
                 }
-                if (cow) {
+                if (cow/* || (va >= USER_HEAP_TOP && va <= USER_STACK_TOP)*/) {
                     if (pa2[k] & PTE_WRITE) {
                         pa2[k] |= PTE_COW;
                         pa2[k] &= ~PTE_WRITE;
-                    }
-                } 
+                    } 
+                }
                 pageInsert(process->pgdir, va, PTE2PA(pa2[k]), PTE2PERM(pa2[k]));
             }
         }
