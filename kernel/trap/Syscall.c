@@ -11,6 +11,7 @@
 #include <Signal.h>
 #include <Socket.h>
 #include <Mmap.h>
+#include <Futex.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
@@ -70,7 +71,11 @@ void (*syscallVector[])(void) = {
     [SYSCALL_LISTEN] syscallListen,
     [SYSCALL_CONNECT] syscallConnect,
     [SYSCALL_ACCEPT] syscallAccept,
-    [SYSCALL_WRITE_VECTOR] syscallWriteVector
+    [SYSCALL_WRITE_VECTOR] syscallWriteVector,
+    [SYSCALL_FUTEX] syscallFutex,
+    [SYSCALL_THREAD_KILL] syscallThreadKill,
+    [SYSCALL_POLL] syscallPoll,
+    [SYSCALL_MEMORY_PROTECT] syscallMemoryProtect
 };
 
 extern struct Spinlock printLock;
@@ -215,7 +220,7 @@ void syscallSetBrk() {
 void syscallMapMemory() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2, flags = trapframe->a3;
-    //printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
+    printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
     bool alloc = (start == 0);
     if (alloc) {
         myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom, 12);
@@ -235,7 +240,7 @@ void syscallMapMemory() {
             trapframe->a0 = -1;
             return ;
         }
-        pageInsert(myproc()->pgdir, start, page2pa(page), perm | PTE_USER);
+        pageInsert(myproc()->pgdir, start, page2pa(page), perm | PTE_USER | PTE_READ | PTE_WRITE);
         start += PGSIZE;
     }
 
@@ -298,7 +303,8 @@ void syscallUname() {
 
 void syscallSetTidAddress() {
     Trapframe *tf = getHartTrapFrame();
-    copyout(myproc()->pgdir, tf->a0, (char*)(&myproc()->id), sizeof(u64));
+    // copyout(myproc()->pgdir, tf->a0, (char*)(&myproc()->id), sizeof(u64));
+    myproc()->clearChildTid = tf->a0;
     tf->a0 = myproc()->id;
 }
 
@@ -409,5 +415,73 @@ void syscallConnect() {
 
 void syscallAccept() {
     Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallFutex() {
+    Trapframe *tf = getHartTrapFrame();
+    int op = tf->a1, val = tf->a2, userVal;
+    u64 uaddr = tf->a0;
+    printf("addr: %lx, op: %d, val: %d\n", uaddr, op, val);
+    op &= (FUTEX_PRIVATE_FLAG - 1);
+    switch (op)
+    {
+        case FUTEX_WAIT:
+            copyin(myproc()->pgdir, (char*)&userVal, uaddr, sizeof(int));
+            printf("val: %d\n", userVal);
+            if (userVal != val) {
+                tf->a0 = -1;
+                return;
+            }
+            futexWait(uaddr, myproc());
+            break;
+        case FUTEX_WAKE:
+            futexWake(uaddr, val);
+            break;
+        default:
+            panic("Futex type not support!\n");
+    }
+    tf->a0 = 0;
+}
+
+void syscallThreadKill() {
+    Trapframe *tf = getHartTrapFrame();
+    int tid = tf->a0, signal = tf->a1;
+    Process* process;
+    int r = pid2Process(tid, &process, 0);
+    if (r < 0) {
+        tf->a0 = r;
+        panic("Can't find thread %lx\n", tid);
+        return;
+    }
+    process->pending |= (1ul<<signal);
+    printf("tid: %lx, pending: %lx sign: %d\n", tid, process->pending, signal);
+    tf->a0 = 0;
+}
+
+void syscallPoll() {
+    Trapframe *tf = getHartTrapFrame();
+    struct pollfd {
+        int fd;
+        short events;
+        short revents;
+    };
+    struct pollfd p;
+    u64 startva = 0;
+    int n = tf->a1;
+    int cnt = 0;
+    for (int i = 0; i < n; i++) {
+        copyin(myproc()->pgdir, (char*)&p, startva, sizeof(struct pollfd));
+        p.revents = 0;
+        copyout(myproc()->pgdir, startva, (char*)&p, sizeof(struct pollfd));
+        startva += sizeof(struct pollfd);
+        cnt += p.revents != 0;
+    }
+    tf->a0 = cnt;
+}
+
+void syscallMemoryProtect() {
+    Trapframe *tf = getHartTrapFrame();
+    printf("mprotect va: %lx, length: %lx\n", tf->a0, tf->a1);
     tf->a0 = 0;
 }

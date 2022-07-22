@@ -40,6 +40,10 @@ SignalAction *getSignalHandler(Process *p) {
     return (SignalAction*)(PROCESS_SIGNAL_BASE + (u64)(p - processes) * PAGE_SIZE);
 }
 
+u64 getProcessTLS(Process* p) {
+    return THREAD_LOCAL_STORE + (u64)(p - processes) * PAGE_SIZE;
+}
+
 void processInit() {
     printf("Process init start...\n");
     
@@ -87,6 +91,10 @@ void processDestory(Process *p) {
 
 void processFree(Process *p) {
     // printf("[%lx] free env %lx\n", currentProcess[r_hartid()] ? currentProcess[r_hartid()]->id : 0, p->id);
+    if (p->clearChildTid) {
+        int val = 0;
+        copyout(p->pgdir, p->clearChildTid, (char*)&val, sizeof(int));
+    }
     pgdirFree(p->pgdir);
     p->state = ZOMBIE; // new
     for (int fd = 0; fd < NOFILE; fd++) {
@@ -155,6 +163,7 @@ int setup(Process *p) {
     p->state = UNUSED;
     p->parentId = 0;
     p->heapBottom = USER_HEAP_BOTTOM;
+    p->setChildTid = p->clearChildTid = 0;
     p->awakeTime = 0;
     p->cwd = &rootFileSystem.root;
 
@@ -317,8 +326,11 @@ void processRun(Process* p) {
             struct dirent* ep = create(AT_FDCWD, "/dev", T_DIR, O_RDONLY);
             eunlock(ep);
             eput(ep);
-            ep = create(AT_FDCWD, "/dev/vda2", T_DIR, O_RDONLY);
+            ep = create(AT_FDCWD, "/dev/vda2", T_DIR, O_RDONLY); //driver
             ep->head = &rootFileSystem;            
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/dev/shm", T_DIR, O_RDONLY); //share memory
             eunlock(ep);
         }
         bcopy(&(currentProcess[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
@@ -491,24 +503,30 @@ void yield() {
         }
         releaseLock(&scheduleListLock);
         acquireLock(&scheduleListLock);
+        // printf("id: %d, state: %d\n", process->id, process->state);
     }
     releaseLock(&scheduleListLock);
     count--;
     processTimeCount[hartId] = count;
     processBelongList[hartId] = point;
-    // printf("hartID %d yield process %lx\n", hartId, process->id);
+    printf("hartID %d yield process %lx\n", hartId, process->id);
     if (process->awakeTime > 0) {
         getHartTrapFrame()->a0 = 0;
         process->awakeTime = 0;
     }
+    // handle signal
+    handleSignal(process);
     processRun(process);
 }
 
-void processFork(u32 flags, u64 stackVa, u64 parentThreadId, u64 tls, u64 childThreadId) {
-    if (flags != START_FORK) {
-        currentProcess[r_hartid()]->trapframe.a0 = -1;
-        return;
-    }
+void processFork(u32 flags, u64 stackVa, u64 ptid, u64 tls, u64 ctid) {
+    // if (flags != START_FORK) {
+    //     currentProcess[r_hartid()]->trapframe.a0 = -1;
+    //     panic("flags: %lx\n", flags);
+    //     return;
+    // }
+    printf("CLONE flags: %lx, a1: %lx, a2: %lx, a3: %lx, a4: %lx\n", flags, stackVa, ptid, tls, ctid);
+    bool cow = ((flags & CLONE_VM) == 0);
     Process *process;
     int hartId = r_hartid();
     int r = processAlloc(&process, currentProcess[hartId]->id);
@@ -529,14 +547,25 @@ void processFork(u32 flags, u64 stackVa, u64 parentThreadId, u64 tls, u64 childT
     if (stackVa != 0) {
         process->trapframe.sp = stackVa;
     }
-    if (parentThreadId != NULL) {
-        copyout(currentProcess[hartId]->pgdir, parentThreadId, (char*) &currentProcess[hartId]->id, sizeof(u32));
+
+    if (flags != START_FORK) {
+        process->trapframe.tp = tls;
     }
-    if (childThreadId != NULL) {
-        copyout(currentProcess[hartId]->pgdir, childThreadId, (char*) &process->id, sizeof(u32));
+
+    if (ptid != NULL) {
+        copyout(currentProcess[hartId]->pgdir, ptid, (char*) &process->id, sizeof(u32));
+    }
+    
+    // if (childThreadId != NULL) {
+    //     copyout(currentProcess[hartId]->pgdir, childThreadId, (char*) &process->id, sizeof(u32));
+    // }
+
+    if (flags & CLONE_CHILD_CLEARTID) {
+        process->clearChildTid = ctid;
     }
 
     trapframe->a0 = process->id;
+
     u64 i, j, k;
     for (i = 0; i < 512; i++) {
         if (!(currentProcess[hartId]->pgdir[i] & PTE_VALID)) {
@@ -556,10 +585,12 @@ void processFork(u32 flags, u64 stackVa, u64 parentThreadId, u64 tls, u64 childT
                 if (va == TRAMPOLINE_BASE || va == TRAMPOLINE_BASE + PAGE_SIZE) {
                     continue;
                 }
-                if (pa2[k] & PTE_WRITE) {
-                    pa2[k] |= PTE_COW;
-                    pa2[k] &= ~PTE_WRITE;
-                } 
+                if (cow/* || (va >= USER_HEAP_TOP && va <= USER_STACK_TOP)*/) {
+                    if (pa2[k] & PTE_WRITE) {
+                        pa2[k] |= PTE_COW;
+                        pa2[k] &= ~PTE_WRITE;
+                    } 
+                }
                 pageInsert(process->pgdir, va, PTE2PA(pa2[k]), PTE2PERM(pa2[k]));
             }
         }

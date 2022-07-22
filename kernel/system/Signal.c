@@ -38,7 +38,7 @@ int doSignalAction(int sig, u64 act, u64 oldAction) {
 int __dequeueSignal(SignalSet *pending, SignalSet *mask) {
     u64 x = *pending & ~*mask;
     if (x) {
-        int i = 1;
+        int i = 0;
         while (!(x & 1)) {
             i++;
             x >>= 1;
@@ -59,4 +59,24 @@ int doSignalTimedWait(SignalSet *which, SignalInfo *info, TimeSpec *ts) {
         p->awakeTime = r_time() +  ts->second * 1000000 + ts->microSecond;
     }
     return dequeueSignal(p, which, info);    
+}
+
+void handleSignal(struct Process* process) {
+    for (int i = 0; i < 64; i++) {
+        u64 signal = (process->pending & ~process->blocked);
+        if ((1ul << i) & signal) {
+            switch (i) {
+                case SIGQUIT:
+                case SIGKILL:
+                    processDestory(process);
+                    process->pending -= (1ul << i);
+                    break;
+                case SIGCANCEL:
+                    break;
+                default:
+                    panic("Can not handle this %d of signal\n", i);
+                    break;
+                }
+        }
+    }
 }
