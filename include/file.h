@@ -64,4 +64,6 @@ int dirnext(struct File* f, u64 addr);
 #define DT_SOCK		12
 #define DT_WHT		14
 
+u64 do_mmap(struct file* fd, u64 start, u64 len, int perm, int type, u64 off);
+
 #endif
