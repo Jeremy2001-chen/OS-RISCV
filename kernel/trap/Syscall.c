@@ -218,7 +218,7 @@ void syscallSetBrk() {
 void syscallMapMemory() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2, flags = trapframe->a3;
-    //printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
+    printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
     bool alloc = (start == 0);
     if (alloc) {
         myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom, 12);
@@ -301,7 +301,8 @@ void syscallUname() {
 
 void syscallSetTidAddress() {
     Trapframe *tf = getHartTrapFrame();
-    copyout(myproc()->pgdir, tf->a0, (char*)(&myproc()->id), sizeof(u64));
+    // copyout(myproc()->pgdir, tf->a0, (char*)(&myproc()->id), sizeof(u64));
+    myproc()->clearChildTid = tf->a0;
     tf->a0 = myproc()->id;
 }
 

@@ -91,6 +91,10 @@ void processDestory(Process *p) {
 
 void processFree(Process *p) {
     // printf("[%lx] free env %lx\n", currentProcess[r_hartid()] ? currentProcess[r_hartid()]->id : 0, p->id);
+    if (p->clearChildTid) {
+        int val = 0;
+        copyout(p->pgdir, p->clearChildTid, (char*)&val, sizeof(int));
+    }
     pgdirFree(p->pgdir);
     p->state = ZOMBIE; // new
     for (int fd = 0; fd < NOFILE; fd++) {
@@ -159,6 +163,7 @@ int setup(Process *p) {
     p->state = UNUSED;
     p->parentId = 0;
     p->heapBottom = USER_HEAP_BOTTOM;
+    p->setChildTid = p->clearChildTid = 0;
     p->awakeTime = 0;
     p->cwd = &rootFileSystem.root;
 
@@ -511,13 +516,13 @@ void yield() {
     processRun(process);
 }
 
-void processFork(u32 flags, u64 stackVa, u64 parentThreadId, u64 tls, u64 childThreadId) {
+void processFork(u32 flags, u64 stackVa, u64 ptid, u64 tls, u64 ctid) {
     // if (flags != START_FORK) {
     //     currentProcess[r_hartid()]->trapframe.a0 = -1;
     //     panic("flags: %lx\n", flags);
     //     return;
     // }
-    printf("CLONE flags: %lx, a1: %lx, a2: %lx, a3: %lx, a4: %lx\n", flags, stackVa, parentThreadId, tls, childThreadId);
+    printf("CLONE flags: %lx, a1: %lx, a2: %lx, a3: %lx, a4: %lx\n", flags, stackVa, ptid, tls, ctid);
     bool cow = ((flags & CLONE_VM) == 0);
     Process *process;
     int hartId = r_hartid();
@@ -544,12 +549,16 @@ void processFork(u32 flags, u64 stackVa, u64 parentThreadId, u64 tls, u64 childT
         process->trapframe.tp = tls;
     }
 
-    if (parentThreadId != NULL) {
-        copyout(currentProcess[hartId]->pgdir, parentThreadId, (char*) &process->id, sizeof(u32));
+    if (ptid != NULL) {
+        copyout(currentProcess[hartId]->pgdir, ptid, (char*) &process->id, sizeof(u32));
     }
     
-    if (childThreadId != NULL) {
-        copyout(currentProcess[hartId]->pgdir, childThreadId, (char*) &process->id, sizeof(u32));
+    // if (childThreadId != NULL) {
+    //     copyout(currentProcess[hartId]->pgdir, childThreadId, (char*) &process->id, sizeof(u32));
+    // }
+
+    if (flags & CLONE_CHILD_CLEARTID) {
+        process->clearChildTid = ctid;
     }
 
     trapframe->a0 = process->id;

@@ -93,6 +93,8 @@ typedef struct Process {
     u64 heapBottom;
     SignalSet blocked;
     SignalSet pending;
+    u64 setChildTid;
+    u64 clearChildTid;
 } Process;
 
 LIST_HEAD(ProcessList, Process);
