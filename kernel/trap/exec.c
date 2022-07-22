@@ -11,7 +11,7 @@
 #include <Trap.h>
 #include <Sysfile.h>
 #include <uapi/linux/auxvec.h>
-#include <mmap.h>
+#include <Mmap.h>
 
 #define MAXARG 32  // max exec arguments
 
