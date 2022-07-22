@@ -326,8 +326,11 @@ void processRun(Process* p) {
             struct dirent* ep = create(AT_FDCWD, "/dev", T_DIR, O_RDONLY);
             eunlock(ep);
             eput(ep);
-            ep = create(AT_FDCWD, "/dev/vda2", T_DIR, O_RDONLY);
+            ep = create(AT_FDCWD, "/dev/vda2", T_DIR, O_RDONLY); //driver
             ep->head = &rootFileSystem;            
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/dev/shm", T_DIR, O_RDONLY); //share memory
             eunlock(ep);
         }
         bcopy(&(currentProcess[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));

@@ -198,7 +198,7 @@ u64 load_elf_interp(u64* pagetable,
 			else if (no_base && interp_elf_ex->type == ET_DYN)
 				load_addr = -vaddr;
             
-            struct file interp_file;
+            struct File interp_file;
             interp_file.ep = interpreter;
             interp_file.type = FD_ENTRY;
             interp_file.readable = 1;

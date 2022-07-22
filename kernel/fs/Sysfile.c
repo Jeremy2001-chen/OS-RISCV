@@ -286,10 +286,11 @@ void syscallOpenAt(void) {
     }
     struct dirent* entryPoint;
 
-    // printf("startFd: %d, flags: %x, mode: %x\n", startFd, flags, mode);
+    printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
     if (flags & O_CREATE) {
         entryPoint = create(startFd, path, T_FILE, mode);
         if (entryPoint == NULL) {
+            printf("open at: 1\n");
             goto bad;
         }
     } else {
@@ -316,6 +317,7 @@ void syscallOpenAt(void) {
         }
         eunlock(entryPoint);
         eput(entryPoint);
+        printf("open at: 2\n");
         goto bad;
     }
 
@@ -332,9 +334,11 @@ void syscallOpenAt(void) {
     eunlock(entryPoint);
 
     tf->a0 = fd;
+    printf("open at: %d\n", fd);
     return;
 bad:
     tf->a0 = -1;
+    printf("open at: %d\n", -1);
 }
 
 //todo: support the mode

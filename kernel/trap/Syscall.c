@@ -73,7 +73,9 @@ void (*syscallVector[])(void) = {
     [SYSCALL_ACCEPT] syscallAccept,
     [SYSCALL_WRITE_VECTOR] syscallWriteVector,
     [SYSCALL_FUTEX] syscallFutex,
-    [SYSCALL_THREAD_KILL] syscallThreadKill
+    [SYSCALL_THREAD_KILL] syscallThreadKill,
+    [SYSCALL_POLL] syscallPoll,
+    [SYSCALL_MEMORY_PROTECT] syscallMemoryProtect
 };
 
 extern struct Spinlock printLock;
@@ -238,7 +240,7 @@ void syscallMapMemory() {
             trapframe->a0 = -1;
             return ;
         }
-        pageInsert(myproc()->pgdir, start, page2pa(page), perm | PTE_USER);
+        pageInsert(myproc()->pgdir, start, page2pa(page), perm | PTE_USER | PTE_READ | PTE_WRITE);
         start += PGSIZE;
     }
 
@@ -454,5 +456,32 @@ void syscallThreadKill() {
     }
     process->pending |= (1ul<<signal);
     printf("tid: %lx, pending: %lx sign: %d\n", tid, process->pending, signal);
+    tf->a0 = 0;
+}
+
+void syscallPoll() {
+    Trapframe *tf = getHartTrapFrame();
+    struct pollfd {
+        int fd;
+        short events;
+        short revents;
+    };
+    struct pollfd p;
+    u64 startva = 0;
+    int n = tf->a1;
+    int cnt = 0;
+    for (int i = 0; i < n; i++) {
+        copyin(myproc()->pgdir, (char*)&p, startva, sizeof(struct pollfd));
+        p.revents = 0;
+        copyout(myproc()->pgdir, startva, (char*)&p, sizeof(struct pollfd));
+        startva += sizeof(struct pollfd);
+        cnt += p.revents != 0;
+    }
+    tf->a0 = cnt;
+}
+
+void syscallMemoryProtect() {
+    Trapframe *tf = getHartTrapFrame();
+    printf("mprotect va: %lx, length: %lx\n", tf->a0, tf->a1);
     tf->a0 = 0;
 }

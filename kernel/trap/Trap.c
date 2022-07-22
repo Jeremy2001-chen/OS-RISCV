@@ -149,6 +149,7 @@ void userTrap() {
             } else if (*pte & PTE_COW) {
                 cowHandler(currentProcess[hartId]->pgdir, r_stval());
             } else {
+                printf("spec: %lx %lx %lx %lx\n", sepc, pa, *pte, TRAMPOLINE_BASE);
                 panic("unknown");
             }
             break;
