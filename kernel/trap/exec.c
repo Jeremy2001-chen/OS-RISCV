@@ -102,7 +102,8 @@ static u64 total_mapping_size(const Phdr* phdr, int nr) {
     }
     return pt_load ? (max_addr - min_addr) : 0;
 }
-static u64 elf_map(struct file* filep,
+
+static u64 elf_map(struct File* filep,
                    u64 addr,
                    const Phdr* eppnt,
                    int prot,

@@ -186,3 +186,36 @@ int dirnext(struct File* f, u64 addr) {
 
     return 1;
 }
+
+u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int type, u64 off) {
+    bool alloc = (start == 0);
+    printf("heapBottom = %x\n", myproc()->heapBottom);
+    if (alloc) {
+        myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom, PAGE_SIZE);
+        start = myproc()->heapBottom;
+        myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom + len, PAGE_SIZE);
+    }
+    u64 addr = start, end = start + len;
+    start = DOWN_ALIGN(start, 12);
+    while (start < end) {
+        u64* pte;
+        u64 pa = pageLookup(myproc()->pgdir, start, &pte);
+        if (pa > 0 && (*pte & PTE_COW)) {
+            cowHandler(myproc()->pgdir, start);
+        }
+        PhysicalPage* page;
+        if (pageAlloc(&page) < 0) {
+            return -1;
+        }
+        pageInsert(myproc()->pgdir, start, page2pa(page), perm | PTE_USER);
+        start += PGSIZE;
+    }
+
+    printf("mapping %lx %lx %lx\n", addr, len, perm);
+    fd->off = off;
+    if (fileread(fd, addr, len)) {
+        return addr;
+    } else {
+        return -1;
+    }
+}
