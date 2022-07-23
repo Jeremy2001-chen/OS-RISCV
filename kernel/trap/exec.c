@@ -112,7 +112,7 @@ static u64 elf_map(struct file* filep,
     u64 size = eppnt->filesz + PAGE_OFFSET(eppnt->vaddr, PAGE_SIZE);
     u64 off = eppnt->offset - PAGE_OFFSET(eppnt->vaddr, PAGE_SIZE);
     addr = DOWN_ALIGN(addr, PAGE_SIZE);
-    size = UP_ALIGN(size, PGSIZE);
+    // size = UP_ALIGN(size, PGSIZE);
 
     MSG_PRINT("mmaping %x %x\n",addr, size);
     /* mmap() will return -EINVAL if given a zero size, but a
@@ -421,7 +421,7 @@ int exec(char* path, char** argv) {
     } else {
         elf_entry = elf.entry;
     }
-    printf("end of load interpreter");
+    printf("end of load interpreter\n");
 /* ============ End of find and load interpreter ============== */
 
     eunlock(de);

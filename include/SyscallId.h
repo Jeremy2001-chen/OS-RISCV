@@ -13,7 +13,7 @@
 #define SYSCALL_DEV 20
 #define SYSCALL_DUP 23
 #define SYSCALL_DUP3 24
-
+#define SYSCALL_fcntl 25
 #define SYSCALL_IOCONTROL 29
 
 #define SYSCALL_MKDIRAT 34
@@ -31,6 +31,8 @@
 #define SYSCALL_LSEEK 62
 #define SYSCALL_READ 63
 #define SYSCALL_WRITE 64
+#define SYSCALL_READV 65
+#define SYSCALL_WRITEV 66
 
 #define SYSCALL_FSTAT 80
 #define SYSCALL_EXIT 93 
