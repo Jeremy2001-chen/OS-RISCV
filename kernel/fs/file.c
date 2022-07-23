@@ -215,7 +215,6 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
     printf("mapping %lx %lx %lx\n", addr, len, perm);
     if (flags & MAP_ANONYMOUS) {
         return addr;
-        return;
     }
     /* if fd == NULL, we think this is a anonymous map */
     if (fd != NULL) {

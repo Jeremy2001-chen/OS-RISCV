@@ -29,8 +29,6 @@ void (*syscallVector[])(void) = {
     [SYSCALL_PIPE2]             syscallPipe,
     [SYSCALL_WRITE]             syscallWrite,
     [SYSCALL_READ]              syscallRead,
-    [SYSCALL_WRITEV]            syscallWrite,
-    [SYSCALL_READV]             syscallRead,
     [SYSCALL_CLOSE]             syscallClose,
     [SYSCALL_OPENAT]            syscallOpenAt,
     [SYSCALL_GET_CPU_TIMES]     syscallGetCpuTimes,
@@ -70,7 +68,6 @@ void (*syscallVector[])(void) = {
     [SYSCALL_SET_SOCKET_OPTION] syscallSetSocketOption,
     [SYSCALL_SEND_TO] syscallSendTo,
     [SYSCALL_RECEIVE_FROM] syscallReceiveFrom,
-    [SYSCALL_FCNTL] syscallFcntl,
     [SYSCALL_LISTEN] syscallListen,
     [SYSCALL_CONNECT] syscallConnect,
     [SYSCALL_ACCEPT] syscallAccept,
@@ -222,12 +219,13 @@ void syscallSetBrk() {
 
 void syscallMapMemory() {
     Trapframe* trapframe = getHartTrapFrame();
-    u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2, off = trapframe->a5,flags = trapframe->a3;
-    struct file* fd;
+    u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2,
+        off = trapframe->a5, flags = trapframe->a3;
+    struct File* fd;
     printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
 
-    if (argfd(4, 0, &fd)) {
-        // printf("fd: %x\n", trapframe->a4);
+    argfd(4, 0, &fd);
+    if (fd == NULL && start != 0) {
         trapframe->a0 = -1;
         return;
     }

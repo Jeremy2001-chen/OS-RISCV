@@ -456,8 +456,8 @@ int exec(char* path, char** argv) {
     ustack[0] = argc;
     ustack[argc + 1] = 0;
 
-    int envCount = 2;
-    char *envVariable[2] = {"va=a", "vb=b"};
+    int envCount = 1;
+    char *envVariable[1] = {"LD_LIBRARY_PATH=/lib"};
     for (i = 0; i < envCount; i++) {
         sp -= strlen(envVariable[i]) + 1;
         sp -= sp % 16;  // riscv sp must be 16-byte aligned
@@ -515,7 +515,7 @@ int exec(char* path, char** argv) {
 	#define from_kuid_munged(x, y) (0)
 	#define from_kgid_munged(x,y) (0)
 
-    u64 secureexec = 1; // the default value is 1, 但是我不清楚哪些情况会把它变成0
+    u64 secureexec = 0; // the default value is 1, 但是我不清楚哪些情况会把它变成0
 	NEW_AUX_ENT(AT_HWCAP, ELF_HWCAP); //CPU的extension信息
 	NEW_AUX_ENT(AT_PAGESZ, ELF_EXEC_PAGESIZE); //PAGE_SIZE
 	NEW_AUX_ENT(AT_PHDR, phdr_addr);// Phdr * phdr_addr; 指向用户态。
@@ -527,7 +527,7 @@ int exec(char* path, char** argv) {
 	NEW_AUX_ENT(AT_EUID, from_kuid_munged(cred->user_ns, cred->euid));// 0
 	NEW_AUX_ENT(AT_GID, from_kgid_munged(cred->user_ns, cred->gid));// 0
 	NEW_AUX_ENT(AT_EGID, from_kgid_munged(cred->user_ns, cred->egid));// 0
-	NEW_AUX_ENT(AT_SECURE, secureexec);//安全，默认1
+	NEW_AUX_ENT(AT_SECURE, secureexec);//安全，默认1。该模式下不会启用LD_LIBRARY_PATH等
 	NEW_AUX_ENT(AT_RANDOM, u_rand_bytes);//16byte随机数的地址。
 #ifdef ELF_HWCAP2
 	NEW_AUX_ENT(AT_HWCAP2, ELF_HWCAP2);
