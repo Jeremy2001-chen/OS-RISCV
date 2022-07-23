@@ -11,6 +11,7 @@
 #include <Debug.h>
 #include <FileSystem.h>
 #include <Sysfile.h>
+#include <Thread.h>
 
 /* fields that start with "_" are something we don't use */
 
@@ -1014,14 +1015,14 @@ static struct dirent* lookup_path(int fd, char* path, int parent, char* name) {
     struct dirent *entry, *next;
     
     if (*path != '/' && fd != AT_FDCWD && fd >= 0 && fd < NOFILE) {
-        if (myproc()->ofile[fd] == 0) {
+        if (myProcess()->ofile[fd] == 0) {
             return NULL;
         }
-        entry = edup(myproc()->ofile[fd]->ep);
+        entry = edup(myProcess()->ofile[fd]->ep);
     } else if (*path == '/') {
         entry = edup(&rootFileSystem.root);
     } else if (*path != '\0' && fd == AT_FDCWD) {
-        entry = edup(myproc()->cwd);
+        entry = edup(myProcess()->cwd);
     } else {
         return NULL;
     }

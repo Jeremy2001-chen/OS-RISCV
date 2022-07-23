@@ -4,7 +4,6 @@
 #include <SyscallId.h>
 
 void syscallPutchar();
-void syscallGetProcessId();
 void syscallYield();
 void syscallProcessDestory();
 void syscallClone();

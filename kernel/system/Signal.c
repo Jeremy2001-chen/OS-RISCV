@@ -2,18 +2,19 @@
 #include <Riscv.h>
 #include <Process.h>
 #include <Page.h>
+#include <Thread.h>
 
 int signProccessMask(u64 how, SignalSet *newSet) {
-    Process *p = myproc();
+    Thread* th = myThread();
     switch (how) {
     case SIG_UNBLOCK:
-        p->blocked |= ~(*newSet);
+        th->blocked |= ~(*newSet);
         return 0;
     case SIG_BLOCK:
-        p->blocked &= *newSet;
+        th->blocked &= *newSet;
         return 0;
     case SIG_SETMASK:
-        p->blocked = *newSet;
+        th->blocked = *newSet;
         return 0;
     default:
         return -1;
@@ -21,16 +22,16 @@ int signProccessMask(u64 how, SignalSet *newSet) {
 }
 
 int doSignalAction(int sig, u64 act, u64 oldAction) {
-    Process *p = myproc();
+    Thread* th = myThread();
     if (sig < 1 || sig > SIGNAL_COUNT) {
         return -1;
     }
-	SignalAction *k = getSignalHandler(p) + (sig - 1);
+	SignalAction *k = getSignalHandler(th) + (sig - 1);
     if (oldAction) {
-        copyout(myproc()->pgdir, oldAction, (char*)k, sizeof(SignalAction));
+        copyout(myProcess()->pgdir, oldAction, (char*)k, sizeof(SignalAction));
     }
 	if (act) {
-		copyin(myproc()->pgdir, (char *)k, act, sizeof(SignalAction));
+		copyin(myProcess()->pgdir, (char *)k, act, sizeof(SignalAction));
 	}
 	return 0;
 }
@@ -48,28 +49,28 @@ int __dequeueSignal(SignalSet *pending, SignalSet *mask) {
     return 0;
 }
 
-static int dequeueSignal(Process *p, SignalSet *mask, SignalInfo *info) {
-    int signal = __dequeueSignal(&p->pending, mask);
+static int dequeueSignal(Thread *th, SignalSet *mask, SignalInfo *info) {
+    int signal = __dequeueSignal(&th->pending, mask);
     return signal;
 }
 
 int doSignalTimedWait(SignalSet *which, SignalInfo *info, TimeSpec *ts) {
-    Process *p = myproc();
+    Thread* thread = myThread();
     if (ts) {
-        p->awakeTime = r_time() +  ts->second * 1000000 + ts->microSecond;
+        thread->awakeTime = r_time() +  ts->second * 1000000 + ts->microSecond;
     }
-    return dequeueSignal(p, which, info);    
+    return dequeueSignal(thread, which, info);    
 }
 
-void handleSignal(struct Process* process) {
+void handleSignal(Thread* thread) {
     for (int i = 0; i < 64; i++) {
-        u64 signal = (process->pending & ~process->blocked);
+        u64 signal = (thread->pending & ~thread->blocked);
         if ((1ul << i) & signal) {
             switch (i) {
                 case SIGQUIT:
                 case SIGKILL:
-                    processDestory(process);
-                    process->pending -= (1ul << i);
+                    threadDestroy(thread);
+                    thread->pending -= (1ul << i);
                     break;
                 case SIGCANCEL:
                     break;

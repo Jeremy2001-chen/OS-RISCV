@@ -19,6 +19,7 @@
     extern int binary##x##Size; \
     processCreatePriority(binary##x##Start, binary##x##Size, y); \
 }
+
 typedef struct Trapframe {
     u64 kernelSatp;
     u64 kernelSp;
@@ -72,34 +73,36 @@ struct ProcessTime {
 };
 
 typedef struct Process {
-    Trapframe trapframe;
+    // Trapframe trapframe;
     struct ProcessTime processTime;
     CpuTimes cpuTime;
     LIST_ENTRY(Process) link;
-    u64 awakeTime;
+    // u64 awakeTime;
     u64 *pgdir;
-    u32 id;
+    u32 processId;
     u32 parentId;
-    LIST_ENTRY(Process) scheduleLink;
+    // LIST_ENTRY(Process) scheduleLink;
     u32 priority;
     enum ProcessState state;
     struct Spinlock lock;
-    struct dirent *cwd;           // Current directory
+    // struct dirent *cwd;           // Current directory
     struct File *ofile[NOFILE];
-    u64 chan;//wait Object
-    u64 currentKernelSp;
-    int reason;
+    // u64 chan;//wait Object
+    // u64 currentKernelSp;
+    // int reason;
     u64 retValue;
     u64 heapBottom;
-    SignalSet blocked;
-    SignalSet pending;
-    u64 setChildTid;
-    u64 clearChildTid;
+    struct dirent *cwd;
+    // SignalSet blocked;
+    // SignalSet pending;
+    // u64 setChildTid;
+    // u64 clearChildTid;
+    int threadCount;
 } Process;
 
 LIST_HEAD(ProcessList, Process);
 
-#define START_FORK 17
+#define PROCESS_FORK 17
 #define CSIGNAL		0x000000ff
 #define CLONE_VM	0x00000100
 #define CLONE_FS	0x00000200
@@ -126,17 +129,13 @@ LIST_HEAD(ProcessList, Process);
 #define CLONE_NEWNET	0x40000000
 #define CLONE_IO	0x80000000
 
-u64 getProcessTopSp(Process* p);
-u64 getProcessTLS(Process* p);
-SignalAction *getSignalHandler(Process *p);
-
-Process* myproc();
+Process* myProcess();
+int processAlloc(Process **new, u64 parentId);
 void processInit();
 void processCreatePriority(u8* binary, u32 size, u32 priority);
 void sleep(void* chan, struct Spinlock* lk);
 void wakeup(void* channel);
 void yield();
-void processFork(u32, u64, u64, u64, u64);
 void processDestory(Process* p);
 void processFree(Process* p);
 int pid2Process(u32 processId, struct Process **process, int checkPerm);

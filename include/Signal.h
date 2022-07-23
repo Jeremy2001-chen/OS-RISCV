@@ -46,12 +46,12 @@ typedef struct SignalAction {
 #define SIG_UNBLOCK 1
 #define SIG_SETMASK 2
 
-struct Process;
+struct Thread;
 
 int signProccessMask(u64, SignalSet*);
 int doSignalAction(int sig, u64 act, u64 oldAction);
 int doSignalTimedWait(SignalSet *which, SignalInfo *info, TimeSpec *ts);
-void handleSignal(struct Process* process);
+void handleSignal(struct Thread* thread);
 
 #define SIGHUP		 1
 #define SIGINT		 2

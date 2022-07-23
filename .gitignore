@@ -2,6 +2,7 @@
 /.vscode/
 /libc-test/runtest.exe
 /libc-test/entry-static.exe
+/libc-test/run
 fs.img
 os.bin
 sdcard.img

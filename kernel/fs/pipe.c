@@ -64,7 +64,7 @@ void pipeclose(struct pipe* pi, int writable) {
 
 int pipewrite(struct pipe* pi, u64 addr, int n) {
     int i = 0;
-    struct Process* pr = myproc();
+    struct Process* pr = myProcess();
 
     // printf("%d WWWW pipe addr %x\n", r_hartid(), pi);
     acquireLock(&pi->lock);
@@ -96,7 +96,7 @@ int pipewrite(struct pipe* pi, u64 addr, int n) {
 
 int piperead(struct pipe* pi, u64 addr, int n) {
     int i;
-    struct Process* pr = myproc();
+    struct Process* pr = myProcess();
     char ch;
 
     // printf("%d RRRR pipe addr %x\n", r_hartid(), pi);
