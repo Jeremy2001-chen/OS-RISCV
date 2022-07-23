@@ -17,6 +17,7 @@
 #include <pipe.h>
 #include <FileSystem.h>
 #include <Iovec.h>
+#include <Thread.h>
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -26,7 +27,7 @@ int argfd(int n, int* pfd, struct File** pf) {
 
     if (argint(n, &fd) < 0)
         return -1;
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL)
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL)
         return -1;
     if (pfd)
         *pfd = fd;
@@ -39,7 +40,7 @@ int argfd(int n, int* pfd, struct File** pf) {
 // Takes over file reference from caller on success.
 int fdalloc(struct File* f) {
     int fd;
-    struct Process* p = myproc();
+    struct Process* p = myProcess();
     
     for (fd = 0; fd < NOFILE; fd++) {
         if (p->ofile[fd] == 0) {
@@ -54,7 +55,7 @@ void syscallDup(void) {
     Trapframe* tf = getHartTrapFrame();
     struct File* f;
     int fd = tf->a0;
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -73,17 +74,17 @@ void syscallDupAndSet(void) {
     struct File* f;
     int fd = tf->a0, fdnew = tf->a1;
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
 
-    if (fdnew < 0 || fdnew >= NOFILE || myproc()->ofile[fdnew] != NULL) {
+    if (fdnew < 0 || fdnew >= NOFILE || myProcess()->ofile[fdnew] != NULL) {
         tf->a0 = -1;
         return;
     }
 
-    myproc()->ofile[fdnew] = f;
+    myProcess()->ofile[fdnew] = f;
     filedup(f);
     tf->a0 = fdnew;
 }
@@ -94,7 +95,7 @@ void syscallRead(void) {
     int len = tf->a2, fd = tf->a0;
     u64 uva = tf->a1;
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -113,7 +114,7 @@ void syscallWrite(void) {
     int len = tf->a2, fd = tf->a0;
     u64 uva = tf->a1;
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -131,7 +132,7 @@ void syscallWriteVector() {
     struct File* f;
     int fd = tf->a0;
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         goto bad;
     }
 
@@ -141,7 +142,7 @@ void syscallWriteVector() {
     }
 
     struct Iovec vec[IOVMAX];
-    struct Process* p = myproc();
+    struct Process* p = myProcess();
 
     if (copyin(p->pgdir, (char*)vec, tf->a1, cnt * sizeof(struct Iovec)) != 0) {
         goto bad;
@@ -163,12 +164,12 @@ void syscallClose(void) {
     int fd = tf->a0;
     struct File* f;
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
     
-    myproc()->ofile[fd] = 0;
+    myProcess()->ofile[fd] = 0;
     fileclose(f);
     tf->a0 = 0;
 }
@@ -179,7 +180,7 @@ void syscallGetFileState(void) {
     int fd = tf->a0;
     u64 uva = tf->a1; 
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -197,7 +198,7 @@ void syscallGetDirent() {
         getHartTrapFrame()->a0 = -2;
         return;
     }
-    struct Process* p = myproc();
+    struct Process* p = myProcess();
     static char buf[512];
     struct linux_dirent64* dir64 = (struct linux_dirent64*)buf;
 
@@ -372,7 +373,7 @@ void syscallChangeDir(void) {
     char path[FAT32_MAX_PATH];
     struct dirent* ep;
 
-    struct Process* p = myproc();
+    struct Process* process = myProcess();
     
     if (fetchstr(tf->a0, path, FAT32_MAX_PATH) < 0 || (ep = ename(AT_FDCWD, path)) == NULL) {
         tf->a0 = -1;
@@ -388,8 +389,8 @@ void syscallChangeDir(void) {
     }    
 
     eunlock(ep);
-    eput(p->cwd);
-    p->cwd = ep;
+    eput(process->cwd);
+    process->cwd = ep;
     tf->a0 = 0;
 }
 
@@ -403,7 +404,7 @@ void syscallGetWorkDir(void) {
         panic("Alloc addr not implement for cwd\n");
     }
 
-    int len = getAbsolutePath(myproc()->cwd, 1, uva, n);
+    int len = getAbsolutePath(myProcess()->cwd, 1, uva, n);
 
     if (len < 0) {
         tf->a0 = -1;
@@ -418,7 +419,7 @@ void syscallPipe(void) {
     u64 fdarray = tf->a0;  // user pointer to array of two integers
     struct File *rf, *wf;
     int fd0, fd1;
-    struct Process* p = myproc();
+    struct Process* p = myProcess();
 
     if (pipealloc(&rf, &wf) < 0) {
         goto bad;
@@ -490,7 +491,7 @@ void syscallReadDir(void) {
     int fd = tf->a0;
     u64 uva = tf->a1;
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -505,7 +506,7 @@ u64 sys_getcwd(void) {
     if (argaddr(0, &addr) < 0)
         return -1;
 
-    struct dirent* de = myproc()->cwd;
+    struct dirent* de = myProcess()->cwd;
     char path[FAT32_MAX_PATH];
     char* s;
     int len;
@@ -526,7 +527,7 @@ u64 sys_getcwd(void) {
         }
     }
 
-    // if (copyout(myproc()->pgdir, addr, s, strlen(s) + 1) < 0)
+    // if (copyout(myProcess()->pgdir, addr, s, strlen(s) + 1) < 0)
     if (copyout2(addr, s, strlen(s) + 1) < 0)
         return -1;
 
@@ -829,7 +830,7 @@ void syscallLSeek() {
     if (fd < 0 || fd >= NOFILE) {
         goto bad;
     }
-    struct File* file = myproc()->ofile[fd];
+    struct File* file = myProcess()->ofile[fd];
     if (file == 0) {
         goto bad;
     }

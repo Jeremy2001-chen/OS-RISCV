@@ -474,7 +474,7 @@ int sdCardRead(int isUser, u64 dst, u64 startAddr, u64 n) {
 		int st = (startAddr) >> 9;
 		for (int i = 0; i < n; i++) {
 			sdRead((u8*)buf, st, 1);
-			copyout(myproc()->pgdir, dst, buf, 512);
+			copyout(myProcess()->pgdir, dst, buf, 512);
 			dst += 512;
 			st++;
 		}
@@ -503,7 +503,7 @@ int sdCardWrite(int isUser, u64 src, u64 startAddr, u64 n) {
 		char buf[512];
 		int st = (startAddr) >> 9;
 		for (int i = 0; i < n; i++) {
-        	copyin(myproc()->pgdir, buf, src, 512);
+        	copyin(myProcess()->pgdir, buf, src, 512);
 			sdWrite((u8*)buf, st, 1);
 			src += 512;
 			st++;

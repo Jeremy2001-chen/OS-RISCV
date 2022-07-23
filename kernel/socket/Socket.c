@@ -23,7 +23,7 @@ int socketAlloc(Socket **s) {
             }
             extern u64 kernelPageDirectory[];
             pageInsert(kernelPageDirectory, getSocketBufferBase(&sockets[i]), page2pa(page), PTE_READ | PTE_WRITE);
-            sockets[i].process = myproc();
+            sockets[i].process = myProcess();
             *s = &sockets[i];
             return 0;
         }
@@ -52,7 +52,7 @@ int createSocket(int family, int type, int protocal) {
 }
 
 int bindSocket(int fd, SocketAddr *sa) {
-    File *f = myproc()->ofile[fd];
+    File *f = myProcess()->ofile[fd];
     assert(f->type == FD_SOCKET);
     Socket *s = f->socket;
     assert(s->addr.family == sa->family);
@@ -63,9 +63,9 @@ int bindSocket(int fd, SocketAddr *sa) {
 }
 
 int getSocketName(int fd, u64 va) {
-    File *f = myproc()->ofile[fd];
+    File *f = myProcess()->ofile[fd];
     assert(f->type == FD_SOCKET);
-    copyout(myproc()->pgdir, va, (char*)&f->socket->addr, sizeof(SocketAddr));
+    copyout(myProcess()->pgdir, va, (char*)&f->socket->addr, sizeof(SocketAddr));
     return 0;
 }
 
@@ -87,15 +87,15 @@ int sendTo(int fd, char *buf, u32 len, int flags, SocketAddr *dest) {
 }
 
 int receiveFrom(int fd, u64 buf, u32 len, int flags, u64 srcAddr) {
-    File *f = myproc()->ofile[fd];
+    File *f = myProcess()->ofile[fd];
     assert(f->type == FD_SOCKET);
     Socket *s = f->socket;
     char *src = (char*)(getSocketBufferBase(s) + (s->head & (PAGE_SIZE - 1)));
     u32 num = MIN(len, (s->tail - s->head));
     int len1 = MIN(num, PAGE_SIZE - (s->head & (PAGE_SIZE - 1)));
-    copyout(myproc()->pgdir, buf, src, len1);
+    copyout(myProcess()->pgdir, buf, src, len1);
     if (len1 < num) {
-        copyout(myproc()->pgdir, buf + len1, (char*)(getSocketBufferBase(s)), num - len1);
+        copyout(myProcess()->pgdir, buf + len1, (char*)(getSocketBufferBase(s)), num - len1);
     }
     s->head += num;
     return num;

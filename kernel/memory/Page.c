@@ -201,7 +201,7 @@ void cowHandler(u64 *pgdir, u64 badAddr) {
     u64 pa;
     u64 *pte;
     pa = pageLookup(pgdir, badAddr, &pte);
-    printf("[COW] %x to cow %lx %lx\n", myproc()->id, badAddr, pa);
+    printf("[COW] %x to cow %lx %lx\n", myProcess()->processId, badAddr, pa);
     if (!(*pte & PTE_COW)) {
         printf("access denied");
         return;
@@ -299,14 +299,14 @@ int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
 }
 
 int growproc(int n) {
-    if (myproc()->heapBottom + n >= USER_HEAP_TOP)
+    if (myProcess()->heapBottom + n >= USER_HEAP_TOP)
         return -1;
-    myproc()->heapBottom += n;
+    myProcess()->heapBottom += n;
     return 0;
 }
 
 u64 sys_sbrk(u32 len) {
-    u64 addr = myproc()->heapBottom;
+    u64 addr = myProcess()->heapBottom;
     if (growproc(len) < 0)
         return -1;
     return addr;

@@ -286,10 +286,16 @@ int exec(char* path, char** argv) {
     struct dirent* de;
     Phdr ph;
     u64 *pagetable = 0, *old_pagetable = 0;
-    Process* p = myproc();
+    Process* p = myProcess();
     u64* oldpagetable = p->pgdir;
     u64 phdr_addr = 0; // virtual address in user space, point to the program header. We will pass 'phdr_addr' to ld.so
 
+    if ((de = ename(AT_FDCWD, path)) == 0) {
+        printf("%s %d\n", __FILE__, __LINE__);
+        MSG_PRINT("find file error\n");
+        return -1;
+    }
+    elock(de);
     PhysicalPage *page;
     int r = allocPgdir(&page);
     if (r < 0) {
@@ -305,17 +311,18 @@ int exec(char* path, char** argv) {
         PTE_READ | PTE_WRITE | PTE_EXECUTE);
     pageInsert(pagetable, TRAMPOLINE_BASE + PAGE_SIZE, ((u64)trampoline) + PAGE_SIZE, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE);    
-    
+    r = pageAlloc(&page);
+    if (r < 0) {
+        panic("setup stack alloc error\n");
+        return r;
+    }
+    pageInsert(pagetable, USER_STACK_TOP - PGSIZE, page2pa(page), PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE); // We must alloc the stack
+
     old_pagetable = p->pgdir;
     p->pgdir = pagetable;
 
     MSG_PRINT("setup");
 
-    if ((de = ename(AT_FDCWD, path)) == 0) {
-        MSG_PRINT("find file error\n");
-        return -1;
-    }
-    elock(de);
 
     MSG_PRINT("lock file success");
     // Check ELF header
@@ -426,7 +433,7 @@ int exec(char* path, char** argv) {
     eput(de);
     de = 0;
 
-    p = myproc();
+    p = myProcess();
     sp = USER_STACK_TOP;
     stackbase = sp - PGSIZE;
     if (pageAlloc(&page)){

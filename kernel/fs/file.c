@@ -83,7 +83,7 @@ void fileclose(struct File* f) {
 // Get metadata about file f.
 // addr is a user virtual address, pointing to a struct stat.
 int filestat(struct File* f, u64 addr) {
-    struct Process *p = myproc();
+    struct Process *p = myProcess();
     struct stat st;
 
     if (f->type == FD_ENTRY) {
@@ -161,7 +161,7 @@ int filewrite(struct File* f, u64 addr, int n) {
 // Read from dir f.
 // addr is a user virtual address.
 int dirnext(struct File* f, u64 addr) {
-    struct Process* p = myproc();
+    struct Process* p = myProcess();
 
     if (f->readable == 0 || !(f->ep->attribute & ATTR_DIRECTORY))
         return -1;
@@ -189,25 +189,25 @@ int dirnext(struct File* f, u64 addr) {
 
 u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int type, u64 off) {
     bool alloc = (start == 0);
-    printf("heapBottom = %x\n", myproc()->heapBottom);
+    printf("heapBottom = %x\n", myProcess()->heapBottom);
     if (alloc) {
-        myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom, PAGE_SIZE);
-        start = myproc()->heapBottom;
-        myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom + len, PAGE_SIZE);
+        myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom, PAGE_SIZE);
+        start = myProcess()->heapBottom;
+        myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom + len, PAGE_SIZE);
     }
     u64 addr = start, end = start + len;
     start = DOWN_ALIGN(start, 12);
     while (start < end) {
         u64* pte;
-        u64 pa = pageLookup(myproc()->pgdir, start, &pte);
+        u64 pa = pageLookup(myProcess()->pgdir, start, &pte);
         if (pa > 0 && (*pte & PTE_COW)) {
-            cowHandler(myproc()->pgdir, start);
+            cowHandler(myProcess()->pgdir, start);
         }
         PhysicalPage* page;
         if (pageAlloc(&page) < 0) {
             return -1;
         }
-        pageInsert(myproc()->pgdir, start, page2pa(page), perm | PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE);
+        pageInsert(myProcess()->pgdir, start, page2pa(page), perm | PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE);
         start += PGSIZE;
     }
 

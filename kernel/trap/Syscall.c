@@ -12,12 +12,12 @@
 #include <Socket.h>
 #include <Mmap.h>
 #include <Futex.h>
+#include <Thread.h>
+#include <Clone.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
-    [SYSCALL_GET_PROCESS_ID]    syscallGetProcessId,
     [SYSCALL_SCHED_YIELD]       syscallYield,
-    [SYSCALL_PROCESS_DESTORY]   syscallProcessDestory,
     [SYSCALL_CLONE]             syscallClone,
     [SYSCALL_PUT_STRING]        syscallPutString,
     [SYSCALL_GET_PID]           syscallGetProcessId,
@@ -79,7 +79,6 @@ void (*syscallVector[])(void) = {
 };
 
 extern struct Spinlock printLock;
-extern Process *currentProcess[HART_TOTAL_NUMBER];
 
 void syscallPutchar() {
     Trapframe* trapframe = getHartTrapFrame();
@@ -90,28 +89,12 @@ void syscallPutchar() {
 
 void syscallGetProcessId() {
     Trapframe* trapframe = getHartTrapFrame();
-    trapframe->a0 = currentProcess[r_hartid()]->id;
+    trapframe->a0 = myProcess()->processId;
 }
 
 void syscallGetParentProcessId() {
     Trapframe* trapframe = getHartTrapFrame();
-    trapframe->a0 = currentProcess[r_hartid()]->parentId;
-}
-
-void syscallProcessDestory() {
-    Trapframe* trapframe = getHartTrapFrame();
-    u32 processId = trapframe->a0;
-    struct Process* process;
-    int ret;
-
-    if ((ret = pid2Process(processId, &process, 1)) < 0) {
-        trapframe->a0 = ret;
-        return;
-    }    
-
-    processDestory(process);
-    trapframe->a0 = 0;
-    return;
+    trapframe->a0 = myProcess()->parentId;
 }
 
 //todo: support mode
@@ -129,34 +112,32 @@ void syscallYield() {
 
 void syscallClone() {
     Trapframe *tf = getHartTrapFrame();
-    processFork(tf->a0, tf->a1, tf->a2, tf->a3, tf->a4);
+    tf->a0 = clone(tf->a0, tf->a1, tf->a2, tf->a3, tf->a4);
 }
 
 void syscallExit() {
     Trapframe* trapframe = getHartTrapFrame();
-    struct Process* process;
+    Thread* th; 
     int ret, ec = trapframe->a0;
 
-    if ((ret = pid2Process(0, &process, 1)) < 0) {
+    if ((ret = tid2Thread(0, &th, 1)) < 0) {
         panic("Process exit error\n");
         return;
     }    
 
-    process->retValue = (ec << 8); //todo
-    processDestory(process);
+    th->retValue = (ec << 8); //todo
+    threadDestroy(th);
     //will not reach here
     panic("sycall exit error");
 }
 
 void syscallPutString() {
     Trapframe* trapframe = getHartTrapFrame();
-    int hartId = r_hartid();
     //printf("hart %d, env %lx printf string:\n", hartId, currentProcess[hartId]->id);
     u64 va = trapframe->a0;
     int len = trapframe->a1;
-    extern Process *currentProcess[HART_TOTAL_NUMBER];
     u64* pte;
-    u64 pa = pageLookup(currentProcess[hartId]->pgdir, va, &pte) + (va & 0xfff);
+    u64 pa = pageLookup(myProcess()->pgdir, va, &pte) + (va & 0xfff);
     if (pa == 0) {
         panic("Syscall put string address error!\nThe virtual address is %x, the length is %x\n", va, len);
     }
@@ -172,12 +153,8 @@ void syscallPutString() {
 void syscallGetCpuTimes() {
     Trapframe *tf = getHartTrapFrame();
     // printf("addr : %lx\n", tf->a0);
-    int cow;
-    CpuTimes *ct = (CpuTimes*)vir2phy(myproc()->pgdir, tf->a0, &cow);
-    if (cow) {
-        cowHandler(myproc()->pgdir, tf->a0);
-    }
-    *ct = myproc()->cpuTime;
+    Process *p = myProcess();
+    copyout(p->pgdir, tf->a0, (char*)&p->cpuTime, sizeof(CpuTimes));
     tf->a0 = (r_cycle() & 0x3FFFFFFF);
 }
 
@@ -187,15 +164,15 @@ void syscallGetTime() {
     TimeSpec ts;
     ts.second = time / 1000000;
     ts.microSecond = time % 1000000;
-    copyout(myproc()->pgdir, tf->a0, (char*)&ts, sizeof(TimeSpec));
+    copyout(myProcess()->pgdir, tf->a0, (char*)&ts, sizeof(TimeSpec));
     tf->a0 = 0;
 }
 
 void syscallSleepTime() {
     Trapframe *tf = getHartTrapFrame();
     TimeSpec ts;
-    copyin(myproc()->pgdir, (char*)&ts, tf->a0, sizeof(TimeSpec));
-    myproc()->awakeTime = r_time() +  ts.second * 1000000 + ts.microSecond;
+    copyin(myProcess()->pgdir, (char*)&ts, tf->a0, sizeof(TimeSpec));
+    myThread()->awakeTime = r_time() +  ts.second * 1000000 + ts.microSecond;
     kernelProcessCpuTimeEnd();
     yield();
 }
@@ -204,9 +181,9 @@ void syscallBrk() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 addr = trapframe->a0;
     if (addr == 0) {
-        trapframe->a0 = myproc()->heapBottom;
-    } else if (addr >= myproc()->heapBottom) {
-        trapframe->a0 = (sys_sbrk(addr - myproc()->heapBottom) != -1);
+        trapframe->a0 = myProcess()->heapBottom;
+    } else if (addr >= myProcess()->heapBottom) {
+        trapframe->a0 = (sys_sbrk(addr - myProcess()->heapBottom) != -1);
     } else 
         trapframe->a0 = -1;
 }
@@ -223,24 +200,24 @@ void syscallMapMemory() {
     printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
     bool alloc = (start == 0);
     if (alloc) {
-        myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom, 12);
-        start = myproc()->heapBottom;
-        myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom + len, 12); 
+        myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom, 12);
+        start = myProcess()->heapBottom;
+        myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom + len, 12); 
     }
     u64 addr = start, end = start + len;
     start = DOWN_ALIGN(start, 12);
     while (start < end) {
         u64* pte;
-        u64 pa = pageLookup(myproc()->pgdir, start, &pte);
+        u64 pa = pageLookup(myProcess()->pgdir, start, &pte);
         if (pa > 0 && (*pte & PTE_COW)) {
-            cowHandler(myproc()->pgdir, start);
+            cowHandler(myProcess()->pgdir, start);
         }
         PhysicalPage* page;
         if (pageAlloc(&page) < 0) {        
             trapframe->a0 = -1;
             return ;
         }
-        pageInsert(myproc()->pgdir, start, page2pa(page), perm | PTE_USER | PTE_READ | PTE_WRITE);
+        pageInsert(myProcess()->pgdir, start, page2pa(page), perm | PTE_USER | PTE_READ | PTE_WRITE);
         start += PGSIZE;
     }
 
@@ -268,7 +245,7 @@ void syscallUnMapMemory() {
     u64 start = trapframe->a0, len = trapframe->a1, end = start + len;
     start = DOWN_ALIGN(start, 12);
     while (start < end) {
-        if (pageRemove(myproc()->pgdir, start) < 0) {
+        if (pageRemove(myProcess()->pgdir, start) < 0) {
             trapframe->a0 = -1;
             return ;
         }
@@ -298,14 +275,14 @@ void syscallUname() {
     strncpy(uname.machine, "Risc-V sifive_u", 65);
     strncpy(uname.domainname, "Beijing", 65);
     Trapframe *tf = getHartTrapFrame();
-    copyout(myproc()->pgdir, tf->a0, (char*)&uname, sizeof(struct utsname));
+    copyout(myProcess()->pgdir, tf->a0, (char*)&uname, sizeof(struct utsname));
 }
 
 void syscallSetTidAddress() {
     Trapframe *tf = getHartTrapFrame();
-    // copyout(myproc()->pgdir, tf->a0, (char*)(&myproc()->id), sizeof(u64));
-    myproc()->clearChildTid = tf->a0;
-    tf->a0 = myproc()->id;
+    // copyout(myProcess()->pgdir, tf->a0, (char*)(&myProcess()->id), sizeof(u64));
+    myThread()->clearChildTid = tf->a0;
+    tf->a0 = myThread()->id;
 }
 
 void syscallExitGroup() {
@@ -317,9 +294,10 @@ void syscallSignProccessMask() {
     Trapframe *tf = getHartTrapFrame();
     u64 how = tf->a0;
     SignalSet set;
-    copyin(myproc()->pgdir, (char*)&set, tf->a1, sizeof(SignalSet));
+    Process *p = myProcess();
+    copyin(p->pgdir, (char*)&set, tf->a1, sizeof(SignalSet));
     if (tf->a2 != 0) {
-        copyout(myproc()->pgdir, tf->a2, (char*)(&myproc()->blocked), sizeof(SignalSet));
+        copyout(p->pgdir, tf->a2, (char*)(&myThread()->blocked), sizeof(SignalSet));
     }
     tf->a0 = signProccessMask(how, &set);
 }
@@ -332,19 +310,20 @@ void syscallSignalAction() {
 void syscallSignalTimedWait() {
     TimeSpec ts;
     Trapframe *tf = getHartTrapFrame();
+    Process *p = myProcess();
     if (tf->a2) {
-        copyin(myproc()->pgdir, (char*) &ts, tf->a2, sizeof(TimeSpec));
+        copyin(p->pgdir, (char*) &ts, tf->a2, sizeof(TimeSpec));
     }
     SignalSet signalSet;
-    copyin(myproc()->pgdir, (char*) &signalSet, tf->a0, sizeof(SignalSet));
+    copyin(p->pgdir, (char*) &signalSet, tf->a0, sizeof(SignalSet));
     SignalInfo info;
-    copyin(myproc()->pgdir, (char*) &info, tf->a0, sizeof(SignalInfo));
+    copyin(p->pgdir, (char*) &info, tf->a0, sizeof(SignalInfo));
     tf->a0 = doSignalTimedWait(&signalSet, &info, tf->a2 ? &ts: 0);
 }
 
 void syscallGetTheardId() {
     Trapframe *tf = getHartTrapFrame();
-    tf->a0 = myproc()->id;
+    tf->a0 = myThread()->id;
 }
 
 void syscallProcessResourceLimit() {
@@ -368,7 +347,7 @@ void syscallBind() {
     Trapframe *tf = getHartTrapFrame();
     assert(tf->a2 == sizeof(SocketAddr));
     SocketAddr sa;
-    copyin(myproc()->pgdir, (char*)&sa, tf->a1, tf->a2);
+    copyin(myProcess()->pgdir, (char*)&sa, tf->a1, tf->a2);
     tf->a0 = bindSocket(tf->a0, &sa);
 }
 
@@ -387,9 +366,9 @@ void syscallSendTo() {
     Trapframe *tf = getHartTrapFrame();
     assert(tf->a5 == sizeof(SocketAddr));
     SocketAddr sa;
-    copyin(myproc()->pgdir, (char *)&sa, tf->a4, sizeof(SocketAddr));
+    copyin(myProcess()->pgdir, (char *)&sa, tf->a4, sizeof(SocketAddr));
     u32 len = MIN(tf->a2, PAGE_SIZE);
-    copyin(myproc()->pgdir, buf, tf->a1, len);
+    copyin(myProcess()->pgdir, buf, tf->a1, len);
     tf->a0 = sendTo(tf->a0, buf, tf->a2, tf->a3, &sa);
 }
 
@@ -427,13 +406,13 @@ void syscallFutex() {
     switch (op)
     {
         case FUTEX_WAIT:
-            copyin(myproc()->pgdir, (char*)&userVal, uaddr, sizeof(int));
+            copyin(myProcess()->pgdir, (char*)&userVal, uaddr, sizeof(int));
             printf("val: %d\n", userVal);
             if (userVal != val) {
                 tf->a0 = -1;
                 return;
             }
-            futexWait(uaddr, myproc());
+            futexWait(uaddr, myThread());
             break;
         case FUTEX_WAKE:
             futexWake(uaddr, val);
@@ -447,15 +426,15 @@ void syscallFutex() {
 void syscallThreadKill() {
     Trapframe *tf = getHartTrapFrame();
     int tid = tf->a0, signal = tf->a1;
-    Process* process;
-    int r = pid2Process(tid, &process, 0);
+    Thread* th;
+    int r = tid2Thread(tid, &th, 0);
     if (r < 0) {
         tf->a0 = r;
         panic("Can't find thread %lx\n", tid);
         return;
     }
-    process->pending |= (1ul<<signal);
-    printf("tid: %lx, pending: %lx sign: %d\n", tid, process->pending, signal);
+    th->pending |= (1ul<<signal);
+    printf("tid: %lx, pending: %lx sign: %d\n", tid, th->pending, signal);
     tf->a0 = 0;
 }
 
@@ -471,9 +450,9 @@ void syscallPoll() {
     int n = tf->a1;
     int cnt = 0;
     for (int i = 0; i < n; i++) {
-        copyin(myproc()->pgdir, (char*)&p, startva, sizeof(struct pollfd));
+        copyin(myProcess()->pgdir, (char*)&p, startva, sizeof(struct pollfd));
         p.revents = 0;
-        copyout(myproc()->pgdir, startva, (char*)&p, sizeof(struct pollfd));
+        copyout(myProcess()->pgdir, startva, (char*)&p, sizeof(struct pollfd));
         startva += sizeof(struct pollfd);
         cnt += p.revents != 0;
     }
