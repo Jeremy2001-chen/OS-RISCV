@@ -73,7 +73,7 @@ int fatInit(FileSystem *fs) {
 FileSystem rootFileSystem;
 void initDirentCache() {
     initLock(&direntCache.lock, "ecache");
-    struct file* file = filealloc();
+    struct File* file = filealloc();
     rootFileSystem.image = file;
     file->type = FD_DEVICE;
     file->major = 0;

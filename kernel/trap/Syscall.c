@@ -9,6 +9,9 @@
 #include <Sysfile.h>
 #include <exec.h>
 #include <Signal.h>
+#include <Socket.h>
+#include <Mmap.h>
+#include <Futex.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
@@ -60,7 +63,22 @@ void (*syscallVector[])(void) = {
     [SYSCALL_PROCESS_RESOURSE_LIMIT] syscallProcessResourceLimit,
     [SYSCALL_GET_TIME] syscallGetTime,
     [SYSCALL_LSEEK] syscallLSeek,
-    [SYSCALL_IOCONTROL] syscallIOControl
+    [SYSCALL_IOCONTROL] syscallIOControl,
+    [SYSCALL_SOCKET] syscallSocket,
+    [SYSCALL_BIND] syscallBind,
+    [SYSCALL_GET_SOCKET_NAME] syscallGetSocketName,
+    [SYSCALL_SET_SOCKET_OPTION] syscallSetSocketOption,
+    [SYSCALL_SEND_TO] syscallSendTo,
+    [SYSCALL_RECEIVE_FROM] syscallReceiveFrom,
+    [SYSCALL_FCNTL] syscallFcntl,
+    [SYSCALL_LISTEN] syscallListen,
+    [SYSCALL_CONNECT] syscallConnect,
+    [SYSCALL_ACCEPT] syscallAccept,
+    [SYSCALL_WRITE_VECTOR] syscallWriteVector,
+    [SYSCALL_FUTEX] syscallFutex,
+    [SYSCALL_THREAD_KILL] syscallThreadKill,
+    [SYSCALL_POLL] syscallPoll,
+    [SYSCALL_MEMORY_PROTECT] syscallMemoryProtect
 };
 
 extern struct Spinlock printLock;
@@ -204,10 +222,12 @@ void syscallSetBrk() {
 
 void syscallMapMemory() {
     Trapframe* trapframe = getHartTrapFrame();
-    u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2,
-        off = trapframe->a5;
+    u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2, off = trapframe->a5,flags = trapframe->a3;
     struct file* fd;
+    printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
+
     if (argfd(4, 0, &fd)) {
+        // printf("fd: %x\n", trapframe->a4);
         trapframe->a0 = -1;
         return;
     }
@@ -256,6 +276,8 @@ void syscallUname() {
 
 void syscallSetTidAddress() {
     Trapframe *tf = getHartTrapFrame();
+    // copyout(myproc()->pgdir, tf->a0, (char*)(&myproc()->id), sizeof(u64));
+    myproc()->clearChildTid = tf->a0;
     tf->a0 = myproc()->id;
 }
 
@@ -306,5 +328,129 @@ void syscallProcessResourceLimit() {
 void syscallIOControl() {
     Trapframe *tf = getHartTrapFrame();
     printf("fd: %d, cmd: %d, argc: %d\n", tf->a0, tf->a1, tf->a2);
+    tf->a0 = 0;
+}
+
+void syscallSocket() {
+    Trapframe *tf = getHartTrapFrame();
+    int domain = tf->a0, type = tf->a1, protocal = tf->a2;
+    tf->a0 = createSocket(domain, type, protocal);
+}
+
+void syscallBind() {
+    Trapframe *tf = getHartTrapFrame();
+    assert(tf->a2 == sizeof(SocketAddr));
+    SocketAddr sa;
+    copyin(myproc()->pgdir, (char*)&sa, tf->a1, tf->a2);
+    tf->a0 = bindSocket(tf->a0, &sa);
+}
+
+void syscallGetSocketName() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = getSocketName(tf->a0, tf->a1);
+}
+
+void syscallSetSocketOption() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallSendTo() {
+    static char buf[PAGE_SIZE];
+    Trapframe *tf = getHartTrapFrame();
+    assert(tf->a5 == sizeof(SocketAddr));
+    SocketAddr sa;
+    copyin(myproc()->pgdir, (char *)&sa, tf->a4, sizeof(SocketAddr));
+    u32 len = MIN(tf->a2, PAGE_SIZE);
+    copyin(myproc()->pgdir, buf, tf->a1, len);
+    tf->a0 = sendTo(tf->a0, buf, tf->a2, tf->a3, &sa);
+}
+
+void syscallReceiveFrom() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = receiveFrom(tf->a0, tf->a1, tf->a2, tf->a3, tf->a4);
+}
+
+
+void syscallListen() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallConnect() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallAccept() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallFutex() {
+    Trapframe *tf = getHartTrapFrame();
+    int op = tf->a1, val = tf->a2, userVal;
+    u64 uaddr = tf->a0;
+    printf("addr: %lx, op: %d, val: %d\n", uaddr, op, val);
+    op &= (FUTEX_PRIVATE_FLAG - 1);
+    switch (op)
+    {
+        case FUTEX_WAIT:
+            copyin(myproc()->pgdir, (char*)&userVal, uaddr, sizeof(int));
+            printf("val: %d\n", userVal);
+            if (userVal != val) {
+                tf->a0 = -1;
+                return;
+            }
+            futexWait(uaddr, myproc());
+            break;
+        case FUTEX_WAKE:
+            futexWake(uaddr, val);
+            break;
+        default:
+            panic("Futex type not support!\n");
+    }
+    tf->a0 = 0;
+}
+
+void syscallThreadKill() {
+    Trapframe *tf = getHartTrapFrame();
+    int tid = tf->a0, signal = tf->a1;
+    Process* process;
+    int r = pid2Process(tid, &process, 0);
+    if (r < 0) {
+        tf->a0 = r;
+        panic("Can't find thread %lx\n", tid);
+        return;
+    }
+    process->pending |= (1ul<<signal);
+    printf("tid: %lx, pending: %lx sign: %d\n", tid, process->pending, signal);
+    tf->a0 = 0;
+}
+
+void syscallPoll() {
+    Trapframe *tf = getHartTrapFrame();
+    struct pollfd {
+        int fd;
+        short events;
+        short revents;
+    };
+    struct pollfd p;
+    u64 startva = 0;
+    int n = tf->a1;
+    int cnt = 0;
+    for (int i = 0; i < n; i++) {
+        copyin(myproc()->pgdir, (char*)&p, startva, sizeof(struct pollfd));
+        p.revents = 0;
+        copyout(myproc()->pgdir, startva, (char*)&p, sizeof(struct pollfd));
+        startva += sizeof(struct pollfd);
+        cnt += p.revents != 0;
+    }
+    tf->a0 = cnt;
+}
+
+void syscallMemoryProtect() {
+    Trapframe *tf = getHartTrapFrame();
+    printf("mprotect va: %lx, length: %lx\n", tf->a0, tf->a1);
     tf->a0 = 0;
 }

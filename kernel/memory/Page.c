@@ -201,7 +201,7 @@ void cowHandler(u64 *pgdir, u64 badAddr) {
     u64 pa;
     u64 *pte;
     pa = pageLookup(pgdir, badAddr, &pte);
-    // printf("[COW] %x to cow %lx %lx\n", myproc()->id, badAddr, pa);
+    printf("[COW] %x to cow %lx %lx\n", myproc()->id, badAddr, pa);
     if (!(*pte & PTE_COW)) {
         printf("access denied");
         return;

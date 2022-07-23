@@ -30,6 +30,20 @@ void syscallSignalTimedWait();
 void syscallGetTheardId();
 void syscallProcessResourceLimit();
 void syscallIOControl();
+void syscallSocket();
+void syscallBind();
+void syscallGetSocketName();
+void syscallSetSocketOption();
+void syscallSendTo();
+void syscallReceiveFrom();
+void syscallFcntl();
+void syscallListen();
+void syscallConnect();
+void syscallAccept();
+void syscallFutex();
+void syscallThreadKill();
+void syscallPoll();
+void syscallMemoryProtect();
 
 extern void (*syscallVector[])(void);
 

@@ -2,7 +2,6 @@
 #define _USER_PRINTF_H_
 
 #include "SyscallLib.h"
-#include "../../include/Type.h"
 
 #define 	BUFFER_MAX_LEN 128
 

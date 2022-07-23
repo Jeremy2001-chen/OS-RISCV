@@ -37,16 +37,19 @@
 
 #define KERNEL_PROCESS_SP_TOP (1UL << 36)
 
-#define PROCESS_SIGNAL_BASE ((1UL << 36) + (1UL << 30))
+#define PROCESS_SIGNAL_BASE (KERNEL_PROCESS_SP_TOP + (1UL << 30))
+#define SOCKET_BUFFER_BASE (PROCESS_SIGNAL_BASE + (1UL << 30))
 
 #define KERNEL_ADDRESS_TOP (1L << 38)
 #define TRAMPOLINE_BASE (KERNEL_ADDRESS_TOP - (PAGE_SIZE << 1))
 #define USER_STACK_TOP TRAMPOLINE_BASE
 
-
 //New, Heap Address, this limit User Stack Space to 2^32 Bytes
 #define USER_HEAP_TOP ((1L << 38) - (1UL << 30))
 #define USER_HEAP_BOTTOM ((1L << 38) - (1UL << 37))
+
+//TSL
+#define THREAD_LOCAL_STORE (USER_HEAP_BOTTOM - (1UL << 34))
 
 #define USER_BUFFER_BASE 0x01000000
 #endif

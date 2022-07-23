@@ -141,7 +141,7 @@ int getcmd(char* buf, int nbuf) {
     printf("[%s]:$ ", cwd_buf);
     memset(buf, 0, nbuf);
     gets(buf, nbuf);
-    //strcpy(buf, "./runtest.exe -w entry-static.exe env");
+    //strcpy(buf, "./runtest.exe -w entry-static.exe socket");
     if (buf[0] == 0)  // EOF
         return -1;
     return 0;

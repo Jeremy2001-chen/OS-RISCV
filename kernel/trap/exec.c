@@ -11,7 +11,7 @@
 #include <Trap.h>
 #include <Sysfile.h>
 #include <uapi/linux/auxvec.h>
-#include <mmap.h>
+#include <Mmap.h>
 
 #define MAXARG 32  // max exec arguments
 
@@ -102,7 +102,8 @@ static u64 total_mapping_size(const Phdr* phdr, int nr) {
     }
     return pt_load ? (max_addr - min_addr) : 0;
 }
-static u64 elf_map(struct file* filep,
+
+static u64 elf_map(struct File* filep,
                    u64 addr,
                    const Phdr* eppnt,
                    int prot,
@@ -113,6 +114,7 @@ static u64 elf_map(struct file* filep,
     u64 off = eppnt->offset - PAGE_OFFSET(eppnt->vaddr, PAGE_SIZE);
     addr = DOWN_ALIGN(addr, PAGE_SIZE);
     // size = UP_ALIGN(size, PGSIZE);
+    printf("\nsize = %x, off = %x size2=%lx off2=%lx\n", eppnt->filesz, eppnt->offset, size, off);
 
     MSG_PRINT("mmaping %x %x\n",addr, size);
     /* mmap() will return -EINVAL if given a zero size, but a
@@ -201,7 +203,7 @@ u64 load_elf_interp(u64* pagetable,
 			else if (no_base && interp_elf_ex->type == ET_DYN)
 				load_addr = -vaddr;
             
-            struct file interp_file;
+            struct File interp_file;
             interp_file.ep = interpreter;
             interp_file.type = FD_ENTRY;
             interp_file.readable = 1;
@@ -499,7 +501,7 @@ int exec(char* path, char** argv) {
         goto bad;
     u64 u_rand_bytes = sp;
 
-    u64* elf_info = ustack + (argc + envCount + 3) ;// What the Fuck ?
+    u64* elf_info = ustack + (argc + envCount + 3) ;
 #define NEW_AUX_ENT(id, val) \
 	do { \
 		*elf_info++ = id; \
@@ -630,6 +632,7 @@ u64 sys_exec(void) {
     for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)
         pageFree(pa2page((u64)argv[i]));
 
+    printf("out sys_exec \n");
     return ret;
 
 bad:

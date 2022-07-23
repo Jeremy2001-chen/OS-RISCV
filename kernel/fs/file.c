@@ -2,7 +2,7 @@
 // Support functions for system calls that involve file descriptors.
 //
 #include "fat.h"
-#include "file.h"
+#include <file.h>
 #include <Process.h>
 #include <Page.h>
 #include <string.h>
@@ -10,24 +10,26 @@
 #include <Defs.h>
 #include <pipe.h>
 #include <Debug.h>
+#include <Socket.h>
+#include <Mmap.h>
 
 struct devsw devsw[NDEV];
 struct {
     struct Spinlock lock;
-    struct file file[NFILE];
+    struct File file[NFILE];
 } ftable;
 
 void fileinit(void) {
     initLock(&ftable.lock, "ftable");
-    struct file* f;
+    struct File* f;
     for (f = ftable.file; f < ftable.file + NFILE; f++) {
-        memset(f, 0, sizeof(struct file));
+        memset(f, 0, sizeof(struct File));
     }
 }
 
 // Allocate a file structure.
-struct file* filealloc(void) {
-    struct file* f;
+struct File* filealloc(void) {
+    struct File* f;
 
     acquireLock(&ftable.lock);
     for (f = ftable.file; f < ftable.file + NFILE; f++) {
@@ -42,7 +44,7 @@ struct file* filealloc(void) {
 }
 
 // Increment ref count for file f.
-struct file* filedup(struct file* f) {
+struct File* filedup(struct File* f) {
     acquireLock(&ftable.lock);
     if (f->ref < 1)
         panic("filedup");
@@ -52,8 +54,8 @@ struct file* filedup(struct file* f) {
 }
 
 // Close file f.  (Decrement ref count, close when reaches 0.)
-void fileclose(struct file* f) {
-    struct file ff;
+void fileclose(struct File* f) {
+    struct File ff;
 
     // printf("[FILE CLOSE]%x %x\n", f, f->ref);
     acquireLock(&ftable.lock);
@@ -74,12 +76,14 @@ void fileclose(struct file* f) {
     } else if (ff.type == FD_ENTRY) {
         eput(ff.ep);
     } else if (ff.type == FD_DEVICE) {
+    } else if (ff.type == FD_SOCKET) {
+        socketFree(ff.socket);
     }
 }
 
 // Get metadata about file f.
 // addr is a user virtual address, pointing to a struct stat.
-int filestat(struct file* f, u64 addr) {
+int filestat(struct File* f, u64 addr) {
     struct Process *p = myproc();
     struct stat st;
 
@@ -96,7 +100,7 @@ int filestat(struct file* f, u64 addr) {
 
 // Read from file f.
 // addr is a user virtual address.
-int fileread(struct file* f, u64 addr, int n) {
+int fileread(struct File* f, u64 addr, int n) {
     int r = 0;
 
     if (f->readable == 0)
@@ -126,7 +130,7 @@ int fileread(struct file* f, u64 addr, int n) {
 
 // Write to file f.
 // addr is a user virtual address.
-int filewrite(struct file* f, u64 addr, int n) {
+int filewrite(struct File* f, u64 addr, int n) {
     int ret = 0;
 
     if (f->writable == 0)
@@ -157,7 +161,7 @@ int filewrite(struct file* f, u64 addr, int n) {
 
 // Read from dir f.
 // addr is a user virtual address.
-int dirnext(struct file* f, u64 addr) {
+int dirnext(struct File* f, u64 addr) {
     struct Process* p = myproc();
 
     if (f->readable == 0 || !(f->ep->attribute & ATTR_DIRECTORY))
@@ -183,8 +187,10 @@ int dirnext(struct file* f, u64 addr) {
 
     return 1;
 }
-u64 do_mmap(struct file* fd, u64 start, u64 len, int perm, int type, u64 off) {
+
+u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
     bool alloc = (start == 0);
+    printf("heapBottom = %x\n", myproc()->heapBottom);
     if (alloc) {
         myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom, PAGE_SIZE);
         start = myproc()->heapBottom;
@@ -202,11 +208,15 @@ u64 do_mmap(struct file* fd, u64 start, u64 len, int perm, int type, u64 off) {
         if (pageAlloc(&page) < 0) {
             return -1;
         }
-        pageInsert(myproc()->pgdir, start, page2pa(page), perm | PTE_USER);
+        pageInsert(myproc()->pgdir, start, page2pa(page), perm | PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE);
         start += PGSIZE;
     }
 
     printf("mapping %lx %lx %lx\n", addr, len, perm);
+    if (flags & MAP_ANONYMOUS) {
+        return addr;
+        return;
+    }
     /* if fd == NULL, we think this is a anonymous map */
     if (fd != NULL) {
         fd->off = off;
