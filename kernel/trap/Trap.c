@@ -132,9 +132,9 @@ void userTrap() {
         {
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
-                printf("syscall: %d\n", trapframe->a7);
             /*
             if (trapframe->a7 != 63 && trapframe->a7 != 64 && trapframe->a7 != 4) {
+                printf("syscall: %d\n", trapframe->a7);
                 printf("sepc: %lx\n", sepc);
             }
             */

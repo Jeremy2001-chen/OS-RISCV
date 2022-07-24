@@ -114,9 +114,7 @@ static u64 elf_map(struct File* filep,
     u64 off = eppnt->offset - PAGE_OFFSET(eppnt->vaddr, PAGE_SIZE);
     addr = DOWN_ALIGN(addr, PAGE_SIZE);
     // size = UP_ALIGN(size, PGSIZE);
-    printf("\nsize = %x, off = %x size2=%lx off2=%lx\n", eppnt->filesz, eppnt->offset, size, off);
 
-    MSG_PRINT("mmaping %x %x\n",addr, size);
     /* mmap() will return -EINVAL if given a zero size, but a
      * segment with zero filesize is perfectly valid */
     if (!size)
@@ -303,7 +301,6 @@ int exec(char* path, char** argv) {
     }
     
     p->heapBottom = USER_HEAP_BOTTOM;// TODO,these code have writen twice
-    printf("USER_HEAP_BOTTOM:%lx USER_HEAP_TOP:%lx\n",USER_HEAP_BOTTOM, USER_HEAP_TOP);
     pagetable = (u64*)page2pa(page);
     extern char trampoline[];
     pageInsert(pagetable, TRAMPOLINE_BASE, (u64)trampoline, 
@@ -383,16 +380,18 @@ int exec(char* path, char** argv) {
         if (!elf_interpreter)
             panic("Alloc page for elf_interpreter error!");
 
+        /*
         retval = eread(de, 0, (u64)elf_interpreter, ph.offset, ph.filesz);
         if (retval < 0)
             panic("read execed file error");
+        */
 
         /* make sure path is NULL terminated */
+        safestrcpy(elf_interpreter, "/libc.so", 20);
         if (elf_interpreter[ph.filesz - 1] != '\0')
             panic("interpreter path is not NULL terminated");
 
         interpreter = ename(AT_FDCWD, elf_interpreter);
-        printf("inter path :%s\n",elf_interpreter);
 
         // kfree(elf_interpreter);
         if (interpreter == NULL)
@@ -423,7 +422,10 @@ int exec(char* path, char** argv) {
     } else {
         elf_entry = elf.entry;
     }
+
+#ifdef ZZY_DEBUG
     printf("end of load interpreter\n");
+#endif
 /* ============ End of find and load interpreter ============== */
 
     eunlock(de);
@@ -457,7 +459,7 @@ int exec(char* path, char** argv) {
     ustack[argc + 1] = 0;
 
     int envCount = 1;
-    char *envVariable[1] = {"LD_LIBRARY_PATH=/lib"};
+    char *envVariable[1] = {"LD_LIBRARY_PATH=/"};
     for (i = 0; i < envCount; i++) {
         sp -= strlen(envVariable[i]) + 1;
         sp -= sp % 16;  // riscv sp must be 16-byte aligned
@@ -522,7 +524,7 @@ int exec(char* path, char** argv) {
 	NEW_AUX_ENT(AT_PHENT, sizeof(Phdr)); //每个 Phdr 的大小
 	NEW_AUX_ENT(AT_PHNUM, elf.phnum); //phdr的数量
 	NEW_AUX_ENT(AT_BASE, interp_load_addr);
-	NEW_AUX_ENT(AT_ENTRY, elf_entry);//源程序的入口
+	NEW_AUX_ENT(AT_ENTRY, elf.entry);//源程序的入口
 	NEW_AUX_ENT(AT_UID, from_kuid_munged(cred->user_ns, cred->uid));// 0
 	NEW_AUX_ENT(AT_EUID, from_kuid_munged(cred->user_ns, cred->euid));// 0
 	NEW_AUX_ENT(AT_GID, from_kgid_munged(cred->user_ns, cred->gid));// 0
@@ -540,7 +542,9 @@ int exec(char* path, char** argv) {
 /* ============= End put args for ld.so =============== */
 
     u64 copy_size = (elf_info - ustack) * sizeof(u64);
+#ifdef ZZY_DEBUG
     printf("copy size = %x\n", copy_size);
+#endif
 
     // push the array of argv[] pointers, envp[] pointers, auxv[] array.
     sp -= copy_size; /* now elf_info is the stack top */
@@ -550,11 +554,13 @@ int exec(char* path, char** argv) {
     if (copyout(pagetable, sp, (char*)ustack, copy_size) < 0)
         goto bad;
 
+#ifdef ZZY_DEBUG
     for (u64* i = (u64 *)sp; (u64)i < USER_STACK_TOP; ++i) {
         u64 ret;
         copyin(pagetable, (char*)&ret, (u64)(i), sizeof(u64));
         printf("*%lx = %lx\n", (u64)i, ret);
     }
+#endif
     // arguments to user main(argc, argv)
     // argc is returned via the system call return
     // value, which goes in a0.
@@ -568,20 +574,19 @@ int exec(char* path, char** argv) {
             last = s + 1;
     safestrcpy(p->name, last, sizeof(p->name));
     */
-
-    HEX_PRINT(getHartTrapFrame()->epc);
-    HEX_PRINT(getHartTrapFrame()->sp);
-    MSG_PRINT("out exec");
+   
     // Commit to the user image.
 
+#ifdef ZZY_DEBUG
     printf("elf_entry = %lx\n",elf_entry);
+#endif
+
     getHartTrapFrame()->epc = elf_entry;  // initial program counter = main
     getHartTrapFrame()->sp = sp;          // initial stack pointer
 
     //free old pagetable
     pgdirFree(oldpagetable);
     asm volatile("fence.i");
-    printf("out exec\n");
     return argc;  // this ends up in a0, the first argument to main(argc, argv)
 
 bad:
@@ -632,7 +637,6 @@ u64 sys_exec(void) {
     for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)
         pageFree(pa2page((u64)argv[i]));
 
-    printf("out sys_exec \n");
     return ret;
 
 bad:

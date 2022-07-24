@@ -190,7 +190,6 @@ int dirnext(struct File* f, u64 addr) {
 
 u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
     bool alloc = (start == 0);
-    printf("heapBottom = %x\n", myproc()->heapBottom);
     if (alloc) {
         myproc()->heapBottom = UP_ALIGN(myproc()->heapBottom, PAGE_SIZE);
         start = myproc()->heapBottom;
@@ -212,7 +211,6 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
         start += PGSIZE;
     }
 
-    printf("mapping %lx %lx %lx\n", addr, len, perm);
     if (flags & MAP_ANONYMOUS) {
         return addr;
     }
