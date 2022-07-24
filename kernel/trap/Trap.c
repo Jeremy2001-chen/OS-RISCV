@@ -105,7 +105,8 @@ void userTrap() {
     u64 sstatus = r_sstatus();
     u64 scause = r_scause();
     Process* current = myProcess();
-    //printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx, a7 is %d\n", 
+    // int hartId = r_hartid();
+    // printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx, a7 is %d\n", 
     //    hartId, sstatus, sepc, scause, r_stval(), getHartTrapFrame()->a7);
 #ifdef CJY_DEBUG
     printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
@@ -129,10 +130,10 @@ void userTrap() {
         {
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
-            // if (trapframe->a7 != 63 && trapframe->a7 != 64 && trapframe->a7 != 4) {
-            //     printf("syscall: %d\n", trapframe->a7);
-            //     printf("sepc: %lx\n", sepc);
-            // }
+            if (trapframe->a7 != 63 && trapframe->a7 != 64 && trapframe->a7 != 4) {
+                printf("syscall: %d\n", trapframe->a7);
+                printf("sepc: %lx\n", sepc);
+            }
             if (!syscallVector[trapframe->a7]) {
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }

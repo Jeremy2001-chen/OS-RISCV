@@ -21,6 +21,7 @@ int processFork() {
     Trapframe* trapframe = getHartTrapFrame();
     bcopy(trapframe, &thread->trapframe, sizeof(Trapframe));
     thread->trapframe.a0 = 0;
+    thread->trapframe.kernelSp = getThreadTopSp(thread);
     u64 i, j, k;
     for (i = 0; i < 512; i++) {
         if (!(current->pgdir[i] & PTE_VALID)) {
@@ -65,6 +66,8 @@ int threadFork(u64 stackVa, u64 ptid, u64 tls, u64 ctid) {
     bcopy(trapframe, &thread->trapframe, sizeof(Trapframe));
     thread->trapframe.a0 = 0;
     thread->trapframe.tp = tls;
+    thread->trapframe.kernelSp = getThreadTopSp(thread);
+    thread->trapframe.sp = stackVa;
     if (ptid != 0) {
         copyout(current->pgdir, ptid, (char*) &thread->id, sizeof(u32));
     }
