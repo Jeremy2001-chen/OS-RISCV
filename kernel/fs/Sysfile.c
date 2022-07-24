@@ -68,21 +68,27 @@ void syscallDup(void) {
 
     filedup(f);
     tf->a0 = fd;
+
+   // printf("%s %d %d\n", __FILE__, __LINE__, fd);
 }
 
 void syscallDupAndSet(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct File* f;
+    struct File* f, *f2;
     int fd = tf->a0, fdnew = tf->a1;
+    printf("%s %d %d %d\n", __FILE__, __LINE__, fd, fdnew);
 
     if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
 
-    if (fdnew < 0 || fdnew >= NOFILE || myProcess()->ofile[fdnew] != NULL) {
+    if (fdnew < 0 || fdnew >= NOFILE) {
         tf->a0 = -1;
         return;
+    }
+    if ((f2 = myProcess()->ofile[fdnew]) != NULL) {
+        fileclose(f2);
     }
 
     myProcess()->ofile[fdnew] = f;
@@ -151,6 +157,7 @@ void syscallWriteVector() {
 
     u64 len = 0;
     for (int i = 0; i < cnt; i++) {
+        printf("%s %d\n", __FILE__, __LINE__);
         len += filewrite(f, (u64)vec[i].iovBase, vec[i].iovLen);
     }
     tf->a0 = len;
@@ -350,22 +357,25 @@ void syscallOpenAt(void) {
     if (flags & O_CREATE) {
         entryPoint = create(startFd, path, T_FILE, mode);
         if (entryPoint == NULL) {
-            printf("open at: 1\n");
+            tf->a0 = -1;
             goto bad;
         }
     } else {
         if ((entryPoint = ename(startFd, path)) == NULL) {
+            tf->a0 = -1;
             goto bad;
         }
         elock(entryPoint);
         if (!(entryPoint->attribute & ATTR_DIRECTORY) && (flags & O_DIRECTORY)) {
             eunlock(entryPoint);
             eput(entryPoint);
+            tf->a0 = -1;
             goto bad;
         }
         if ((entryPoint->attribute & ATTR_DIRECTORY) && (flags & 0xFFF) != O_RDONLY) { //todo
             eunlock(entryPoint);
             eput(entryPoint);
+            tf->a0 = -1;
             goto bad;
         }
     }
@@ -377,7 +387,7 @@ void syscallOpenAt(void) {
         }
         eunlock(entryPoint);
         eput(entryPoint);
-        printf("open at: 2\n");
+        tf->a0 = -24;
         goto bad;
     }
 
@@ -387,6 +397,7 @@ void syscallOpenAt(void) {
 
     file->type = FD_ENTRY;
     file->off = (flags & O_APPEND) ? entryPoint->file_size : 0;
+    printf("%s %d path: %s, off: %d\n", __FILE__, __LINE__, path, file->off);
     file->ep = entryPoint;
     file->readable = !(flags & O_WRONLY);
     file->writable = (flags & O_WRONLY) || (flags & O_RDWR);
@@ -397,8 +408,7 @@ void syscallOpenAt(void) {
     printf("open at: %d\n", fd);
     return;
 bad:
-    tf->a0 = -1;
-    printf("open at: %d\n", -1);
+    printf("open at: %d\n", tf->a0);
 }
 
 //todo: support the mode
@@ -870,6 +880,7 @@ void syscallUnlinkAt() {
     struct dirent* entryPoint;
 
     if((entryPoint = ename(dirFd, path)) == NULL) {
+        printf("%s %d %s\n", __FILE__, __LINE__, path);
         goto bad;
     }
 
@@ -906,11 +917,59 @@ void syscallLSeek() {
         default:
             goto bad;
     }
-    file->off = (off >= file->off ? file->off : off);
+    file->off = (off >= file->ep->file_size ? file->ep->file_size : off);
     tf->a0 = off;
     return;
 bad:
     tf->a0 = -1;
+}
+
+void syscallPRead() {
+    Trapframe *tf = getHartTrapFrame();
+    int fd = tf->a0;
+    struct File* file = myProcess()->ofile[fd];
+    if (file == 0) {
+        goto bad;
+    }
+    u32 off = file->off;
+    tf->a0 = eread(file->ep, true, tf->a1, tf->a3, tf->a2);
+    file->off = off;
+    return;
+bad:
+    tf->a0 = -1;
+}
+
+void syscallUtimensat() {
+    Trapframe *tf = getHartTrapFrame();
+    char path[FAT32_MAX_PATH];
+    int dirFd = tf->a0;
+    struct dirent *de;
+    if (tf->a1) {
+        if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
+            printf("%s %d\n", __FILE__, __LINE__);
+            tf->a0 = -1;
+            return;
+        }
+        if ((dirFd < 0 && dirFd != AT_FDCWD) || dirFd >= NOFILE) {
+            tf->a0 = -EBADF;
+            return;
+        }
+        if((de = ename(dirFd, path)) == NULL) {
+            tf->a0 = -ENOTDIR;
+            return;
+        }
+    } else {
+        File *f;
+        if (dirFd < 0 || dirFd >= NOFILE || (f = myProcess()->ofile[dirFd]) == NULL) {
+            tf->a0 = -EBADF;
+            return;
+        }
+        de = f->ep;
+    }
+    TimeSpec ts[2];
+    copyin(myProcess()->pgdir, (char*)ts, tf->a2, sizeof(ts));
+    eSetTime(de, ts);
+    tf->a0 = 0;
 }
 
 extern FileSystem rootFileSystem;
@@ -933,3 +992,4 @@ int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen) {
     }
     return either_copyout(isUser, buf, (void*)s, strlen(s) + 1);
 }
+

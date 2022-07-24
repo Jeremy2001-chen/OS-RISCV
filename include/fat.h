@@ -4,6 +4,7 @@
 #include "Sleeplock.h"
 #include "Type.h"
 #include "stat.h"
+#include "Timer.h"
 
 #define ATTR_READ_ONLY 0x01
 #define ATTR_HIDDEN 0x02
@@ -108,4 +109,6 @@ struct dirent* enameparent(int fd, char* path, char* name);
 int eread(struct dirent* entry, int user_dst, u64 dst, uint off, uint n);
 int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n);
 struct dirent* create(int fd, char* path, short type, int mode);
+void eSetTime(struct dirent *entry, TimeSpec ts[2]);
+
 #endif

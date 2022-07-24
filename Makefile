@@ -41,10 +41,6 @@ build: $(modules)
 	$(LD) $(LDFLAGS) -T $(linkscript) -o $(vmlinux_img) $(objects)
 	$(OBJDUMP) -S $(vmlinux_img) > $(vmlinux_asm)
 	$(OBJCOPY) -O binary $(vmlinux_img) $(vmlinux_bin)
-	for d in $(modules); \
-		do \
-			$(MAKE) --directory=$$d clean; \
-		done; \
 
 sifive: clean build
 	$(OBJCOPY) -O binary $(vmlinux_img) /srv/tftp/vm.bin

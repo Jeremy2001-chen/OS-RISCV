@@ -42,6 +42,6 @@ clean:
 		do \
 			$(MAKE) --directory=$$d clean; \
 		done
-	rm -rf *.o *~ *.d *.x *.b.txt $(MOUNT_DIR)/* BinaryToC *.b *.b.c
+	rm -rf *.o *~ *.d *.x *.txt $(MOUNT_DIR)/* BinaryToC *.b *.b.c
 
 include ../include.mk

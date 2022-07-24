@@ -45,6 +45,7 @@ void syscallPoll();
 void syscallMemoryProtect();
 void syscallGetRobustList();
 void syscallSetRobustList();
+void syscallStateFileSystem();
 
 extern void (*syscallVector[])(void);
 

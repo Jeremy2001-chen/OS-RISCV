@@ -91,7 +91,7 @@ typedef struct Process {
     // u64 chan;//wait Object
     // u64 currentKernelSp;
     // int reason;
-    u64 retValue;
+    u32 retValue;
     u64 heapBottom;
     struct dirent *cwd;
     // SignalSet blocked;

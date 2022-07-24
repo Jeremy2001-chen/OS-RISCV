@@ -2,7 +2,7 @@
 #define _TIMER_H_
 
 #define INTERVAL 2000000
-#include <Type.h>
+#include "Type.h"
 
 void setNextTimeout(void);
 void timerTick();

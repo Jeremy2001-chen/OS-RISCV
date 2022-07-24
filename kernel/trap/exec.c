@@ -304,7 +304,6 @@ int exec(char* path, char** argv) {
     }
     
     p->heapBottom = USER_HEAP_BOTTOM;// TODO,these code have writen twice
-    printf("heapBottom ? = %lx %lx\n",USER_HEAP_BOTTOM, USER_HEAP_TOP);
     pagetable = (u64*)page2pa(page);
     extern char trampoline[];
     pageInsert(pagetable, TRAMPOLINE_BASE, (u64)trampoline, 
@@ -411,7 +410,6 @@ int exec(char* path, char** argv) {
         if (retval < 0)
             panic("read interpreter file error");
     }
-    printf("end of find interpreter");
     if (interpreter) {
         u64 interp_Phdrs_size = sizeof(Phdr) * interp_elf_ex->phnum;
         Phdr* interp_elf_phdata = kmalloc(interp_Phdrs_size, 0);
@@ -426,7 +424,6 @@ int exec(char* path, char** argv) {
     } else {
         elf_entry = elf.entry;
     }
-    printf("end of load interpreter");
 /* ============ End of find and load interpreter ============== */
 
     eunlock(de);
@@ -525,7 +522,6 @@ int exec(char* path, char** argv) {
 	#define from_kuid_munged(x, y) (0)
 	#define from_kgid_munged(x,y) (0)
 
-    printf("before NEW AUX ENT");
     u64 secureexec = 1; // the default value is 1, 但是我不清楚哪些情况会把它变成0
 	NEW_AUX_ENT(AT_HWCAP, ELF_HWCAP); //CPU的extension信息
 	NEW_AUX_ENT(AT_PAGESZ, ELF_EXEC_PAGESIZE); //PAGE_SIZE
@@ -559,7 +555,6 @@ int exec(char* path, char** argv) {
 /* ============= End put args for ld.so =============== */
 
     u64 copy_size = (elf_info - ustack) * sizeof(u64);
-    printf("copy size = %x\n", copy_size);
     // for(u64* i=ustack; i < elf_info; ++i)
         // printf("dump_stack:: %lx\n", *((u64*)sp+(i-ustack)));
     // push the array of argv[] pointers, envp[] pointers, auxv[] array.
@@ -570,7 +565,6 @@ int exec(char* path, char** argv) {
     if (copyout(pagetable, sp, (char*)ustack, copy_size) < 0)
         goto bad;
 
-    printf("end push args\n");
     // arguments to user main(argc, argv)
     // argc is returned via the system call return
     // value, which goes in a0.
@@ -590,14 +584,12 @@ int exec(char* path, char** argv) {
     MSG_PRINT("out exec");
     // Commit to the user image.
 
-    printf("elf_entry = %lx\n",elf_entry);
     getHartTrapFrame()->epc = elf_entry;  // initial program counter = main
     getHartTrapFrame()->sp = sp;          // initial stack pointer
 
     //free old pagetable
     pgdirFree(oldpagetable);
     asm volatile("fence.i");
-    printf("out exec");
     return argc;  // this ends up in a0, the first argument to main(argc, argv)
 
 bad:
@@ -648,7 +640,6 @@ u64 sys_exec(void) {
     for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)
         pageFree(pa2page((u64)argv[i]));
 
-    printf("out sys_exec \n");
     return ret;
 
 bad:
