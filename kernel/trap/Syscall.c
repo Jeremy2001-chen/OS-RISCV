@@ -415,6 +415,7 @@ void syscallFutex() {
             futexWait(uaddr, myThread());
             break;
         case FUTEX_WAKE:
+            printf("val: %d\n", val);
             futexWake(uaddr, val);
             break;
         default:

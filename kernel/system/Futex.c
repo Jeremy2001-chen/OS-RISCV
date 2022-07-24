@@ -34,4 +34,5 @@ void futexWake(u64 addr, int n) {
             n--;
         }
     }
+    yield();
 }
