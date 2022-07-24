@@ -105,7 +105,7 @@ void pageFree(PhysicalPage *page) {
     }
     if (page->ref == 0) {
         acquireLock(&pageListLock);
-        LIST_INSERT_HEAD(&freePages, page, link);
+        //LIST_INSERT_HEAD(&freePages, page, link);
         releaseLock(&pageListLock);
     }
 }
@@ -122,7 +122,7 @@ static void paDecreaseRef(u64 pa) {
 }
 
 void pgdirFree(u64* pgdir) {
-   // printf("jaoeifherigh   %lx\n", (u64)pgdir);
+    // printf("jaoeifherigh   %lx\n", (u64)pgdir);
     u64 i, j, k;
     u64* pageTable;
     for (i = 0; i < PTE2PT; i++) {

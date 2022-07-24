@@ -22,8 +22,17 @@ typedef struct DirentCache {
     struct dirent entries[ENTRY_CACHE_NUM];
 } DirentCache;
 
+typedef struct FileSystemStatus {
+	unsigned long f_type, f_bsize;
+	u64 f_blocks, f_bfree, f_bavail;
+	u64 f_files, f_ffree;
+	u64 f_fsid;
+	unsigned long f_namelen, f_frsize, f_flags, f_spare[4];
+} FileSystemStatus;
+
 int fsAlloc(FileSystem **fs);
 int fatInit(FileSystem *fs);
 void initDirentCache();
+int getFsStatus(char *path, FileSystemStatus *fss);
 
 #endif

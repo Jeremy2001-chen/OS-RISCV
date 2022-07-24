@@ -43,6 +43,8 @@ void syscallLinkAt(void);
 void syscallLSeek(void);
 void syscallWriteVector(void);
 void syscallReadVector(void);
+void syscallPRead();
+void syscallUtimensat();
 
 int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen);
 

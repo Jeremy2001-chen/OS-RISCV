@@ -15,6 +15,7 @@
 #include <Thread.h>
 #include <Clone.h>
 #include <Resource.h>
+#include <FileSystem.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
@@ -81,6 +82,9 @@ void (*syscallVector[])(void) = {
     [SYSCALL_MEMORY_PROTECT] syscallMemoryProtect,
     [SYSCALL_SET_ROBUST_LIST] syscallSetRobustList,
     [SYSCALL_GET_ROBUST_LIST] syscallGetRobustList
+    [SYSCALL_STATE_FS] syscallStateFileSystem,
+    [SYSCALL_PREAD] syscallPRead,
+    [SYSCALL_UTIMENSAT] syscallUtimensat
 };
 
 extern struct Spinlock printLock;
@@ -169,7 +173,7 @@ void syscallGetTime() {
     TimeSpec ts;
     ts.second = time / 1000000;
     ts.microSecond = time % 1000000;
-    copyout(myProcess()->pgdir, tf->a0, (char*)&ts, sizeof(TimeSpec));
+    copyout(myProcess()->pgdir, tf->a1, (char*)&ts, sizeof(TimeSpec));
     tf->a0 = 0;
 }
 
@@ -509,4 +513,19 @@ void syscallSetRobustList() {
     Trapframe *tf = getHartTrapFrame();
     copyin(myProcess()->pgdir, (char*)&myThread()->robustHeadPointer, tf->a1, sizeof(u64));
     tf->a0 = 0;
+}
+void syscallStateFileSystem() {
+    Trapframe *tf = getHartTrapFrame();
+    char path[FAT32_MAX_PATH];
+    if (argstr(0, path, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+    FileSystemStatus fss;
+    memset(&fss, 0, sizeof(FileSystemStatus));
+    tf->a0 = getFsStatus(path, &fss);
+    if (tf->a0 == 0) {
+        printf("bjoweihgre8i %ld\n", tf->a1);
+        copyout(myProcess()->pgdir, tf->a1, (char*)&fss, sizeof(FileSystemStatus));
+    }
 }

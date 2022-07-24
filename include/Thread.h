@@ -16,7 +16,7 @@ typedef struct Thread {
     u64 chan;//wait Object
     u64 currentKernelSp;
     int reason;
-    u64 retValue;
+    u32 retValue;
     SignalSet blocked;
     SignalSet pending;
     u64 setChildTid;

@@ -12,6 +12,7 @@
 #include <FileSystem.h>
 #include <Sysfile.h>
 #include <Thread.h>
+#include <Riscv.h>
 
 /* fields that start with "_" are something we don't use */
 
@@ -19,13 +20,13 @@ typedef struct short_name_entry {
     char name[CHAR_SHORT_NAME];
     uint8 attr;
     uint8 _nt_res;
-    uint8 _crt_time_tenth;
-    uint16 _crt_time;
-    uint16 _crt_date;
-    uint16 _lst_acce_date;
+    uint8 _crt_time_tenth; // 39-32 of access
+    uint16 _crt_time; // 31-16 of access
+    uint16 _crt_date; // 15-0 of access
+    uint16 _lst_acce_date; // 47-32 of modify
     uint16 fst_clus_hi;
-    uint16 _lst_wrt_time;
-    uint16 _lst_wrt_date;
+    uint16 _lst_wrt_time; // 31-16 of modify
+    uint16 _lst_wrt_date; // 15-0 of modify
     uint16 fst_clus_lo;
     uint32 file_size;
 } __attribute__((packed, aligned(4))) short_name_entry_t;
@@ -699,6 +700,40 @@ void eupdate(struct dirent* entry) {
     entry->dirty = 0;
 }
 
+#define UTIME_NOW ((1l << 30) - 1l)
+#define UTIME_OMIT ((1l << 30) - 2l)
+void eSetTime(struct dirent *entry, TimeSpec ts[2]) {
+    uint entcnt = 0;
+    FileSystem *fs = entry->fileSystem;
+    uint32 off = reloc_clus(fs, entry->parent, entry->off, 0);
+    rw_clus(fs, entry->parent->cur_clus, 0, 0, (u64)&entcnt, off, 1);
+    entcnt &= ~LAST_LONG_ENTRY;
+    off = reloc_clus(fs, entry->parent, entry->off + (entcnt << 5), 0);
+    union dentry de;
+    rw_clus(entry->fileSystem, entry->parent->cur_clus, 0, 0, (u64)&de, off, sizeof(de));
+    u64 time = r_time();
+    TimeSpec now;
+    now.second = time / 1000000;
+    now.microSecond = time % 1000000;
+    if (ts[0].microSecond != UTIME_OMIT) {
+        if (ts[0].microSecond == UTIME_NOW) {
+            ts[0].second = now.second;
+        }
+        de.sne._crt_date = ts[0].second & ((1 << 16) - 1);
+        de.sne._crt_time = (ts[0].second >> 16) & ((1 << 16) - 1);
+        de.sne._crt_time_tenth = (ts[0].second >> 32) & ((1 << 8) - 1);
+    }
+    if (ts[1].microSecond != UTIME_OMIT) {
+        if (ts[1].microSecond == UTIME_NOW) {
+            ts[1].second = now.second;
+        }
+        de.sne._lst_wrt_date = ts[1].second & ((1 << 16) - 1);
+        de.sne._lst_wrt_time = (ts[1].second >> 16) & ((1 << 16) - 1);
+        de.sne._lst_acce_date = (ts[1].second >> 32) & ((1 << 16) - 1);
+    }
+    rw_clus(entry->fileSystem, entry->parent->cur_clus, true, 0, (u64)&de, off, sizeof(de));
+}
+
 // caller must hold entry->lock
 // caller must hold entry->parent->lock
 // remove the entry in its parent directory
@@ -789,22 +824,32 @@ void eput(struct dirent* entry) {
 }
 
 //todo(need more)
-void estat(struct dirent* de, struct stat* st) {
+void estat(struct dirent* ep, struct stat* st) {
     // strncpy(st->name, de->filename, STAT_MAX_NAME);
     // st->type = (de->attribute & ATTR_DIRECTORY) ? T_DIR : T_FILE;
-    st->st_dev = de->dev;
-    st->st_size = de->file_size;
-    st->st_ino = (de - direntCache.entries);
-    st->st_mode = de->attribute;
+    uint entcnt = 0;
+    FileSystem *fs = ep->fileSystem;
+    uint32 off = reloc_clus(fs, ep->parent, ep->off, 0);
+    rw_clus(fs, ep->parent->cur_clus, 0, 0, (u64)&entcnt, off, 1);
+    entcnt &= ~LAST_LONG_ENTRY;
+    off = reloc_clus(fs, ep->parent, ep->off + (entcnt << 5), 0);
+    union dentry de;
+    rw_clus(ep->fileSystem, ep->parent->cur_clus, 0, 0, (u64)&de, off, sizeof(de));
+    st->st_dev = ep->dev;
+    st->st_size = ep->file_size;
+    st->st_ino = (ep - direntCache.entries);
+    st->st_mode = ep->attribute;
     st->st_nlink = 1;
     st->st_uid = 0;
     st->st_gid = 0;
     st->st_rdev = 0;  // What's this?
-    st->st_blksize = de->fileSystem->superBlock.bpb.byts_per_sec;
+    st->st_blksize = ep->fileSystem->superBlock.bpb.byts_per_sec;
     st->st_blocks = st->st_size / st->st_blksize;
-    st->st_atime_sec = 0;
+    st->st_atime_sec = (((u64)de.sne._crt_time_tenth) << 32) + 
+        (((u64)de.sne._crt_time) << 16) + de.sne._crt_date;
     st->st_atime_nsec = 0;
-    st->st_mtime_sec = 0;
+    st->st_mtime_sec = (((u64)de.sne._lst_acce_date) << 32) + 
+        (((u64)de.sne._lst_wrt_time) << 16) + de.sne._lst_wrt_date;
     st->st_mtime_nsec = 0;
     st->st_ctime_sec = 0;
     st->st_ctime_nsec = 0;
