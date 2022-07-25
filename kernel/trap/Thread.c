@@ -8,6 +8,7 @@
 #include <Interrupt.h>
 #include <Process.h>
 #include <Trap.h>
+#include <Futex.h>
 
 Thread threads[PROCESS_TOTAL_NUMBER];
 
@@ -83,13 +84,12 @@ void threadFree(Thread *th) {
     if (th->clearChildTid) {
         int val = 0;
         copyout(p->pgdir, th->clearChildTid, (char*)&val, sizeof(int));
+        futexWake(th->clearChildTid, 1);
     }
     p->threadCount--;
-    printf("%s %d\n", __FILE__, __LINE__);
     if (!p->threadCount) {
         p->retValue = th->retValue;
         releaseLock(&p->lock);
-        printf("%s %d\n", __FILE__, __LINE__);
         processFree(p);    
     } else {
         releaseLock(&p->lock);
@@ -138,6 +138,7 @@ void threadSetup(Thread* th) {
     th->reason = 0;
     th->setChildTid = th->clearChildTid = 0;
     th->awakeTime = 0;
+    th->robustHeadPointer = 0;
     PhysicalPage *page;
     if (pageAlloc(&page) < 0) {
         panic("");
@@ -287,8 +288,6 @@ void sleep(void* chan, struct Spinlock* lk) {
     releaseLock(&th->lock);
 
     kernelProcessCpuTimeBegin();
-
-    // printf("%x\n", x);
 
     // Reacquire original lock.
     acquireLock(lk);

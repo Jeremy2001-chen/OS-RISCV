@@ -34,5 +34,21 @@ void futexWake(u64 addr, int n) {
             n--;
         }
     }
-    yield();
+    //yield();
+}
+
+void futexRequeue(u64 addr, int n, u64 newAddr) {
+    for (int i = 0; i < FUTEX_COUNT && n; i++) {
+        if (futexQueue[i].valid && futexQueue[i].addr == addr) {
+            futexQueue[i].thread->state = RUNNABLE;
+            futexQueue[i].thread->trapframe.a0 = 0; // set next yield accept!
+            futexQueue[i].valid = false;
+            n--;
+        }
+    }
+    for (int i = 0; i < FUTEX_COUNT; i++) {
+        if (futexQueue[i].valid && futexQueue[i].addr == addr) {
+            futexQueue[i].addr = newAddr;
+        }
+    }
 }

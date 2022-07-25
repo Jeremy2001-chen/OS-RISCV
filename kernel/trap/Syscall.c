@@ -75,7 +75,9 @@ void (*syscallVector[])(void) = {
     [SYSCALL_FUTEX] syscallFutex,
     [SYSCALL_THREAD_KILL] syscallThreadKill,
     [SYSCALL_POLL] syscallPoll,
-    [SYSCALL_MEMORY_PROTECT] syscallMemoryProtect
+    [SYSCALL_MEMORY_PROTECT] syscallMemoryProtect,
+    [SYSCALL_SET_ROBUST_LIST] syscallSetRobustList,
+    [SYSCALL_GET_ROBUST_LIST] syscallGetRobustList
 };
 
 extern struct Spinlock printLock;
@@ -400,8 +402,8 @@ void syscallAccept() {
 void syscallFutex() {
     Trapframe *tf = getHartTrapFrame();
     int op = tf->a1, val = tf->a2, userVal;
-    u64 uaddr = tf->a0;
-    printf("addr: %lx, op: %d, val: %d\n", uaddr, op, val);
+    u64 uaddr = tf->a0, newAddr = tf->a4;
+    printf("addr: %lx, op: %d, val: %d, newAddr: %lx\n", uaddr, op, val, newAddr);
     op &= (FUTEX_PRIVATE_FLAG - 1);
     switch (op)
     {
@@ -417,6 +419,10 @@ void syscallFutex() {
         case FUTEX_WAKE:
             printf("val: %d\n", val);
             futexWake(uaddr, val);
+            break;
+        case FUTEX_REQUEUE:
+            printf("val: %d\n", val);
+            futexRequeue(uaddr, val, newAddr);
             break;
         default:
             panic("Futex type not support!\n");
@@ -463,5 +469,17 @@ void syscallPoll() {
 void syscallMemoryProtect() {
     Trapframe *tf = getHartTrapFrame();
     printf("mprotect va: %lx, length: %lx\n", tf->a0, tf->a1);
+    tf->a0 = 0;
+}
+
+void syscallGetRobustList() {
+    Trapframe *tf = getHartTrapFrame();
+    copyout(myProcess()->pgdir, tf->a1, (char*)&myThread()->robustHeadPointer, sizeof(u64));
+    tf->a0 = 0;
+}
+
+void syscallSetRobustList() {
+    Trapframe *tf = getHartTrapFrame();
+    copyin(myProcess()->pgdir, (char*)&myThread()->robustHeadPointer, tf->a1, sizeof(u64));
     tf->a0 = 0;
 }
