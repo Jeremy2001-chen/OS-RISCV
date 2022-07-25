@@ -22,6 +22,7 @@ typedef struct Thread {
     u64 setChildTid;
     u64 clearChildTid;
     struct Process* process;
+    u64 robustHeadPointer;
 } Thread;
 
 LIST_HEAD(ThreadList, Thread);

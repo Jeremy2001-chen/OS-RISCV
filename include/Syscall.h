@@ -43,6 +43,8 @@ void syscallFutex();
 void syscallThreadKill();
 void syscallPoll();
 void syscallMemoryProtect();
+void syscallGetRobustList();
+void syscallSetRobustList();
 
 extern void (*syscallVector[])(void);
 
