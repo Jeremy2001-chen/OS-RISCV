@@ -8,11 +8,13 @@
 
 #define FUTEX_WAIT 0
 #define FUTEX_WAKE 1
+#define FUTEX_REQUEUE 3
 
 #define FUTEX_PRIVATE_FLAG 128
 #define FUTEX_COUNT 128
 
 void futexWait(u64 addr, Thread* thread);
 void futexWake(u64 addr, int n);
+void futexRequeue(u64 addr, int n, u64 newAddr);
 
 #endif
