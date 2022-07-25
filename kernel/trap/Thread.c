@@ -248,6 +248,7 @@ void threadRun(Thread* th) {
             eput(ep);
             ep = create(AT_FDCWD, "/dev/shm", T_DIR, O_RDONLY); //share memory
             eunlock(ep);
+            setNextTimeout();
         }
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
         u64 sp = getHartKernelTopSp(th);
@@ -304,3 +305,4 @@ void wakeup(void* channel) {
         }
     }
 }
+
