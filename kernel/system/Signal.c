@@ -62,6 +62,15 @@ int doSignalTimedWait(SignalSet *which, SignalInfo *info, TimeSpec *ts) {
     return dequeueSignal(thread, which, info);    
 }
 
+void signalCancel(Thread* thread) {
+    struct pthread self;
+    copyin(thread->process->pgdir, (char*)&self, thread->trapframe.tp - sizeof(struct pthread), sizeof(struct pthread));
+    if (self.cancelasync && !self.canceldisable) {
+        //pthread_exit
+        panic("%d\n", self.tsd_used);
+    }
+}
+
 void handleSignal(Thread* thread) {
     for (int i = 0; i < 64; i++) {
         u64 signal = (thread->pending & ~thread->blocked);
@@ -73,6 +82,7 @@ void handleSignal(Thread* thread) {
                     thread->pending -= (1ul << i);
                     break;
                 case SIGCANCEL:
+                    signalCancel(thread);
                     break;
                 default:
                     panic("Can not handle this %d of signal\n", i);
