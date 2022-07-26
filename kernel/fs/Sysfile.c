@@ -159,6 +159,38 @@ bad:
     tf->a0 = -1;
 }
 
+void syscallReadVector() {
+    Trapframe* tf = getHartTrapFrame();
+    struct File* f;
+    int fd = tf->a0;
+
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
+        goto bad;
+    }
+
+    int cnt = tf->a2;
+    if (cnt < 0 || cnt >= IOVMAX) {
+        goto bad;
+    }
+
+    struct Iovec vec[IOVMAX];
+    struct Process* p = myProcess();
+
+    if (copyin(p->pgdir, (char*)vec, tf->a1, cnt * sizeof(struct Iovec)) != 0) {
+        goto bad;
+    }
+
+    u64 len = 0;
+    for (int i = 0; i < cnt; i++) {
+        len += fileread(f, (u64)vec[i].iovBase, vec[i].iovLen);
+    }
+    tf->a0 = len;
+    return;
+
+bad:
+    tf->a0 = -1;
+}
+
 void syscallClose(void) {
     Trapframe* tf = getHartTrapFrame();
     int fd = tf->a0;
