@@ -131,6 +131,7 @@ int processSetup(Process *p) {
     p->parentId = 0;
     p->heapBottom = USER_HEAP_BOTTOM;
     p->cwd = &rootFileSystem.root;
+    p->fileDescription.hard = p->fileDescription.soft = NOFILE;
 
     extern char trampoline[];
     pageInsert(p->pgdir, TRAMPOLINE_BASE, (u64)trampoline, 
