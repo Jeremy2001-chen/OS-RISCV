@@ -40,7 +40,7 @@ void yield() {
     count--;
     processTimeCount[hartId] = count;
     processBelongList[hartId] = point;
-    printf("hartID %d yield thread %lx, the process is %lx\n", hartId, thread->id, thread->process->processId);
+    // printf("hartID %d yield thread %lx, the process is %lx\n", hartId, thread->id, thread->process->processId);
     if (thread->awakeTime > 0) {
         getHartTrapFrame()->a0 = 0;
         thread->awakeTime = 0;

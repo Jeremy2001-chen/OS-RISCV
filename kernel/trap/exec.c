@@ -291,7 +291,6 @@ int exec(char* path, char** argv) {
     u64 phdr_addr = 0; // virtual address in user space, point to the program header. We will pass 'phdr_addr' to ld.so
 
     if ((de = ename(AT_FDCWD, path)) == 0) {
-        printf("%s %d\n", __FILE__, __LINE__);
         MSG_PRINT("find file error\n");
         return -1;
     }

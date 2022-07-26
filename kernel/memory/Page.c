@@ -105,7 +105,7 @@ void pageFree(PhysicalPage *page) {
     }
     if (page->ref == 0) {
         acquireLock(&pageListLock);
-        //LIST_INSERT_HEAD(&freePages, page, link);
+        LIST_INSERT_HEAD(&freePages, page, link);
         releaseLock(&pageListLock);
     }
 }
@@ -185,7 +185,7 @@ void pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
-    printf("[Page out]pageout at %lx\n", badAddr);
+    // printf("[Page out]pageout at %lx\n", badAddr);
     PhysicalPage *page;
     if (pageAlloc(&page) < 0) {
         panic("");
@@ -201,7 +201,7 @@ void cowHandler(u64 *pgdir, u64 badAddr) {
     u64 pa;
     u64 *pte;
     pa = pageLookup(pgdir, badAddr, &pte);
-    printf("[COW] %x to cow %lx %lx\n", myProcess()->processId, badAddr, pa);
+    // printf("[COW] %x to cow %lx %lx\n", myProcess()->processId, badAddr, pa);
     if (!(*pte & PTE_COW)) {
         printf("access denied");
         return;
