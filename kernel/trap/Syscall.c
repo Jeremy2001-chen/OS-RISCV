@@ -72,6 +72,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_CONNECT] syscallConnect,
     [SYSCALL_ACCEPT] syscallAccept,
     [SYSCALL_WRITE_VECTOR] syscallWriteVector,
+    [SYSCALL_READ_VECTOR] syscallReadVector,
     [SYSCALL_FUTEX] syscallFutex,
     [SYSCALL_THREAD_KILL] syscallThreadKill,
     [SYSCALL_POLL] syscallPoll,
