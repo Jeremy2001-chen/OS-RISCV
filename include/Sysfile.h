@@ -27,6 +27,7 @@ void syscallRead(void);
 void syscallWrite(void);
 void syscallClose(void);
 void syscallGetFileState(void);
+void syscallGetFileStateAt(void);
 void syscallOpenAt(void);
 void syscallMakeDirAt(void);
 void syscallChangeDir(void);

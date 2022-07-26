@@ -41,6 +41,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_BRK]               syscallBrk,
     [SYSCALL_SBRK]              syscallSetBrk,
     [SYSCALL_FSTAT]             syscallGetFileState,
+    [SYSCALL_FSTATAT]           syscallGetFileStateAt,
     [SYSCALL_MAP_MEMORY]        syscallMapMemory,
     [SYSCALL_UNMAP_MEMORY]      syscallUnMapMemory,
     [SYSCALL_READDIR]           syscallReadDir,
