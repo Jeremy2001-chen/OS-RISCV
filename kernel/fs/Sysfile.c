@@ -18,6 +18,7 @@
 #include <FileSystem.h>
 #include <Iovec.h>
 #include <Thread.h>
+#include <Error.h>
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -42,7 +43,7 @@ int fdalloc(struct File* f) {
     int fd;
     struct Process* p = myProcess();
     
-    for (fd = 0; fd < NOFILE; fd++) {
+    for (fd = 0; fd < p->fileDescription.hard; fd++) {
         if (p->ofile[fd] == 0) {
             p->ofile[fd] = f;
             return fd;
@@ -61,7 +62,7 @@ void syscallDup(void) {
     }
 
     if ((fd = fdalloc(f)) < 0) {
-        tf->a0 = -1;
+        tf->a0 = -EMFILE;
         return;
     }
 

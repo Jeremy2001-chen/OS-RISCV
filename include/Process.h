@@ -8,6 +8,7 @@
 #include <Timer.h>
 #include <file.h>
 #include <Signal.h>
+#include <Resource.h>
 
 #define NOFILE 128  //Number of fds that a process can open
 #define LOG_PROCESS_NUM 10
@@ -98,6 +99,7 @@ typedef struct Process {
     // u64 setChildTid;
     // u64 clearChildTid;
     int threadCount;
+    struct ResourceLimit fileDescription;
 } Process;
 
 LIST_HEAD(ProcessList, Process);

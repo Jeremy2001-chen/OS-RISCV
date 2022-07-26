@@ -14,6 +14,7 @@
 #include <Futex.h>
 #include <Thread.h>
 #include <Clone.h>
+#include <Resource.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
@@ -332,6 +333,30 @@ void syscallGetTheardId() {
 
 void syscallProcessResourceLimit() {
     Trapframe *tf = getHartTrapFrame();
+    u64 pid = tf->a0, resouce = tf->a1, newVa = tf->a2, oldVa = tf->a3;
+    if (pid) {
+        panic("Resouce limit not current process!\n");
+    }
+    printf("resouce limit: pid: %lx, resource: %d, new: %lx, old: %lx\n", pid, resouce, newVa, oldVa);
+    struct ResourceLimit newLimit;
+    Process* process = myProcess();
+    acquireLock(&process->lock);
+    if (newVa && copyin(process->pgdir, (char*)&newLimit, newVa, sizeof(struct ResourceLimit)) < 0) {
+        releaseLock(&process->lock);
+        tf->a0 = -1;
+    }
+    switch(resouce) {
+        case RLIMIT_NOFILE:
+            if (newVa) {
+                process->fileDescription.hard = newLimit.hard;
+                process->fileDescription.soft = newLimit.soft;
+            }
+            if (oldVa) {
+                copyout(process->pgdir, oldVa, (char*)&process->fileDescription, sizeof(struct ResourceLimit));
+            }
+            break;
+    }
+    releaseLock(&process->lock);
     tf->a0 = 0;
 }
 
