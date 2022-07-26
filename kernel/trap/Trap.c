@@ -130,12 +130,12 @@ void userTrap() {
         {
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
-            if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63) {
-                printf("syscall-trigger %d\n", trapframe->a7);
-            }
-            if (!syscallVector[trapframe->a7]) {
-                panic("unknown-syscall: %d\n", trapframe->a7);
-            }
+            // if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63) {
+            //     printf("syscall-trigger %d\n", trapframe->a7);
+            // }
+            // if (!syscallVector[trapframe->a7]) {
+            //     panic("unknown-syscall: %d\n", trapframe->a7);
+            // }
             syscallVector[trapframe->a7]();
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
@@ -163,7 +163,6 @@ void userTrap() {
 }
 
 static inline void userProcessCpuTimeBegin() {
-    //printf("leave kernel %s %d\n", __FILE__, __LINE__);
     Process *p = myProcess();
     p->processTime.lastUserTime = r_time();
 }

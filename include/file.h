@@ -53,6 +53,15 @@ int filestat(struct File*, u64 addr);
 int filewrite(struct File*, u64, int n);
 int dirnext(struct File* f, u64 addr);
 
+/* File types.  */
+#define	DIR_TYPE	0040000	/* Directory.  */
+#define	CHR_TYPE	0020000	/* Character device.  */
+#define	BLK_TYPE	0060000	/* Block device.  */
+#define	REG_TYPE	0100000	/* Regular file.  */
+#define	FIFO_TYPE	0010000	/* FIFO.  */
+#define	LNK_TYPE	0120000	/* Symbolic link.  */
+#define	SOCK_TYPE	0140000	/* Socket.  */
+
 /* these are defined by POSIX and also present in glibc's dirent.h */
 #define DT_UNKNOWN	0
 #define DT_FIFO		1

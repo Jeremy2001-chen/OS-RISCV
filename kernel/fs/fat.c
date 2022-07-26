@@ -238,6 +238,8 @@ struct dirent* create(int fd, char* path, short type, int mode) {
         mode = ATTR_DIRECTORY;
     }  else if (type == T_LINK) {
         mode = ATTR_LINK;
+    } else if (type == T_CHAR) {
+        mode = ATTR_CHARACTER_DEVICE;
     }  else if (mode & O_RDONLY) {
         mode = ATTR_READ_ONLY;
     } else {
@@ -827,32 +829,36 @@ void eput(struct dirent* entry) {
 void estat(struct dirent* ep, struct stat* st) {
     // strncpy(st->name, de->filename, STAT_MAX_NAME);
     // st->type = (de->attribute & ATTR_DIRECTORY) ? T_DIR : T_FILE;
-    uint entcnt = 0;
-    FileSystem *fs = ep->fileSystem;
-    uint32 off = reloc_clus(fs, ep->parent, ep->off, 0);
-    rw_clus(fs, ep->parent->cur_clus, 0, 0, (u64)&entcnt, off, 1);
-    entcnt &= ~LAST_LONG_ENTRY;
-    off = reloc_clus(fs, ep->parent, ep->off + (entcnt << 5), 0);
-    union dentry de;
-    rw_clus(ep->fileSystem, ep->parent->cur_clus, 0, 0, (u64)&de, off, sizeof(de));
     st->st_dev = ep->dev;
     st->st_size = ep->file_size;
     st->st_ino = (ep - direntCache.entries);
-    st->st_mode = ep->attribute;
+    st->st_mode = (ep->attribute & ATTR_DIRECTORY ? DIR_TYPE :
+                ep->attribute & ATTR_CHARACTER_DEVICE ? CHR_TYPE : REG_TYPE);
     st->st_nlink = 1;
     st->st_uid = 0;
     st->st_gid = 0;
     st->st_rdev = 0;  // What's this?
     st->st_blksize = ep->fileSystem->superBlock.bpb.byts_per_sec;
     st->st_blocks = st->st_size / st->st_blksize;
-    st->st_atime_sec = (((u64)de.sne._crt_time_tenth) << 32) + 
-        (((u64)de.sne._crt_time) << 16) + de.sne._crt_date;
-    st->st_atime_nsec = 0;
-    st->st_mtime_sec = (((u64)de.sne._lst_acce_date) << 32) + 
-        (((u64)de.sne._lst_wrt_time) << 16) + de.sne._lst_wrt_date;
-    st->st_mtime_nsec = 0;
-    st->st_ctime_sec = 0;
-    st->st_ctime_nsec = 0;
+    printf("attr: %d\n", st->st_mode);
+    if (ep->parent != NULL) {
+        uint entcnt = 0;
+        FileSystem *fs = ep->fileSystem;
+        uint32 off = reloc_clus(fs, ep->parent, ep->off, 0);
+        rw_clus(fs, ep->parent->cur_clus, 0, 0, (u64)&entcnt, off, 1);
+        entcnt &= ~LAST_LONG_ENTRY;
+        off = reloc_clus(fs, ep->parent, ep->off + (entcnt << 5), 0);
+        union dentry de;
+        rw_clus(ep->fileSystem, ep->parent->cur_clus, 0, 0, (u64)&de, off, sizeof(de));
+        st->st_atime_sec = (((u64)de.sne._crt_time_tenth) << 32) + 
+            (((u64)de.sne._crt_time) << 16) + de.sne._crt_date;
+        st->st_atime_nsec = 0;
+        st->st_mtime_sec = (((u64)de.sne._lst_acce_date) << 32) + 
+            (((u64)de.sne._lst_wrt_time) << 16) + de.sne._lst_wrt_date;
+        st->st_mtime_nsec = 0;
+        st->st_ctime_sec = 0;
+        st->st_ctime_nsec = 0;
+    }
 }
 
 /**

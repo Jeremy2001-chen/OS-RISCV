@@ -7,11 +7,11 @@
 int signProccessMask(u64 how, SignalSet *newSet) {
     Thread* th = myThread();
     switch (how) {
-    case SIG_UNBLOCK:
-        th->blocked |= ~(*newSet);
-        return 0;
     case SIG_BLOCK:
-        th->blocked &= *newSet;
+        th->blocked |= *newSet;
+        return 0;
+    case SIG_UNBLOCK:
+        th->blocked &= ~(*newSet);
         return 0;
     case SIG_SETMASK:
         th->blocked = *newSet;

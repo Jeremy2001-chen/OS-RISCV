@@ -76,7 +76,6 @@ void syscallDupAndSet(void) {
     Trapframe* tf = getHartTrapFrame();
     struct File* f, *f2;
     int fd = tf->a0, fdnew = tf->a1;
-    printf("%s %d %d %d\n", __FILE__, __LINE__, fd, fdnew);
 
     if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
@@ -157,7 +156,6 @@ void syscallWriteVector() {
 
     u64 len = 0;
     for (int i = 0; i < cnt; i++) {
-        printf("%s %d\n", __FILE__, __LINE__);
         len += filewrite(f, (u64)vec[i].iovBase, vec[i].iovLen);
     }
     tf->a0 = len;
@@ -231,7 +229,7 @@ void syscallGetFileState(void) {
 void syscallGetFileStateAt(void) {
     Trapframe* tf = getHartTrapFrame();
     int dirfd = tf->a0/*, flags = tf->a2*/;
-    u64 uva = tf->a1; 
+    u64 uva = tf->a2; 
     char path[FAT32_MAX_PATH];
     if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
         tf->a0 = -1;
@@ -247,6 +245,7 @@ void syscallGetFileStateAt(void) {
     elock(entryPoint);
     estat(entryPoint, &st);
     eunlock(entryPoint);
+    printf("%d %lx\n", st.st_mode, uva);
     if (copyout(myProcess()->pgdir, uva, (char*)&st, sizeof(struct stat)) < 0) {
         tf->a0 = -1;
         return;
@@ -353,7 +352,7 @@ void syscallOpenAt(void) {
     }
     struct dirent* entryPoint;
 
-    printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
+    // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
     if (flags & O_CREATE) {
         entryPoint = create(startFd, path, T_FILE, mode);
         if (entryPoint == NULL) {
@@ -397,7 +396,6 @@ void syscallOpenAt(void) {
 
     file->type = FD_ENTRY;
     file->off = (flags & O_APPEND) ? entryPoint->file_size : 0;
-    printf("%s %d path: %s, off: %d\n", __FILE__, __LINE__, path, file->off);
     file->ep = entryPoint;
     file->readable = !(flags & O_WRONLY);
     file->writable = (flags & O_WRONLY) || (flags & O_RDWR);
@@ -405,10 +403,10 @@ void syscallOpenAt(void) {
     eunlock(entryPoint);
 
     tf->a0 = fd;
-    printf("open at: %d\n", fd);
+    // printf("open at: %d\n", fd);
     return;
 bad:
-    printf("open at: %d\n", tf->a0);
+    // printf("open at: %d\n", tf->a0);
 }
 
 //todo: support the mode
@@ -880,7 +878,6 @@ void syscallUnlinkAt() {
     struct dirent* entryPoint;
 
     if((entryPoint = ename(dirFd, path)) == NULL) {
-        printf("%s %d %s\n", __FILE__, __LINE__, path);
         goto bad;
     }
 
@@ -946,7 +943,6 @@ void syscallUtimensat() {
     struct dirent *de;
     if (tf->a1) {
         if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
-            printf("%s %d\n", __FILE__, __LINE__);
             tf->a0 = -1;
             return;
         }

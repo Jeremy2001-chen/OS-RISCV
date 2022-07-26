@@ -84,7 +84,9 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_ROBUST_LIST] syscallGetRobustList,
     [SYSCALL_STATE_FS] syscallStateFileSystem,
     [SYSCALL_PREAD] syscallPRead,
-    [SYSCALL_UTIMENSAT] syscallUtimensat
+    [SYSCALL_UTIMENSAT] syscallUtimensat,
+    [SYSCALL_GET_USER_ID] syscallGetUserId,
+    [SYSCALL_GET_EFFECTIVE_USER_ID] syscallGetEffectiveUserId
 };
 
 extern struct Spinlock printLock;
@@ -339,9 +341,9 @@ void syscallProcessResourceLimit() {
     Trapframe *tf = getHartTrapFrame();
     u64 pid = tf->a0, resouce = tf->a1, newVa = tf->a2, oldVa = tf->a3;
     if (pid) {
-        panic("Resouce limit not current process!\n");
+        panic("Resource limit not current process!\n");
     }
-    printf("resouce limit: pid: %lx, resource: %d, new: %lx, old: %lx\n", pid, resouce, newVa, oldVa);
+    // printf("resource limit: pid: %lx, resource: %d, new: %lx, old: %lx\n", pid, resouce, newVa, oldVa);
     struct ResourceLimit newLimit;
     Process* process = myProcess();
     acquireLock(&process->lock);
@@ -366,7 +368,7 @@ void syscallProcessResourceLimit() {
 
 void syscallIOControl() {
     Trapframe *tf = getHartTrapFrame();
-    printf("fd: %d, cmd: %d, argc: %d\n", tf->a0, tf->a1, tf->a2);
+    // printf("fd: %d, cmd: %d, argc: %d\n", tf->a0, tf->a1, tf->a2);
     tf->a0 = 0;
 }
 
@@ -514,6 +516,7 @@ void syscallSetRobustList() {
     copyin(myProcess()->pgdir, (char*)&myThread()->robustHeadPointer, tf->a1, sizeof(u64));
     tf->a0 = 0;
 }
+
 void syscallStateFileSystem() {
     Trapframe *tf = getHartTrapFrame();
     char path[FAT32_MAX_PATH];
@@ -528,4 +531,14 @@ void syscallStateFileSystem() {
         printf("bjoweihgre8i %ld\n", tf->a1);
         copyout(myProcess()->pgdir, tf->a1, (char*)&fss, sizeof(FileSystemStatus));
     }
+}
+
+void syscallGetUserId() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallGetEffectiveUserId() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;    
 }

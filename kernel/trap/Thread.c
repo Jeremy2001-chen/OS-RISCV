@@ -22,7 +22,7 @@ Thread* myThread() {
     interruptPush();
     int hartId = r_hartid();
     if (currentThread[hartId] == NULL) {
-        printf("[Kernel]No thread run in the hart %d\n", hartId);
+        // printf("[Kernel]No thread run in the hart %d\n", hartId);
         interruptPop();
         return NULL;
     }
@@ -250,7 +250,7 @@ void threadRun(Thread* th) {
             eunlock(ep);
             setNextTimeout();
             eput(ep);
-            ep = create(AT_FDCWD, "/dev/null", T_FILE, O_RDONLY); //share memory
+            ep = create(AT_FDCWD, "/dev/null", T_CHAR, O_RDONLY); //share memory
             eunlock(ep);
         }
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));

@@ -100,7 +100,6 @@ void initDirentCache() {
 int getFsStatus(char *path, FileSystemStatus *fss) {
     struct dirent *de;
     if ((de = ename(AT_FDCWD, path)) == NULL) {
-        printf("%s %d\n", __FILE__, __LINE__);
         return -1;
     }
     FileSystem *fs = de->fileSystem;
