@@ -220,6 +220,32 @@ void syscallGetFileState(void) {
     tf->a0 = filestat(f, uva);
 }
 
+void syscallGetFileStateAt(void) {
+    Trapframe* tf = getHartTrapFrame();
+    int dirfd = tf->a0/*, flags = tf->a2*/;
+    u64 uva = tf->a1; 
+    char path[FAT32_MAX_PATH];
+    if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+    struct dirent* entryPoint = ename(dirfd, path);
+    if (entryPoint == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+
+    struct stat st;
+    elock(entryPoint);
+    estat(entryPoint, &st);
+    eunlock(entryPoint);
+    if (copyout(myProcess()->pgdir, uva, (char*)&st, sizeof(struct stat)) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+    tf->a0 = 0;
+}
+
 extern struct entry_cache* ecache;
 void syscallGetDirent() {
     struct File* f;
