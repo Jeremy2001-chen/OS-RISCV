@@ -299,7 +299,7 @@ int wait(int targetProcessId, u64 addr) {
 // Returns 0 on success, -1 on error.
 int either_copyout(int user_dst, u64 dst, void* src, u64 len) {
     if (user_dst) {
-        struct Process* p = myProcess();//because only this branch uses p->pgdir, so it need call myproc
+        struct Process* p = myProcess();//because only this branch uses p->pgdir, so it need call myProcess
         return copyout(p->pgdir, dst, src, len);
     } else {
         memmove((char*)dst, src, len);
@@ -312,7 +312,7 @@ int either_copyout(int user_dst, u64 dst, void* src, u64 len) {
 // Returns 0 on success, -1 on error.
 int either_copyin(void* dst, int user_src, u64 src, u64 len) {
     if (user_src) {
-        struct Process* p = myProcess();//because only this branch uses p->pgdir, so it need call myproc
+        struct Process* p = myProcess();//because only this branch uses p->pgdir, so it need call myProcess
         return copyin(p->pgdir, dst, src, len);
     } else {
         memmove(dst, (char*)src, len);

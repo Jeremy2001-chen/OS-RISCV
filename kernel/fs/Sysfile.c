@@ -28,7 +28,7 @@ int argfd(int n, int* pfd, struct File** pf) {
 
     if (argint(n, &fd) < 0)
         return -1;
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         if (pfd)
             *pfd = -1;
         if (pf)
@@ -105,7 +105,7 @@ void syscall_fcntl(void){
     struct File* f;
     int fd = tf->a0/*, cmd = tf->a1, flag = tf->a2*/;
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -424,8 +424,8 @@ void syscallOpenAt(void) {
 
     tf->a0 = fd;
     // printf("open at: %d\n", fd);
-    return;
 bad:
+    return;
     // printf("open at: %d\n", tf->a0);
 }
 
