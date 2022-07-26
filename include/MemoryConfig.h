@@ -45,8 +45,8 @@
 #define USER_STACK_TOP TRAMPOLINE_BASE
 
 //New, Heap Address, this limit User Stack Space to 2^32 Bytes
-#define USER_HEAP_TOP (USER_STACK_TOP-(1UL<<32))
-#define USER_HEAP_BOTTOM (USER_HEAP_TOP-(1UL<<32))
+#define USER_HEAP_TOP ((1L << 38) - (1UL << 30))
+#define USER_HEAP_BOTTOM ((1L << 38) - (1UL << 37))
 
 //TSL
 #define THREAD_LOCAL_STORE (USER_HEAP_BOTTOM - (1UL << 34))

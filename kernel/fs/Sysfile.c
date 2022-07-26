@@ -28,8 +28,13 @@ int argfd(int n, int* pfd, struct File** pf) {
 
     if (argint(n, &fd) < 0)
         return -1;
-    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL)
+    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+        if (pfd)
+            *pfd = -1;
+        if (pf)
+            *pf = NULL;
         return -1;
+    }
     if (pfd)
         *pfd = fd;
     if (pf)
@@ -95,6 +100,19 @@ void syscallDupAndSet(void) {
     tf->a0 = fdnew;
 }
 
+void syscall_fcntl(void){
+    Trapframe* tf = getHartTrapFrame();
+    struct File* f;
+    int fd = tf->a0/*, cmd = tf->a1, flag = tf->a2*/;
+
+    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+
+    // printf("syscall_fcntl fd:%x cmd:%x flag:%x\n", fd, cmd, flag);
+    tf->a0 = 0;
+}
 void syscallRead(void) {
     Trapframe* tf = getHartTrapFrame();
     struct File* f;
@@ -110,7 +128,7 @@ void syscallRead(void) {
         tf->a0 = -1;
         return;
     }
-    
+
     tf->a0 = fileread(f, uva, len);
 }
 
@@ -350,8 +368,9 @@ void syscallOpenAt(void) {
         tf->a0 = -1;
         return;
     }
-    struct dirent* entryPoint;
+    // printf("open path: %s\n", path);
 
+    struct dirent* entryPoint;
     // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
     if (flags & O_CREATE) {
         entryPoint = create(startFd, path, T_FILE, mode);
@@ -401,6 +420,7 @@ void syscallOpenAt(void) {
     file->writable = (flags & O_WRONLY) || (flags & O_RDWR);
 
     eunlock(entryPoint);
+
 
     tf->a0 = fd;
     // printf("open at: %d\n", fd);

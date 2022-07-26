@@ -11,6 +11,7 @@
 #include <pipe.h>
 #include <Debug.h>
 #include <Socket.h>
+#include <Mmap.h>
 
 struct devsw devsw[NDEV];
 struct {
@@ -187,9 +188,8 @@ int dirnext(struct File* f, u64 addr) {
     return 1;
 }
 
-u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int type, u64 off) {
+u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
     bool alloc = (start == 0);
-    printf("heapBottom = %x\n", myProcess()->heapBottom);
     if (alloc) {
         myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom, PAGE_SIZE);
         start = myProcess()->heapBottom;
@@ -211,11 +211,18 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int type, u64 off) {
         start += PGSIZE;
     }
 
-    printf("mapping %lx %lx %lx\n", addr, len, perm);
-    fd->off = off;
-    if (fileread(fd, addr, len)) {
+    if (flags & MAP_ANONYMOUS) {
         return addr;
+    }
+    /* if fd == NULL, we think this is a anonymous map */
+    if (fd != NULL) {
+        fd->off = off;
+        if (fileread(fd, addr, len)) {
+            return addr;
+        } else {
+            return -1;
+        }
     } else {
-        return -1;
+        return addr;
     }
 }

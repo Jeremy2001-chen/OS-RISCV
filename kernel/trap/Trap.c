@@ -126,6 +126,7 @@ void userTrap() {
         kernelProcessCpuTimeBegin();
         u64 *pte = NULL;
         u64 pa = -1;
+        // printf("sepc:%lx sstatus:%lx scause:%lx \n", sepc, sstatus, scause);
         switch (scause & SCAUSE_EXCEPTION_CODE)
         {
         case SCAUSE_ENVIRONMENT_CALL:
@@ -198,6 +199,8 @@ void userTrapReturn() {
         use(tem);
 #endif
     }
+    
+    // printf("return to user!\n");
     ((void(*)(u64, u64))fn)((u64)trapframe, satp);
 }
 

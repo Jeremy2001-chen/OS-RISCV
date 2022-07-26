@@ -12,7 +12,7 @@
 #define SYSCALL_DEV 20
 #define SYSCALL_DUP 23
 #define SYSCALL_DUP3 24
-#define SYSCALL_FCNTL 25
+#define SYSCALL_fcntl 25
 #define SYSCALL_IOCONTROL 29
 
 #define SYSCALL_MKDIRAT 34

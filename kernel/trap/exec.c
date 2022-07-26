@@ -112,11 +112,9 @@ static u64 elf_map(struct File* filep,
     u64 map_addr;
     u64 size = eppnt->filesz + PAGE_OFFSET(eppnt->vaddr, PAGE_SIZE);
     u64 off = eppnt->offset - PAGE_OFFSET(eppnt->vaddr, PAGE_SIZE);
-    printf("\nsize = %x, off = %x size2=%lx off2=%lx\n", eppnt->filesz, eppnt->offset, size, off);
     addr = DOWN_ALIGN(addr, PAGE_SIZE);
-    size = UP_ALIGN(size, PGSIZE);
+    // size = UP_ALIGN(size, PGSIZE);
 
-    MSG_PRINT("mmaping %x %x\n",addr, size);
     /* mmap() will return -EINVAL if given a zero size, but a
      * segment with zero filesize is perfectly valid */
     if (!size)
@@ -133,9 +131,11 @@ static u64 elf_map(struct File* filep,
 
     if (total_size) {
         total_size = UP_ALIGN(total_size, PAGE_SIZE);
-        map_addr = do_mmap(filep, addr, total_size, prot, type, off);
-    } else
-        map_addr = do_mmap(filep, addr, size, prot, type, off);
+        map_addr = do_mmap(NULL, addr, total_size, prot, type, off);
+        addr = map_addr;
+    }
+
+    map_addr = do_mmap(filep, addr, size, prot, type, off);
 
     if (map_addr == -1)
         panic("mmap interpreter fail!");
@@ -143,6 +143,8 @@ static u64 elf_map(struct File* filep,
     return (map_addr);
 }
 static inline int make_prot(u32 p_flags) {
+    return PTE_READ | PTE_WRITE | PTE_EXECUTE | PTE_USER | PTE_ACCESSED;
+/*
     int prot = 0;
 
     if (p_flags & PF_R)
@@ -152,6 +154,7 @@ static inline int make_prot(u32 p_flags) {
     if (p_flags & PF_X)
         prot |= PTE_EXECUTE;
     return prot|PTE_USER|PTE_ACCESSED;
+*/
 }
 //加载动态链接器
 u64 load_elf_interp(u64* pagetable,
@@ -383,16 +386,18 @@ int exec(char* path, char** argv) {
         if (!elf_interpreter)
             panic("Alloc page for elf_interpreter error!");
 
+        /*
         retval = eread(de, 0, (u64)elf_interpreter, ph.offset, ph.filesz);
         if (retval < 0)
             panic("read execed file error");
+        */
 
         /* make sure path is NULL terminated */
+        safestrcpy(elf_interpreter, "/libc.so", 20);
         if (elf_interpreter[ph.filesz - 1] != '\0')
             panic("interpreter path is not NULL terminated");
 
         interpreter = ename(AT_FDCWD, elf_interpreter);
-        printf("inter path :%s\n",elf_interpreter);
 
         // kfree(elf_interpreter);
         if (interpreter == NULL)
@@ -423,6 +428,10 @@ int exec(char* path, char** argv) {
     } else {
         elf_entry = elf.entry;
     }
+
+#ifdef ZZY_DEBUG
+    printf("end of load interpreter\n");
+#endif
 /* ============ End of find and load interpreter ============== */
 
     eunlock(de);
@@ -455,8 +464,8 @@ int exec(char* path, char** argv) {
     ustack[0] = argc;
     ustack[argc + 1] = 0;
 
-    int envCount = 2;
-    char *envVariable[2] = {"va=a", "vb=b"};
+    int envCount = 1;
+    char *envVariable[1] = {"LD_LIBRARY_PATH=/"};
     for (i = 0; i < envCount; i++) {
         sp -= strlen(envVariable[i]) + 1;
         sp -= sp % 16;  // riscv sp must be 16-byte aligned
@@ -472,15 +481,19 @@ int exec(char* path, char** argv) {
 
 /*
     argc
-    argv[]
+    argv[1]
+    argv[2]
     NULL
-    envp[]
+    envp[1]
+    envp[2]
     NULL
     AT_HWCAP ELF_HWCAP
     AT_PAGESZ ELF_EXEC_PAGESIZE
     NULL NULL
-    "args"
-    "PATH=/usr/lib"
+    "argv1"
+    "argv2"
+    "va=a"
+    "vb=b"
 */
 
 	/*
@@ -488,17 +501,15 @@ int exec(char* path, char** argv) {
 	 */
     static u8 k_rand_bytes[] = {0, 1, 2,  3,  4,  5,  6,  7,
                                 8, 9, 10, 11, 12, 13, 14, 15};
-    sp -= 16;
+    sp -= 32;
     sp -= sp % 16;
     if (sp < stackbase)
         goto bad;
     if (copyout(pagetable, sp, (char *)k_rand_bytes, sizeof(k_rand_bytes)) < 0)
         goto bad;
     u64 u_rand_bytes = sp;
-    bool have_execfd = 0; /* TODO, 实际上是有对应的fd，但是这里暂时没实现 */
-    u32 execfd = 0;
 
-    u64* elf_info = ustack + (argc + 3 + envCount);
+    u64* elf_info = ustack + (argc + envCount + 3) ;
 #define NEW_AUX_ENT(id, val) \
 	do { \
 		*elf_info++ = id; \
@@ -507,46 +518,29 @@ int exec(char* path, char** argv) {
 
     #define ELF_HWCAP 0  /* we assume this risc-v cpu have no extensions */
 	#define ELF_EXEC_PAGESIZE PAGE_SIZE
-	#define CLOCKS_PER_SEC 100
-
-	/* preserve argv0 for the interpreter  */
-	#define BINPRM_FLAGS_PRESERVE_ARGV0_BIT 3
-	#define BINPRM_FLAGS_PRESERVE_ARGV0 (1 << BINPRM_FLAGS_PRESERVE_ARGV0_BIT)
-
-	/* preserve argv0 for the interpreter  */
-	#define AT_FLAGS_PRESERVE_ARGV0_BIT 0
-	#define AT_FLAGS_PRESERVE_ARGV0 (1 << AT_FLAGS_PRESERVE_ARGV0_BIT)
 
     /* these function always return 0 */
 	#define from_kuid_munged(x, y) (0)
 	#define from_kgid_munged(x,y) (0)
 
-    u64 secureexec = 1; // the default value is 1, 但是我不清楚哪些情况会把它变成0
+    u64 secureexec = 0; // the default value is 1, 但是我不清楚哪些情况会把它变成0
 	NEW_AUX_ENT(AT_HWCAP, ELF_HWCAP); //CPU的extension信息
 	NEW_AUX_ENT(AT_PAGESZ, ELF_EXEC_PAGESIZE); //PAGE_SIZE
-	NEW_AUX_ENT(AT_CLKTCK, CLOCKS_PER_SEC);//与时钟相关的，copy linux 100
 	NEW_AUX_ENT(AT_PHDR, phdr_addr);// Phdr * phdr_addr; 指向用户态。
 	NEW_AUX_ENT(AT_PHENT, sizeof(Phdr)); //每个 Phdr 的大小
 	NEW_AUX_ENT(AT_PHNUM, elf.phnum); //phdr的数量
 	NEW_AUX_ENT(AT_BASE, interp_load_addr);
-    u64 flags = 0;
-	if (/*bprm->interp_flags & BINPRM_FLAGS_PRESERVE_ARGV0*/true)
-		flags |= AT_FLAGS_PRESERVE_ARGV0;//该标志AT_FLAGS_PRESERVE_ARGV0时，argv[0]==程序的路径。
-	NEW_AUX_ENT(AT_FLAGS, flags);
-	NEW_AUX_ENT(AT_ENTRY, elf_entry);//源程序的入口
+	NEW_AUX_ENT(AT_ENTRY, elf.entry);//源程序的入口
 	NEW_AUX_ENT(AT_UID, from_kuid_munged(cred->user_ns, cred->uid));// 0
 	NEW_AUX_ENT(AT_EUID, from_kuid_munged(cred->user_ns, cred->euid));// 0
 	NEW_AUX_ENT(AT_GID, from_kgid_munged(cred->user_ns, cred->gid));// 0
 	NEW_AUX_ENT(AT_EGID, from_kgid_munged(cred->user_ns, cred->egid));// 0
-	NEW_AUX_ENT(AT_SECURE, secureexec);//安全，默认1
+	NEW_AUX_ENT(AT_SECURE, secureexec);//安全，默认1。该模式下不会启用LD_LIBRARY_PATH等
 	NEW_AUX_ENT(AT_RANDOM, u_rand_bytes);//16byte随机数的地址。
 #ifdef ELF_HWCAP2
 	NEW_AUX_ENT(AT_HWCAP2, ELF_HWCAP2);
 #endif
 	NEW_AUX_ENT(AT_EXECFN, ustack[1]/*用户态地址*/); /* 传递给动态连接器该程序的名称 */
-	if (have_execfd) { //exec program，program的fd传给ld.so
-		NEW_AUX_ENT(AT_EXECFD, execfd);
-	}
 	/* And advance past the AT_NULL entry.  */
     NEW_AUX_ENT(0, 0);
     //auxiliary 辅助数组
@@ -554,8 +548,10 @@ int exec(char* path, char** argv) {
 /* ============= End put args for ld.so =============== */
 
     u64 copy_size = (elf_info - ustack) * sizeof(u64);
-    // for(u64* i=ustack; i < elf_info; ++i)
-        // printf("dump_stack:: %lx\n", *((u64*)sp+(i-ustack)));
+#ifdef ZZY_DEBUG
+    printf("copy size = %x\n", copy_size);
+#endif
+
     // push the array of argv[] pointers, envp[] pointers, auxv[] array.
     sp -= copy_size; /* now elf_info is the stack top */
     sp -= sp % 16;
@@ -564,6 +560,13 @@ int exec(char* path, char** argv) {
     if (copyout(pagetable, sp, (char*)ustack, copy_size) < 0)
         goto bad;
 
+#ifdef ZZY_DEBUG
+    for (u64* i = (u64 *)sp; (u64)i < USER_STACK_TOP; ++i) {
+        u64 ret;
+        copyin(pagetable, (char*)&ret, (u64)(i), sizeof(u64));
+        printf("*%lx = %lx\n", (u64)i, ret);
+    }
+#endif
     // arguments to user main(argc, argv)
     // argc is returned via the system call return
     // value, which goes in a0.
@@ -577,11 +580,9 @@ int exec(char* path, char** argv) {
             last = s + 1;
     safestrcpy(p->name, last, sizeof(p->name));
     */
-
-    HEX_PRINT(getHartTrapFrame()->epc);
-    HEX_PRINT(getHartTrapFrame()->sp);
-    MSG_PRINT("out exec");
+   
     // Commit to the user image.
+
 
     getHartTrapFrame()->epc = elf_entry;  // initial program counter = main
     getHartTrapFrame()->sp = sp;          // initial stack pointer

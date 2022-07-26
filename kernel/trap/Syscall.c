@@ -37,6 +37,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_TIME_OF_DAY]   syscallGetTime,
     [SYSCALL_SLEEP_TIME]        syscallSleepTime,
     [SYSCALL_DUP3]              syscallDupAndSet,
+    [SYSCALL_fcntl]             syscall_fcntl,
     [SYSCALL_CHDIR]             syscallChangeDir,
     [SYSCALL_CWD]               syscallGetWorkDir,
     [SYSCALL_MKDIRAT]           syscallMakeDirAt,
@@ -70,7 +71,6 @@ void (*syscallVector[])(void) = {
     [SYSCALL_SET_SOCKET_OPTION] syscallSetSocketOption,
     [SYSCALL_SEND_TO] syscallSendTo,
     [SYSCALL_RECEIVE_FROM] syscallReceiveFrom,
-    [SYSCALL_FCNTL] syscallFcntl,
     [SYSCALL_LISTEN] syscallListen,
     [SYSCALL_CONNECT] syscallConnect,
     [SYSCALL_ACCEPT] syscallAccept,
@@ -206,49 +206,20 @@ void syscallSetBrk() {
 }
 
 void syscallMapMemory() {
-    Trapframe *trapframe = getHartTrapFrame();
-    u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2, flags = trapframe->a3;
-    printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
-    bool alloc = (start == 0);
-    if (alloc) {
-        myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom, 12);
-        start = myProcess()->heapBottom;
-        myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom + len, 12); 
-    }
-    u64 addr = start, end = start + len;
-    start = DOWN_ALIGN(start, 12);
-    while (start < end) {
-        u64* pte;
-        u64 pa = pageLookup(myProcess()->pgdir, start, &pte);
-        if (pa > 0 && (*pte & PTE_COW)) {
-            cowHandler(myProcess()->pgdir, start);
-        }
-        PhysicalPage* page;
-        if (pageAlloc(&page) < 0) {        
-            trapframe->a0 = -1;
-            return ;
-        }
-        pageInsert(myProcess()->pgdir, start, page2pa(page), perm | PTE_USER | PTE_READ | PTE_WRITE);
-        start += PGSIZE;
-    }
-
+    Trapframe* trapframe = getHartTrapFrame();
+    u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2,
+        off = trapframe->a5, flags = trapframe->a3;
     struct File* fd;
-    if (flags & MAP_ANONYMOUS) {
-        trapframe->a0 = addr;
+    printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
+
+    argfd(4, 0, &fd);
+    if (fd == NULL && start != 0) {
+        trapframe->a0 = -1;
         return;
     }
-
-    if (argfd(4, 0, &fd)) {
-        // printf("fd: %x\n", trapframe->a4);
-        trapframe->a0 = -1;
-        return ;
-    }
-    fd->off = trapframe->a5;
-    if (fileread(fd, addr, len)) {
-        trapframe->a0 = addr;
-    } else {
-        trapframe->a0 = -1;
-    }
+    trapframe->a0 =
+        do_mmap(fd, start, len, perm, /*'type' currently not used */ 0, off);
+    return;
 }
 
 void syscallUnMapMemory() {
@@ -412,10 +383,6 @@ void syscallReceiveFrom() {
     tf->a0 = receiveFrom(tf->a0, tf->a1, tf->a2, tf->a3, tf->a4);
 }
 
-void syscallFcntl() {
-    Trapframe *tf = getHartTrapFrame();
-    tf->a0 = -1;
-}
 
 void syscallListen() {
     Trapframe *tf = getHartTrapFrame();
