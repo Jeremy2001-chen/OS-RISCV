@@ -13,6 +13,7 @@
 #include <Sysfile.h>
 #include <Signal.h>
 #include <Thread.h>
+#include <Sysfile.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
@@ -240,6 +241,15 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
     acquireLock(&scheduleListLock);
     LIST_INSERT_TAIL(&scheduleList[0], th, scheduleLink);
     releaseLock(&scheduleListLock);
+}
+
+
+void pre_link() {
+    printf("begin pre_link\n");
+    int ret;
+    if((ret=do_linkat(AT_FDCWD, "/libdlopen_dso.so", AT_FDCWD, "/dlopen_dso.so"))<0){
+        printf("pre_link error\n");
+    }
 }
 
 static inline void updateAncestorsCpuTime(Process *p) {

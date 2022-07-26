@@ -837,24 +837,10 @@ void syscallUmount() {
     tf->a0 = 0;
 }
 
-void syscallLinkAt() {
-    Trapframe *tf = getHartTrapFrame();
-    int oldDirFd = tf->a0, newDirFd = tf->a2, flags = tf->a4;
-    
-    assert(flags == 0);
-    char oldPath[FAT32_MAX_PATH], newPath[FAT32_MAX_PATH];
-    if (fetchstr(tf->a1, oldPath, FAT32_MAX_PATH) < 0) {
-        tf->a0 = -1;
-        return;
-    }
-    if (fetchstr(tf->a3, newPath, FAT32_MAX_PATH) < 0) {
-        tf->a0 = -1;
-        return;
-    }
+int do_linkat(int oldDirFd, char* oldPath, int newDirFd, char* newPath) {
+    struct dirent *entryPoint, *targetPoint = NULL;
 
-    struct dirent* entryPoint, *targetPoint = NULL;
-
-    if((entryPoint = ename(oldDirFd, oldPath)) == NULL) {
+    if ((entryPoint = ename(oldDirFd, oldPath)) == NULL) {
         goto bad;
     }
 
@@ -874,15 +860,30 @@ void syscallLinkAt() {
 
     targetPoint->_nt_res = DT_LNK;
     eupdate(targetPoint);
-
-    tf->a0 = 0;
-    eunlock(targetPoint);
-    return;
+    return 0;
 bad:
     if (targetPoint) {
-        eunlock(targetPoint);
+        eremove(targetPoint);
     }
-    tf->a0 = -1;
+    return -1;
+}
+
+void syscallLinkAt() {
+    Trapframe* tf = getHartTrapFrame();
+    int oldDirFd = tf->a0, newDirFd = tf->a2, flags = tf->a4;
+
+    assert(flags == 0);
+    char oldPath[FAT32_MAX_PATH], newPath[FAT32_MAX_PATH];
+    if (fetchstr(tf->a1, oldPath, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+    if (fetchstr(tf->a3, newPath, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+
+    tf->a0 = do_linkat(oldDirFd, oldPath, newDirFd, newPath);
 }
 
 void syscallUnlinkAt() {
