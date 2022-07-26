@@ -12,6 +12,7 @@
 #include <FileSystem.h>
 #include <Sysfile.h>
 #include <Signal.h>
+#include <Sysfile.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
@@ -284,6 +285,14 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
     releaseLock(&scheduleListLock);
 }
 
+void pre_link() {
+    printf("begin pre_link\n");
+    int ret;
+    if((ret=do_linkat(AT_FDCWD, "/libdlopen_dso.so", AT_FDCWD, "/dlopen_dso.so"))<0){
+        printf("pre_link error\n");
+    }
+}
+
 void sleepRec();
 void processRun(Process* p) {
     static volatile int first = 0;
@@ -322,6 +331,7 @@ void processRun(Process* p) {
             printf("init dirent end\n");
             void testfat();
             testfat();
+            pre_link();
 
             struct dirent* ep = create(AT_FDCWD, "/dev", T_DIR, O_RDONLY);
             eunlock(ep);
