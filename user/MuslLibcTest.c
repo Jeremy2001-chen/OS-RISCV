@@ -4,7 +4,7 @@
 #include <uLib.h>
 
 char *staticArgv[] = {"./runtest.exe", "-w", "entry-static.exe", "", 0};
-char *staticList[] = {"syscall_sign_extend",
+char *staticList[] = {
     "search_hsearch", "basename", "clocale_mbfuncs", "clock_gettime",
     "crypt", "dirname", "env", "fdopen", "fnmatch",
     "fscanf", "fwscanf", "iconv_open", "inet_pton", 
@@ -47,7 +47,7 @@ putenv_doublefree
 */
 
 char *dynamicArgv[] = {"./runtest.exe", "-w", "entry-dynamic.exe", "", 0};
-char *dynamicList[] = {"sem_init",
+char *dynamicList[] = {
     "argv", "basename", "clocale_mbfuncs", "clock_gettime", "crypt",
     "dirname", "dlopen", "env", "fdopen", "fnmatch", "fscanf",
     "fwscanf", "iconv_open", "inet_pton", "mbc", "memstream",
