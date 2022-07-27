@@ -274,7 +274,6 @@ void syscallGetFileStateAt(void) {
     elock(entryPoint);
     estat(entryPoint, &st);
     eunlock(entryPoint);
-    printf("%d %lx\n", st.st_mode, uva);
     if (copyout(myProcess()->pgdir, uva, (char*)&st, sizeof(struct stat)) < 0) {
         tf->a0 = -1;
         return;

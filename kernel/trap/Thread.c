@@ -255,6 +255,9 @@ void threadRun(Thread* th) {
             ep = create(AT_FDCWD, "/tmp", T_DIR, O_RDONLY); //share memory
             eunlock(ep);
             eput(ep);
+            ep = create(AT_FDCWD, "/dev/zero", T_CHAR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
             printf("begin pre_link\n");
             int ret;
             if((ret=do_linkat(AT_FDCWD, "/libdlopen_dso.so", AT_FDCWD, "/dlopen_dso.so"))<0){
