@@ -5,6 +5,7 @@
 
 char *staticArgv[] = {"./runtest.exe", "-w", "entry-static.exe", "", 0};
 char *staticList[] = {
+    "putenv_doublefree", "flockfile_list",
     "search_hsearch", "basename", "clocale_mbfuncs", "clock_gettime",
     "crypt", "dirname", "env", "fdopen", "fnmatch",
     "fscanf", "fwscanf", "iconv_open", "inet_pton", 
@@ -43,11 +44,11 @@ pthread_condattr_setclock
 pthread_exit_cancel
 pthread_once_deadlock
 pthread_rwlock_ebusy
-putenv_doublefree
 */
 
 char *dynamicArgv[] = {"./runtest.exe", "-w", "entry-dynamic.exe", "", 0};
 char *dynamicList[] = {
+    "putenv_doublefree", "flockfile_list",
     "argv", "basename", "clocale_mbfuncs", "clock_gettime", "crypt",
     "dirname", "dlopen", "env", "fdopen", "fnmatch", "fscanf",
     "fwscanf", "iconv_open", "inet_pton", "mbc", "memstream",
@@ -83,7 +84,6 @@ pthread_condattr_setclock
 pthread_exit_cancel
 pthread_once_deadlock
 pthread_rwlock_ebusy
-putenv_doublefree
 sem_init
 tls_init
 tls_local_exec
