@@ -4,7 +4,7 @@
 #include <uLib.h>
 
 char *staticArgv[] = {"./runtest.exe", "-w", "entry-static.exe", "", 0};
-char *staticList[] = {"socket",
+char *staticList[] = {
     "search_hsearch", "basename", "clocale_mbfuncs", "clock_gettime",
     "crypt", "dirname", "env", "fdopen", "fnmatch",
     "fscanf", "fwscanf", "iconv_open", "inet_pton", 
