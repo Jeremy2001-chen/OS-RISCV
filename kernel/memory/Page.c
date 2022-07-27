@@ -298,6 +298,30 @@ int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
     return 0;
 }
 
+int memsetOut(u64 *pgdir, u64 dst, u8 value, u64 len) {
+    u64 n, va0, pa0;
+    int cow;
+
+    while (len > 0) {
+        va0 = DOWN_ALIGN(dst, PGSIZE);
+        pa0 = vir2phy(pgdir, va0, &cow);
+        if (pa0 == NULL)
+            return -1;
+        if (cow) {
+            // printf("COW?\n");
+            cowHandler(pgdir, va0);
+        }
+        pa0 = vir2phy(pgdir, va0, &cow);
+        n = PGSIZE - (dst - va0);
+        if (n > len)
+            n = len;
+        memset((void*)(pa0 + (dst - va0)), value, n);
+        len -= n;
+        dst = va0 + PGSIZE;
+    }
+    return 0;
+}
+
 int growproc(int n) {
     if (myProcess()->heapBottom + n >= USER_HEAP_TOP)
         return -1;

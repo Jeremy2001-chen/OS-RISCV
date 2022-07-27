@@ -308,6 +308,15 @@ int either_copyout(int user_dst, u64 dst, void* src, u64 len) {
     }
 }
 
+int either_memset(bool user, u64 dst, u8 value, u64 len) {
+    if (user) {
+        Process *p = myProcess();
+        return memsetOut(p->pgdir, dst, value, len);
+    }
+    memset((void *)dst, value, len);
+    return 0;
+}
+
 // Copy from either a user address, or kernel address,
 // depending on usr_src.
 // Returns 0 on success, -1 on error.

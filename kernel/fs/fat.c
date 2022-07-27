@@ -360,6 +360,11 @@ int getBlockNumber(struct dirent* entry, int dataBlockNum) {
 /* like the original readi, but "reade" is odd, let alone "writee" */
 // Caller must hold entry->lock.
 int eread(struct dirent* entry, int user_dst, u64 dst, uint off, uint n) {
+    if (entry->dev == ZERO) {
+        if (!either_memset(user_dst, dst, 0, n)) {
+            return n;
+        }
+    }
     if (off > entry->file_size || off + n < off ||
         (entry->attribute & ATTR_DIRECTORY)) {
         return 0;

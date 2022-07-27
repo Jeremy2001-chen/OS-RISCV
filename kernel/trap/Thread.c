@@ -256,8 +256,8 @@ void threadRun(Thread* th) {
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/zero", T_CHAR, O_RDONLY);
+            ep->dev = ZERO;
             eunlock(ep);
-            eput(ep);
             printf("begin pre_link\n");
             int ret;
             if((ret=do_linkat(AT_FDCWD, "/libdlopen_dso.so", AT_FDCWD, "/dlopen_dso.so"))<0){

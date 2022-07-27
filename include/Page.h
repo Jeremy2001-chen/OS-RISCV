@@ -96,6 +96,7 @@ void pageFree(PhysicalPage *page);
 u64 vir2phy(u64* pagetable, u64 va, int* cow);
 int copyin(u64* pagetable, char* dst, u64 srcva, u64 len);
 int copyout(u64* pagetable, u64 dstva, char* src, u64 len);
+int memsetOut(u64 *pgdir, u64 dst, u8 value, u64 len);
 u64 sys_sbrk(u32);
 
 #define IS_RAM(pa) (pa >= PHYSICAL_ADDRESS_BASE && pa < PHYSICAL_MEMORY_TOP)
