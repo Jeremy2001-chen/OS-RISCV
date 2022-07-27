@@ -1,7 +1,7 @@
 #ifndef _TIMER_H_
 #define _TIMER_H_
 
-#define INTERVAL 2000000
+#define INTERVAL 200000
 #include "Type.h"
 
 void setNextTimeout(void);

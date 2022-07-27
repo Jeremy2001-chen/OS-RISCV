@@ -5,6 +5,7 @@
 
 char *staticArgv[] = {"./runtest.exe", "-w", "entry-static.exe", "", 0};
 char *staticList[] = {
+    "pthread_cond_smasher",
     "pthread_condattr_setclock", 
     "pthread_cancel_points", "pthread_tsd", "pthread_robust_detach",
     "pthread_cancel_sem_wait", "pthread_exit_cancel",
@@ -37,12 +38,12 @@ char *staticList[] = {
 
 /*
 static: 
-pthread_cancel  
-pthread_cond_smasher
+pthread_cancel
 */
 
 char *dynamicArgv[] = {"./runtest.exe", "-w", "entry-dynamic.exe", "", 0};
 char *dynamicList[] = {
+    "pthread_cond_smasher",
     "pthread_condattr_setclock",
     "pthread_cancel_points", "pthread_tsd", "pthread_robust_detach",
     "pthread_cond", "pthread_exit_cancel",
@@ -75,7 +76,6 @@ char *dynamicList[] = {
 /*
 dynamic:
 pthread_cancel
-pthread_cond_smasher
 */
 
 void userMain() {

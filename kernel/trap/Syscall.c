@@ -449,7 +449,6 @@ void syscallThreadKill() {
         return;
     }
     th->pending |= (1ul<<signal);
-    // printf("tid: %lx, pending: %lx sign: %d\n", tid, th->pending, signal);
     tf->a0 = 0;
 }
 

@@ -206,6 +206,14 @@ static inline u64 r_time() {
 	return x + (1ll << 35);
 }
 
+static inline u64 r_realTime() {
+	u64 x;
+  	// asm volatile("csrr %0, time" : "=r" (x) );
+  	// this instruction will trap in SBI
+	asm volatile("rdtime %0" : "=r" (x) );
+	return x;
+}
+
 static inline u64 r_cycle() {
 	u64 x;
 	asm volatile("rdcycle %0" : "=r" (x) );
