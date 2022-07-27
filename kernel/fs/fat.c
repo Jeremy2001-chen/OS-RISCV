@@ -863,6 +863,13 @@ void estat(struct dirent* ep, struct stat* st) {
         st->st_mtime_nsec = 0;
         st->st_ctime_sec = 0;
         st->st_ctime_nsec = 0;
+    } else {
+        st->st_atime_sec = 0;
+        st->st_atime_nsec = 0;
+        st->st_mtime_sec = 0;
+        st->st_mtime_nsec = 0;
+        st->st_ctime_sec = 0;
+        st->st_ctime_nsec = 0;
     }
 }
 
