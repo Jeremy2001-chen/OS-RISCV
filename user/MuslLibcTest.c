@@ -52,12 +52,12 @@ char *dynamicList[] = {"sem_init",
     "dirname", "dlopen", "env", "fdopen", "fnmatch", "fscanf",
     "fwscanf", "iconv_open", "inet_pton", "mbc", "memstream",
     "qsort", "random", "search_hsearch", "search_insque", "search_lsearch",
-    "search_tsearch", "sem_init", "setjmp", "snprintf", "socket",
+    "search_tsearch", "setjmp", "snprintf", "socket",
     "sscanf", "sscanf_long", "stat", "strftime", "string", "string_memcpy",
     "string_memmem", "string_memset", "string_strchr", "string_strcspn",
     "string_strstr", "strptime", "strtod", "strtod_simple", "strtof",
-    "strtol", "strtold", "swprintf", "tgmath", "time", "tls_init", "tls_local_exec",
-    "udiv", "ungetc", "utime", "wcsstr", "wcstol", "daemon_failure", "dn_expand_empty",
+    "strtol", "strtold", "swprintf", "tgmath", "time", "udiv", 
+    "ungetc", "utime", "wcsstr", "wcstol", "daemon_failure", "dn_expand_empty",
     "dn_expand_ptr_0", "fflush_exit", "fgets_eof", "fgetwc_buffering", "fpclassify_invalid_ld80",
     "ftello_unflushed_append", "getpwnam_r_crash", "getpwnam_r_errno", "iconv_roundtrips",
     "inet_ntop_v4mapped", "inet_pton_empty_last_field", "iswspace_null", "lrand48_signextend",
@@ -67,7 +67,7 @@ char *dynamicList[] = {"sem_init",
     "regex_ere_backref", "regex_escaped_high_byte", "regex_negated_range",
     "regexec_nosub", "rewind_clear_error", "rlimit_open_files", "scanf_bytes_consumed",
     "scanf_match_literal_eof", "scanf_nullbyte_char", "setvbuf_unget", "sigprocmask_internal",
-    "sscanf_eof", "statvfs", "strverscmp", "syscall_sign_extend", "tls_get_new_dtv", "uselocale_0",
+    "sscanf_eof", "statvfs", "strverscmp", "syscall_sign_extend", "uselocale_0",
     "wcsncpy_read_overflow", "wcsstr_false_negative"
 };
 
@@ -84,6 +84,10 @@ pthread_exit_cancel
 pthread_once_deadlock
 pthread_rwlock_ebusy
 putenv_doublefree
+sem_init
+tls_init
+tls_local_exec
+tls_get_new_dtv
 */
 
 void userMain() {
