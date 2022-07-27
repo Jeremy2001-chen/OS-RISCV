@@ -208,9 +208,9 @@ void syscallSetBrk() {
 void syscallMapMemory() {
     Trapframe* trapframe = getHartTrapFrame();
     u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2,
-        off = trapframe->a5, flags = trapframe->a3;
+        off = trapframe->a5/*, flags = trapframe->a3*/;
     struct File* fd;
-    printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
+    // printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
 
     argfd(4, 0, &fd);
     if (fd == NULL && start != 0) {
@@ -403,13 +403,13 @@ void syscallFutex() {
     Trapframe *tf = getHartTrapFrame();
     int op = tf->a1, val = tf->a2, userVal;
     u64 uaddr = tf->a0, newAddr = tf->a4;
-    printf("addr: %lx, op: %d, val: %d, newAddr: %lx\n", uaddr, op, val, newAddr);
+    // printf("addr: %lx, op: %d, val: %d, newAddr: %lx\n", uaddr, op, val, newAddr);
     op &= (FUTEX_PRIVATE_FLAG - 1);
     switch (op)
     {
         case FUTEX_WAIT:
             copyin(myProcess()->pgdir, (char*)&userVal, uaddr, sizeof(int));
-            printf("val: %d\n", userVal);
+            // printf("val: %d\n", userVal);
             if (userVal != val) {
                 tf->a0 = -1;
                 return;
@@ -417,11 +417,11 @@ void syscallFutex() {
             futexWait(uaddr, myThread());
             break;
         case FUTEX_WAKE:
-            printf("val: %d\n", val);
+            // printf("val: %d\n", val);
             futexWake(uaddr, val);
             break;
         case FUTEX_REQUEUE:
-            printf("val: %d\n", val);
+            // printf("val: %d\n", val);
             futexRequeue(uaddr, val, newAddr);
             break;
         default:
@@ -441,7 +441,7 @@ void syscallThreadKill() {
         return;
     }
     th->pending |= (1ul<<signal);
-    printf("tid: %lx, pending: %lx sign: %d\n", tid, th->pending, signal);
+    // printf("tid: %lx, pending: %lx sign: %d\n", tid, th->pending, signal);
     tf->a0 = 0;
 }
 
@@ -468,7 +468,7 @@ void syscallPoll() {
 
 void syscallMemoryProtect() {
     Trapframe *tf = getHartTrapFrame();
-    printf("mprotect va: %lx, length: %lx\n", tf->a0, tf->a1);
+    // printf("mprotect va: %lx, length: %lx\n", tf->a0, tf->a1);
     tf->a0 = 0;
 }
 
@@ -495,7 +495,7 @@ void syscallStateFileSystem() {
     memset(&fss, 0, sizeof(FileSystemStatus));
     tf->a0 = getFsStatus(path, &fss);
     if (tf->a0 == 0) {
-        printf("bjoweihgre8i %ld\n", tf->a1);
+        // printf("bjoweihgre8i %ld\n", tf->a1);
         copyout(myProcess()->pgdir, tf->a1, (char*)&fss, sizeof(FileSystemStatus));
     }
 }

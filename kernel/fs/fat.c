@@ -840,7 +840,7 @@ void estat(struct dirent* ep, struct stat* st) {
     st->st_rdev = 0;  // What's this?
     st->st_blksize = ep->fileSystem->superBlock.bpb.byts_per_sec;
     st->st_blocks = st->st_size / st->st_blksize;
-    printf("attr: %d\n", st->st_mode);
+    // printf("attr: %d\n", st->st_mode);
     if (ep->parent != NULL) {
         uint entcnt = 0;
         FileSystem *fs = ep->fileSystem;
