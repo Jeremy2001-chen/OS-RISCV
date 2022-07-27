@@ -4,6 +4,7 @@
 #include <Thread.h>
 #include <Page.h>
 #include <Signal.h>
+#include <Futex.h>
 
 extern struct Spinlock scheduleListLock;
 extern struct ThreadList scheduleList[2];
@@ -47,5 +48,6 @@ void yield() {
     }
     // handle signal
     handleSignal(thread);
+    futexClear(thread);
     threadRun(thread);
 }

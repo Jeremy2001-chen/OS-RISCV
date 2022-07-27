@@ -403,19 +403,26 @@ void syscallAccept() {
 void syscallFutex() {
     Trapframe *tf = getHartTrapFrame();
     int op = tf->a1, val = tf->a2, userVal;
+    u64 time = tf->a3;
     u64 uaddr = tf->a0, newAddr = tf->a4;
+    struct TimeSpec t;
     // printf("addr: %lx, op: %d, val: %d, newAddr: %lx\n", uaddr, op, val, newAddr);
     op &= (FUTEX_PRIVATE_FLAG - 1);
     switch (op)
     {
         case FUTEX_WAIT:
             copyin(myProcess()->pgdir, (char*)&userVal, uaddr, sizeof(int));
+            if (time) {
+                if (copyin(myProcess()->pgdir, (char*)&t, time, sizeof(struct TimeSpec)) < 0) {
+                    panic("copy time error!\n");
+                }
+            }
             // printf("val: %d\n", userVal);
             if (userVal != val) {
                 tf->a0 = -1;
                 return;
             }
-            futexWait(uaddr, myThread());
+            futexWait(uaddr, myThread(), time ? &t : 0);
             break;
         case FUTEX_WAKE:
             // printf("val: %d\n", val);
