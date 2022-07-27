@@ -243,15 +243,6 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
     releaseLock(&scheduleListLock);
 }
 
-
-void pre_link() {
-    printf("begin pre_link\n");
-    int ret;
-    if((ret=do_linkat(AT_FDCWD, "/libdlopen_dso.so", AT_FDCWD, "/dlopen_dso.so"))<0){
-        printf("pre_link error\n");
-    }
-}
-
 static inline void updateAncestorsCpuTime(Process *p) {
     Process *pp = p;
     while (pp->parentId > 0 && pid2Process(pp->parentId, &pp, false) >= 0) {
