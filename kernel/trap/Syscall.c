@@ -86,7 +86,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_PREAD] syscallPRead,
     [SYSCALL_UTIMENSAT] syscallUtimensat,
     [SYSCALL_GET_USER_ID] syscallGetUserId,
-    [SYSCALL_GET_EFFECTIVE_USER_ID] syscallGetEffectiveUserId
+    [SYSCALL_GET_EFFECTIVE_USER_ID] syscallGetEffectiveUserId,
+    [SYSCALL_MEMORY_BARRIER] syscallMemoryBarrier
 };
 
 extern struct Spinlock printLock;
@@ -508,4 +509,9 @@ void syscallGetUserId() {
 void syscallGetEffectiveUserId() {
     Trapframe *tf = getHartTrapFrame();
     tf->a0 = 0;    
+}
+
+void syscallMemoryBarrier() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
 }

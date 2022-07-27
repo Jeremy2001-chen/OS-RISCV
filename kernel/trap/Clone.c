@@ -52,7 +52,7 @@ int processFork() {
     acquireLock(&scheduleListLock);
     LIST_INSERT_TAIL(&scheduleList[0], thread, scheduleLink);
     releaseLock(&scheduleListLock);
-    return thread->id;
+    return process->processId;
 }
 
 int threadFork(u64 stackVa, u64 ptid, u64 tls, u64 ctid) {
