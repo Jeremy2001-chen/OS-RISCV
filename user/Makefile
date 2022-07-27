@@ -6,7 +6,7 @@ USER_LIB	:= LibMain.o Printf.o uLib.o userHeap.o
 
 MOUNT_DIR	:= ./mnt
 
-USER_TARGET	:= ProcessA.x ProcessB.x ForkTest.x ProcessIdTest.x SysfileTest.x PipeTest.x ExecTest.x ExecToLs.x SyscallTest.x WaitTest.x MkdirTest.x MountTest.x LinkTest.x ls.x sh.x echo.x xargs.x cat.x mkdir.x touch.x rm.x\
+USER_TARGET	:= ProcessA.x ProcessB.x ForkTest.x ProcessIdTest.x SysfileTest.x PipeTest.x ExecTest.x ExecToLs.x SyscallTest.x WaitTest.x MkdirTest.x MountTest.x LinkTest.x MuslLibcTest.x ls.x sh.x echo.x xargs.x cat.x mkdir.x touch.x rm.x\
 		ls sh echo xargs cat mkdir touch rm
 
 .PHONY: bintoc build clean
