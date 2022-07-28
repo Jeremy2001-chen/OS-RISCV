@@ -12,7 +12,7 @@ dst		:=	/mnt
 fs_img		:=	fs.img
 
 modules := 	$(kernel_dir) $(user_dir)
-objects := $(shell find $(kernel_dir) -name *\.o) $(shell find $(user_dir) -name *\.x)
+objects := $(kernel_dir)/*/*.o $(user_dir)/*.x
 
 .PHONY: build clean $(modules) run
 
