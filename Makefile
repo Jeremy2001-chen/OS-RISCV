@@ -3,15 +3,6 @@ linker_dir	:= 	linkscript
 user_dir	:= 	user
 target_dir	:= 	target
 utility_dir	:=	utility
-driver_dir	:= 	$(kernel_dir)/driver
-memory_dir	:= 	$(kernel_dir)/memory
-boot_dir	:=	$(kernel_dir)/boot
-trap_dir	:=	$(kernel_dir)/trap
-lock_dir	:= 	$(kernel_dir)/lock
-system_dir	:= 	$(kernel_dir)/system
-utility_dir	:=	$(kernel_dir)/utility
-socket_dir 	:= 	$(kernel_dir)/socket
-fs_dir 		:=	$(kernel_dir)/fs
 
 linkscript	:= 	$(linker_dir)/Qemu.ld
 vmlinux_img	:=	$(target_dir)/vmlinux.img
@@ -21,16 +12,7 @@ dst		:=	/mnt
 fs_img		:=	fs.img
 
 modules := 	$(kernel_dir) $(user_dir)
-objects	:=	$(boot_dir)/*.o \
-		$(driver_dir)/*.o \
-		$(memory_dir)/*.o \
-		$(trap_dir)/*.o \
-		$(lock_dir)/*.o \
-		$(system_dir)/*.o \
-		$(utility_dir)/*.o \
-		$(fs_dir)/*.o \
-		$(socket_dir)/*.o \
-		$(user_dir)/*.x
+objects := $(shell find $(kernel_dir) -name *\.o) $(shell find $(user_dir) -name *\.x)
 
 .PHONY: build clean $(modules) run
 
