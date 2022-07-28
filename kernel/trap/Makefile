@@ -1,6 +1,6 @@
 INCLUDES := -I../../include
 
-target = KernelVector.o Process.o Trap.o Timer.o Trampoline.o ElfLoader.o Syscall.o Sysarg.o Sleep.o exec.o Thread.o Yield.o Clone.o
+target = $(shell ls *.c *.S | awk '{gsub(/\.c|\.S/, ".o"); print $0}')
 
 .PHONY: build clean
 
