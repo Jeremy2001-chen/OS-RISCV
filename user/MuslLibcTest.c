@@ -11,8 +11,7 @@ char *staticList[] = {
     "pthread_cancel_points", "pthread_tsd", "pthread_robust_detach",
     "pthread_cancel_sem_wait", "pthread_exit_cancel",
     "pthread_cond", "pthread_once_deadlock", "pthread_rwlock_ebusy",
-    "putenv_doublefree", "flockfile_list",
-    "search_hsearch", "basename", "clocale_mbfuncs", "clock_gettime",
+    "putenv_doublefree", "search_hsearch", "basename", "clocale_mbfuncs", "clock_gettime",
     "crypt", "dirname", "env", "fdopen", "fnmatch",
     "fscanf", "fwscanf", "iconv_open", "inet_pton", 
     "mbc", "memstream", "qsort", "random", "argv",
@@ -43,13 +42,14 @@ static:
 
 char *dynamicArgv[] = {"./runtest.exe", "-w", "entry-dynamic.exe", "", 0};
 char *dynamicList[] = {
+    "pthread_cancel",
     "pthread_cond_smasher",
     "pthread_condattr_setclock",
     "pthread_cancel_points", "pthread_tsd", "pthread_robust_detach",
     "pthread_cond", "pthread_exit_cancel",
     "pthread_once_deadlock", "pthread_rwlock_ebusy", "sem_init",
     "tls_init", "tls_local_exec", "tls_get_new_dtv",
-    "putenv_doublefree", "flockfile_list",
+    "putenv_doublefree",
     "argv", "basename", "clocale_mbfuncs", "clock_gettime", "crypt",
     "dirname", "dlopen", "env", "fdopen", "fnmatch", "fscanf",
     "fwscanf", "iconv_open", "inet_pton", "mbc", "memstream",
@@ -75,7 +75,6 @@ char *dynamicList[] = {
 
 /*
 dynamic:
-pthread_cancel
 */
 
 void userMain() {
