@@ -12,7 +12,7 @@
 
 
 #define MAX_CORES 8
-#define MAX_TIMES 10000
+#define MAX_TIMES 50000
 
 #define TL_CLK 1000000000UL
 #ifndef TL_CLK
@@ -423,7 +423,7 @@ start:	p = st;
 		int timeout = MAX_TIMES;
 		while (--timeout) {
 			x = sd_dummy();
-			printf("%x ", x);
+			// printf("%x ", x);
 			if (5 == (x & 0x1f)) {
 				break;
 			}
