@@ -185,7 +185,7 @@ void pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
-    // printf("[Page out]pageout at %lx\n", badAddr);
+    printf("[Page out]pageout at %lx\n", badAddr);
     PhysicalPage *page;
     if (pageAlloc(&page) < 0) {
         panic("");

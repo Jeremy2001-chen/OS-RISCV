@@ -139,6 +139,7 @@ void userTrap() {
             // }
             syscallVector[trapframe->a7]();
             break;
+        case 12:
         case SCAUSE_LOAD_PAGE_FAULT:
         case SCAUSE_STORE_PAGE_FAULT:
             pa = pageLookup(current->pgdir, r_stval(), &pte);
@@ -179,6 +180,8 @@ void userTrapReturn() {
     trapframe->kernelSp = getThreadTopSp(myThread());
     trapframe->trapHandler = (u64)userTrap;
     trapframe->kernelHartId = r_tp();
+
+    handleSignal(myThread());
 
     //bcopy(&(currentProcess->trapframe), trapframe, sizeof(Trapframe));
 

@@ -1,3 +1,4 @@
+#include <Thread.h>
 #include "Hart.h"
 #include "Riscv.h"
 #include "Process.h"

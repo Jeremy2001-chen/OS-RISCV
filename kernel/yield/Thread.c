@@ -35,10 +35,6 @@ u64 getThreadTopSp(Thread* th) {
     return KERNEL_PROCESS_SP_TOP - (u64)(th - threads) * 10 * PAGE_SIZE;
 }
 
-SignalAction *getSignalHandler(Thread* th) {
-    return (SignalAction*)(PROCESS_SIGNAL_BASE + (u64)(th - threads) * PAGE_SIZE);
-}
-
 extern u64 kernelPageDirectory[];
 void threadInit() {
     initLock(&freeThreadListLock, "freeThread");
@@ -80,6 +76,13 @@ void threadDestroy(Thread *th) {
 
 void threadFree(Thread *th) {
     Process* p = th->process;
+    acquireLock(&th->lock);
+    while (!LIST_EMPTY(&th->waitingSignal)) {
+        SignalContext* sc = LIST_FIRST(&th->waitingSignal);
+        LIST_REMOVE(sc, link);
+        signalContextFree(sc);
+    }
+    releaseLock(&th->lock);
     acquireLock(&p->lock);
     if (th->clearChildTid) {
         int val = 0;
@@ -139,15 +142,16 @@ void threadSetup(Thread* th) {
     th->setChildTid = th->clearChildTid = 0;
     th->awakeTime = 0;
     th->robustHeadPointer = 0;
+    LIST_INIT(&th->waitingSignal);
     PhysicalPage *page;
     if (pageAlloc(&page) < 0) {
         panic("");
     }
     pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE, page2pa(page), PTE_READ | PTE_WRITE);
-    if (pageAlloc(&page) < 0) {
-        panic("");
-    }
-    pageInsert(kernelPageDirectory, (u64)getSignalHandler(th), page2pa(page), PTE_READ | PTE_WRITE);
+}
+
+u64 getSignalHandlerSp(Thread *th) {
+    return SIGNAL_HANDLER_SP_BASE + (th - threads + 1) * PAGE_SIZE * 10;
 }
 
 int mainThreadAlloc(Thread **new, u64 parentId) {
@@ -258,11 +262,11 @@ void threadRun(Thread* th) {
             ep = create(AT_FDCWD, "/dev/zero", T_CHAR, O_RDONLY);
             ep->dev = ZERO;
             eunlock(ep);
-            printf("begin pre_link\n");
-            int ret;
-            if((ret=do_linkat(AT_FDCWD, "/libdlopen_dso.so", AT_FDCWD, "/dlopen_dso.so"))<0){
-                printf("pre_link error\n");
-            }            
+            // printf("begin pre_link\n");
+            // int ret;
+            // if((ret=do_linkat(AT_FDCWD, "/libdlopen_dso.so", AT_FDCWD, "/dlopen_dso.so"))<0){
+            //     printf("pre_link error\n");
+            // }            
             setNextTimeout();
         }
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));

@@ -1,6 +1,6 @@
 INCLUDES := -I../../include
 
-target = Hart.o Signal.o Futex.o Resource.o
+target = $(shell ls *.c *.S | awk '{gsub(/\.c|\.S/, ".o"); print $0}')
 
 .PHONY: build clean
 

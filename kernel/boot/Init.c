@@ -1,7 +1,7 @@
 #include <Driver.h>
 #include <Page.h>
 #include <Trap.h>
-#include <Process.h>
+#include <Thread.h>
 #include <Riscv.h>
 #include <Sd.h>
 #include <fat.h>
@@ -44,7 +44,7 @@ void main(u64 hartId) {
         sdInit();
         binit();
         fileinit();
-        
+        signalInit();
 
         for (int i = 1; i < 5; ++ i) {
             if (i != hartId) {
