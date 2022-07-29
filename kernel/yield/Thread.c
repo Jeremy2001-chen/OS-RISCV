@@ -258,11 +258,11 @@ void threadRun(Thread* th) {
             ep = create(AT_FDCWD, "/dev/zero", T_CHAR, O_RDONLY);
             ep->dev = ZERO;
             eunlock(ep);
-            printf("begin pre_link\n");
-            int ret;
-            if((ret=do_linkat(AT_FDCWD, "/libdlopen_dso.so", AT_FDCWD, "/dlopen_dso.so"))<0){
-                printf("pre_link error\n");
-            }            
+            // printf("begin pre_link\n");
+            // int ret;
+            // if((ret=do_linkat(AT_FDCWD, "/libdlopen_dso.so", AT_FDCWD, "/dlopen_dso.so"))<0){
+            //     printf("pre_link error\n");
+            // }            
             setNextTimeout();
         }
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
