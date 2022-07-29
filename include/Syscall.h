@@ -49,6 +49,7 @@ void syscallStateFileSystem();
 void syscallGetUserId();
 void syscallGetEffectiveUserId();
 void syscallMemoryBarrier();
+void syscallSignalReturn();
 
 extern void (*syscallVector[])(void);
 

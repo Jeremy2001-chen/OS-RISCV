@@ -4,6 +4,7 @@
 #include <MemoryConfig.h>
 #include <Riscv.h>
 #include <Process.h>
+#include <Thread.h>
 
 void trapInit();
 void kernelVector();

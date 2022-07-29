@@ -46,8 +46,6 @@ void yield() {
         getHartTrapFrame()->a0 = 0;
         thread->awakeTime = 0;
     }
-    // handle signal
-    handleSignal(thread);
     futexClear(thread);
     threadRun(thread);
 }

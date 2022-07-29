@@ -32,6 +32,10 @@ Process* myProcess() {
     return ret;
 }
 
+SignalAction *getSignalHandler(Process* p) {
+    return (SignalAction*)(PROCESS_SIGNAL_BASE + (u64)(p - processes) * PAGE_SIZE);
+}
+
 extern Trapframe trapframe[];
 
 void processInit() {
@@ -139,6 +143,15 @@ int processSetup(Process *p) {
         PTE_READ | PTE_WRITE | PTE_EXECUTE);
     pageInsert(p->pgdir, TRAMPOLINE_BASE + PAGE_SIZE, ((u64)trampoline) + PAGE_SIZE, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE);
+    extern char signalTrampoline[];
+    pageInsert(p->pgdir, SIGNAL_TRAMPOLINE_BASE, (u64)signalTrampoline,
+        PTE_USER | PTE_EXECUTE | PTE_READ | PTE_WRITE);
+
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    extern u64 kernelPageDirectory[];
+    pageInsert(kernelPageDirectory, (u64)getSignalHandler(p), page2pa(page), PTE_READ | PTE_WRITE);
     return 0;
 }
 

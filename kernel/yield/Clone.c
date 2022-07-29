@@ -38,6 +38,7 @@ int processFork() {
                     continue;
                 }
                 u64 va = (i << 30) + (j << 21) + (k << 12);
+                // printf("Fork va addr is %lx\n", va);
                 if (va == TRAMPOLINE_BASE || va == TRAMPOLINE_BASE + PAGE_SIZE) {
                     continue;
                 }

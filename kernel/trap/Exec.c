@@ -312,6 +312,10 @@ int exec(char* path, char** argv) {
         PTE_READ | PTE_WRITE | PTE_EXECUTE);
     pageInsert(pagetable, TRAMPOLINE_BASE + PAGE_SIZE, ((u64)trampoline) + PAGE_SIZE, 
         PTE_READ | PTE_WRITE | PTE_EXECUTE);    
+    extern char signalTrampoline[];
+    pageInsert(pagetable, SIGNAL_TRAMPOLINE_BASE, (u64)signalTrampoline,
+        PTE_USER | PTE_EXECUTE | PTE_READ | PTE_WRITE);
+
     r = pageAlloc(&page);
     if (r < 0) {
         panic("setup stack alloc error\n");

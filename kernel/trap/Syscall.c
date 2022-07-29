@@ -87,7 +87,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_UTIMENSAT] syscallUtimensat,
     [SYSCALL_GET_USER_ID] syscallGetUserId,
     [SYSCALL_GET_EFFECTIVE_USER_ID] syscallGetEffectiveUserId,
-    [SYSCALL_MEMORY_BARRIER] syscallMemoryBarrier
+    [SYSCALL_MEMORY_BARRIER] syscallMemoryBarrier,
+    [SYSCALL_SIGNAL_RETURN] syscallSignalReturn
 };
 
 extern struct Spinlock printLock;
@@ -441,15 +442,7 @@ void syscallFutex() {
 void syscallThreadKill() {
     Trapframe *tf = getHartTrapFrame();
     int tid = tf->a0, signal = tf->a1;
-    Thread* th;
-    int r = tid2Thread(tid, &th, 0);
-    if (r < 0) {
-        tf->a0 = r;
-        panic("Can't find thread %lx\n", tid);
-        return;
-    }
-    th->pending |= (1ul<<signal);
-    tf->a0 = 0;
+    tf->a0 = signalSend(tid, signal);
 }
 
 void syscallPoll() {
@@ -520,4 +513,13 @@ void syscallGetEffectiveUserId() {
 void syscallMemoryBarrier() {
     Trapframe *tf = getHartTrapFrame();
     tf->a0 = 0;
+}
+
+void syscallSignalReturn() {
+    Trapframe *tf = getHartTrapFrame();
+    Thread* thread = myThread();
+    SignalContext* sc = getHandlingSignal(thread);
+    sc->contextRecover.epc = sc->uContext->uc_mcontext.MC_PC;
+    bcopy(&sc->contextRecover, tf, sizeof(Trapframe));
+    signalFinish(thread, sc);
 }
