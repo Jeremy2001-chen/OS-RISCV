@@ -864,7 +864,7 @@ int do_linkat(int oldDirFd, char* oldPath, int newDirFd, char* newPath) {
     }
 
     int len = strlen(buf);
-    if (ewrite(targetPoint, 0, (u64)buf, 0, strlen(buf)) != len) {
+    if (ewrite(targetPoint, 0, (u64)buf, 0, len + 1) != len + 1) {
         goto bad;
     }
 
