@@ -195,9 +195,9 @@ void handleSignal(Thread* thread) {
 
 int doSignalTimedWait(SignalSet *which, SignalInfo *info, TimeSpec *ts) {
     Thread* thread = myThread();
-    if (ts) {
-        thread->awakeTime = r_time() +  ts->second * 1000000 + ts->microSecond;
-    }
+    // if (ts) {
+    //     thread->awakeTime = r_time() +  ts->second * 1000000 + ts->microSecond;
+    // }
     SignalContext *sc = getFirstSignalContext(thread);
     return sc == NULL ? 0 : sc->signal;    
 }
