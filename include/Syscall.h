@@ -4,7 +4,6 @@
 #include <SyscallId.h>
 
 void syscallPutchar();
-void syscallGetProcessId();
 void syscallYield();
 void syscallProcessDestory();
 void syscallClone();
@@ -22,6 +21,35 @@ void syscallMapMemory();
 void syscallUnMapMemory();
 void syscallExec();
 void syscallUname();
+void syscallSetTidAddress();
+void syscallExitGroup();
+void syscallSignProccessMask();
+void syscallSignalAction();
+void syscallSignalTimedWait();
+void syscallGetTheardId();
+void syscallProcessResourceLimit();
+void syscallIOControl();
+void syscallSocket();
+void syscallBind();
+void syscallGetSocketName();
+void syscallSetSocketOption();
+void syscallSendTo();
+void syscallReceiveFrom();
+void syscallFcntl();
+void syscallListen();
+void syscallConnect();
+void syscallAccept();
+void syscallFutex();
+void syscallThreadKill();
+void syscallPoll();
+void syscallMemoryProtect();
+void syscallGetRobustList();
+void syscallSetRobustList();
+void syscallStateFileSystem();
+void syscallGetUserId();
+void syscallGetEffectiveUserId();
+void syscallMemoryBarrier();
+void syscallSignalReturn();
 
 extern void (*syscallVector[])(void);
 

@@ -11,7 +11,7 @@ struct Sleeplock {
   
   // For debugging:
   char *name;        // Name of lock.
-  int pid;           // Process holding lock
+  int tid;           // Thread holding lock
 };
 
 void            acquiresleep(struct Sleeplock*);

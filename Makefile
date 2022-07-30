@@ -3,14 +3,6 @@ linker_dir	:= 	linkscript
 user_dir	:= 	user
 target_dir	:= 	target
 utility_dir	:=	utility
-driver_dir	:= 	$(kernel_dir)/driver
-memory_dir	:= 	$(kernel_dir)/memory
-boot_dir	:=	$(kernel_dir)/boot
-trap_dir	:=	$(kernel_dir)/trap
-lock_dir	:= 	$(kernel_dir)/lock
-system_dir	:= 	$(kernel_dir)/system
-utility_dir	:=	$(kernel_dir)/utility
-fs_dir 		:=	$(kernel_dir)/fs
 
 linkscript	:= 	$(linker_dir)/Qemu.ld
 vmlinux_img	:=	$(target_dir)/vmlinux.img
@@ -20,15 +12,7 @@ dst		:=	/mnt
 fs_img		:=	fs.img
 
 modules := 	$(kernel_dir) $(user_dir)
-objects	:=	$(boot_dir)/*.o \
-		$(driver_dir)/*.o \
-		$(memory_dir)/*.o \
-		$(trap_dir)/*.o \
-		$(lock_dir)/*.o \
-		$(system_dir)/*.o \
-		$(utility_dir)/*.o \
-		$(fs_dir)/*.o \
-		$(user_dir)/*.x
+objects := $(kernel_dir)/*/*.o $(user_dir)/*.x
 
 .PHONY: build clean $(modules) run
 
@@ -39,10 +23,6 @@ build: $(modules)
 	$(LD) $(LDFLAGS) -T $(linkscript) -o $(vmlinux_img) $(objects)
 	$(OBJDUMP) -S $(vmlinux_img) > $(vmlinux_asm)
 	$(OBJCOPY) -O binary $(vmlinux_img) $(vmlinux_bin)
-	for d in $(modules); \
-		do \
-			$(MAKE) --directory=$$d clean; \
-		done; \
 
 sifive: clean build
 	$(OBJCOPY) -O binary $(vmlinux_img) /srv/tftp/vm.bin
@@ -56,11 +36,17 @@ fat: $(user_dir)
 	# @if [ ! -d "$(dst)/bin" ]; then sudo mkdir $(dst)/bin; fi
 	# @sudo cp README $(dst)/README
 	@sudo cp -r user/mnt/* $(dst)/
-	@sudo cp -r home $(dst)/
+	# @sudo cp -r home $(dst)/
+	@sudo cp -r libc-test/** $(dst)/
 	# @for file in $$( ls user/_* ); do \
 	# 	sudo cp $$file $(dst)/$${file#$U/_};\
 	# 	sudo cp $$file $(dst)/bin/$${file#$U/_}; done
 	@sudo umount $(dst)
+
+new-lib:
+	cd ../testsuits-for-oskernel/libc-test && make compile
+
+new: clean new-lib fat run
 
 umount:
 	sudo umount $(dst)

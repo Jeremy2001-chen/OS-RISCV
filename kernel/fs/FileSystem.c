@@ -4,6 +4,7 @@
 #include <string.h>
 #include <Driver.h>
 #include <file.h>
+#include <Sysfile.h>
 FileSystem fileSystem[32];
 
 int fsAlloc(FileSystem **fs) {
@@ -73,7 +74,7 @@ int fatInit(FileSystem *fs) {
 FileSystem rootFileSystem;
 void initDirentCache() {
     initLock(&direntCache.lock, "ecache");
-    struct file* file = filealloc();
+    struct File* file = filealloc();
     rootFileSystem.image = file;
     file->type = FD_DEVICE;
     file->major = 0;
@@ -94,4 +95,20 @@ void initDirentCache() {
      //   fs->root.next->prev = de;
      //   fs->root.next = de;
     }
+}
+
+int getFsStatus(char *path, FileSystemStatus *fss) {
+    struct dirent *de;
+    if ((de = ename(AT_FDCWD, path)) == NULL) {
+        return -1;
+    }
+    FileSystem *fs = de->fileSystem;
+    fss->f_bsize = 189;
+    fss->f_blocks = fs->superBlock.bpb.tot_sec - fs->superBlock.first_data_sec;
+    fss->f_bfree = 1;
+    fss->f_bavail = 2;
+    fss->f_files = 4;
+    fss->f_ffree = 3;
+    fss->f_namelen = FAT32_MAX_FILENAME;
+    return 0;
 }

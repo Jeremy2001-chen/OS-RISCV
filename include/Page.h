@@ -8,9 +8,9 @@
 
 void pageLockInit(void);
 
-#define DOWN_ALIGN(x, y) (((u64)(x)) & (~((u64)((y) - 1))))
-#define UP_ALIGN(x, y) (DOWN_ALIGN((x) - 1, (y)) + (y))
-
+#define DOWN_ALIGN(x, y) (((u64)(x)) & (~((u64)((y)-1))))
+#define UP_ALIGN(x, y) (DOWN_ALIGN((x)-1, (y)) + (y))
+#define PAGE_OFFSET(x, y) ((x) & ((y)-1))
 #define PGSIZE (4096)
 
 struct PhysicalPage;
@@ -46,6 +46,8 @@ inline u64 page2pa(PhysicalPage *page) {
 }
 
 inline PhysicalPage* pa2page(u64 pa) {
+    if (pa == 0)
+        return NULL;
     return ppn2page((pa - PHYSICAL_ADDRESS_BASE) >> PAGE_SHIFT);
 }
 
@@ -94,6 +96,7 @@ void pageFree(PhysicalPage *page);
 u64 vir2phy(u64* pagetable, u64 va, int* cow);
 int copyin(u64* pagetable, char* dst, u64 srcva, u64 len);
 int copyout(u64* pagetable, u64 dstva, char* src, u64 len);
+int memsetOut(u64 *pgdir, u64 dst, u8 value, u64 len);
 u64 sys_sbrk(u32);
 
 #define IS_RAM(pa) (pa >= PHYSICAL_ADDRESS_BASE && pa < PHYSICAL_MEMORY_TOP)

@@ -122,7 +122,7 @@ static void paDecreaseRef(u64 pa) {
 }
 
 void pgdirFree(u64* pgdir) {
-   // printf("jaoeifherigh   %lx\n", (u64)pgdir);
+    // printf("jaoeifherigh   %lx\n", (u64)pgdir);
     u64 i, j, k;
     u64* pageTable;
     for (i = 0; i < PTE2PT; i++) {
@@ -185,7 +185,7 @@ void pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
-    printf("[Page out]pageout at %lx\n", badAddr);
+    // printf("[Page out]pageout at %lx\n", badAddr);
     PhysicalPage *page;
     if (pageAlloc(&page) < 0) {
         panic("");
@@ -201,7 +201,7 @@ void cowHandler(u64 *pgdir, u64 badAddr) {
     u64 pa;
     u64 *pte;
     pa = pageLookup(pgdir, badAddr, &pte);
-    // printf("[COW] %x to cow %lx %lx\n", myproc()->id, badAddr, pa);
+    // printf("[COW] %x to cow %lx %lx\n", myProcess()->processId, badAddr, pa);
     if (!(*pte & PTE_COW)) {
         printf("access denied");
         return;
@@ -298,15 +298,39 @@ int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
     return 0;
 }
 
+int memsetOut(u64 *pgdir, u64 dst, u8 value, u64 len) {
+    u64 n, va0, pa0;
+    int cow;
+
+    while (len > 0) {
+        va0 = DOWN_ALIGN(dst, PGSIZE);
+        pa0 = vir2phy(pgdir, va0, &cow);
+        if (pa0 == NULL)
+            return -1;
+        if (cow) {
+            // printf("COW?\n");
+            cowHandler(pgdir, va0);
+        }
+        pa0 = vir2phy(pgdir, va0, &cow);
+        n = PGSIZE - (dst - va0);
+        if (n > len)
+            n = len;
+        memset((void*)(pa0 + (dst - va0)), value, n);
+        len -= n;
+        dst = va0 + PGSIZE;
+    }
+    return 0;
+}
+
 int growproc(int n) {
-    if (myproc()->heapBottom + n >= USER_HEAP_TOP)
+    if (myProcess()->heapBottom + n >= USER_HEAP_TOP)
         return -1;
-    myproc()->heapBottom += n;
+    myProcess()->heapBottom += n;
     return 0;
 }
 
 u64 sys_sbrk(u32 len) {
-    u64 addr = myproc()->heapBottom;
+    u64 addr = myProcess()->heapBottom;
     if (growproc(len) < 0)
         return -1;
     return addr;

@@ -10,6 +10,7 @@
 #include <Debug.h>
 #include <Defs.h>
 #include <exec.h>
+#include <Thread.h>
 
 void trapInit() {
     printf("Trap init start...\n");
@@ -63,7 +64,6 @@ void kernelTrap() {
     u64 sstatus = r_sstatus();
     u64 scause = r_scause();
     u64 hartId = r_hartid();
-    extern Process *currentProcess[HART_TOTAL_NUMBER];
     printf("[Kernel Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
 
 #ifdef CJY_DEBUG
@@ -83,7 +83,7 @@ void kernelTrap() {
     int device = trapDevice();
     if (device == UNKNOWN_DEVICE) {
         u64* pte;
-        int pa = pageLookup(currentProcess[hartId]->pgdir, r_stval(), &pte);
+        int pa = pageLookup(myProcess()->pgdir, r_stval(), &pte);
         panic("unhandled error %d,  %lx, %lx\n", scause, r_stval(), pa);
         panic("kernel trap");
     }
@@ -95,7 +95,7 @@ void kernelTrap() {
 }
 
 static inline void userProcessCpuTimeEnd() {
-    Process *p = myproc();
+    Process *p = myProcess();
     long currentTime = r_time();
     p->cpuTime.user += currentTime - p->processTime.lastUserTime;
 }
@@ -104,8 +104,10 @@ void userTrap() {
     u64 sepc = r_sepc();
     u64 sstatus = r_sstatus();
     u64 scause = r_scause();
-    u64 hartId = r_hartid();
-
+    Process* current = myProcess();
+    // int hartId = r_hartid();
+    // printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx, a7 is %d\n", 
+    //    hartId, sstatus, sepc, scause, r_stval(), getHartTrapFrame()->a7);
 #ifdef CJY_DEBUG
     printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
 #else
@@ -115,7 +117,6 @@ void userTrap() {
         panic("usertrap: not from user mode\n");
     }
     w_stvec((u64) kernelVector);
-    extern Process *currentProcess[HART_TOTAL_NUMBER];
     userProcessCpuTimeEnd();
     Trapframe* trapframe = getHartTrapFrame();
     if (scause & SCAUSE_INTERRUPT) {
@@ -125,26 +126,36 @@ void userTrap() {
         kernelProcessCpuTimeBegin();
         u64 *pte = NULL;
         u64 pa = -1;
+        // printf("sepc:%lx sstatus:%lx scause:%lx \n", sepc, sstatus, scause);
         switch (scause & SCAUSE_EXCEPTION_CODE)
         {
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
+            // if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63) {
+            //     printf("syscall-trigger %d\n", trapframe->a7);
+            // }
+            // if (!syscallVector[trapframe->a7]) {
+            //     panic("unknown-syscall: %d\n", trapframe->a7);
+            // }
             syscallVector[trapframe->a7]();
             break;
+        case 12:
         case SCAUSE_LOAD_PAGE_FAULT:
         case SCAUSE_STORE_PAGE_FAULT:
-            pa = pageLookup(currentProcess[hartId]->pgdir, r_stval(), &pte);
+            pa = pageLookup(current->pgdir, r_stval(), &pte);
             if (pa == 0) {
-                pageout(currentProcess[hartId]->pgdir, r_stval());
+                // printf("spec: %lx\n", sepc);
+                pageout(current->pgdir, r_stval());
             } else if (*pte & PTE_COW) {
-                cowHandler(currentProcess[hartId]->pgdir, r_stval());
+                cowHandler(current->pgdir, r_stval());
             } else {
+                // printf("spec: %lx %lx %lx %lx\n", sepc, pa, *pte, TRAMPOLINE_BASE);
                 panic("unknown");
             }
             break;
         default:
             trapframeDump(trapframe);
-            pageLookup(currentProcess[hartId]->pgdir, r_stval(), &pte);
+            pageLookup(current->pgdir, r_stval(), &pte);
             panic("unhandled error %d,  %lx, %lx\n", scause, r_stval(), *pte);
             break;
         }
@@ -154,7 +165,7 @@ void userTrap() {
 }
 
 static inline void userProcessCpuTimeBegin() {
-    Process *p = myproc();
+    Process *p = myProcess();
     p->processTime.lastUserTime = r_time();
 }
 
@@ -162,14 +173,15 @@ void userTrapReturn() {
     userProcessCpuTimeBegin();
     extern char trampoline[];
     w_stvec(TRAMPOLINE_BASE + ((u64)userVector - (u64)trampoline));
-    int hartId = r_hartid();
+    Process* current = myProcess();
 
-    extern Process *currentProcess[HART_TOTAL_NUMBER];
     Trapframe* trapframe = getHartTrapFrame();
 
-    trapframe->kernelSp = getProcessTopSp(myproc());
+    trapframe->kernelSp = getThreadTopSp(myThread());
     trapframe->trapHandler = (u64)userTrap;
     trapframe->kernelHartId = r_tp();
+
+    handleSignal(myThread());
 
     //bcopy(&(currentProcess->trapframe), trapframe, sizeof(Trapframe));
 
@@ -177,10 +189,10 @@ void userTrapReturn() {
     sstatus &= ~SSTATUS_SPP;
     sstatus |= SSTATUS_SPIE;
     w_sstatus(sstatus);
-    u64 satp = MAKE_SATP(currentProcess[hartId]->pgdir);
+    u64 satp = MAKE_SATP(current->pgdir);
     u64 fn = TRAMPOLINE_BASE + ((u64)userReturn - (u64)trampoline);
     u64* pte;
-    u64 pa = pageLookup(currentProcess[hartId]->pgdir, USER_STACK_TOP - PAGE_SIZE, &pte);
+    u64 pa = pageLookup(current->pgdir, USER_STACK_TOP - PAGE_SIZE, &pte);
     if (pa > 0) {
         long* tem = (long*)(pa + 4072);
 #ifdef CJY_DEBUG
@@ -190,6 +202,8 @@ void userTrapReturn() {
         use(tem);
 #endif
     }
+    
+    // printf("return to user!\n");
     ((void(*)(u64, u64))fn)((u64)trapframe, satp);
 }
 

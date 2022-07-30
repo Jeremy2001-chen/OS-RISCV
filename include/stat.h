@@ -7,6 +7,7 @@
 #define T_FILE 2    // File
 #define T_DEVICE 3  // Device
 #define T_LINK 4
+#define T_CHAR 5
 
 #define STAT_MAX_NAME 32
 

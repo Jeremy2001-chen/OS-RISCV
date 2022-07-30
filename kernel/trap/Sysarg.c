@@ -5,10 +5,11 @@
 #include <string.h>
 #include <Page.h>
 #include <Debug.h>
+#include <Thread.h>
 
 // Fetch the u64 at addr from the current process.
 int fetchaddr(u64 addr, u64* ip) {
-    struct Process* p = myproc();
+    struct Process* p = myProcess();
     if (copyin(p->pgdir, (char*)ip, addr, sizeof(*ip)) != 0)
         return -1;
     return 0;
@@ -18,14 +19,12 @@ int fetchaddr(u64 addr, u64* ip) {
 // Returns length of string, not including nul, or -1 for error.
 
 int fetchstr(u64 uva, char* buf, int max) {
-    struct Process* p = myproc();
+    struct Process* p = myProcess();
     int err = copyinstr(p->pgdir, buf, uva, max);
     if (err < 0)
         return err;
     return strlen(buf);
 }
-
-
 
 
 static u64 argraw(int n) {

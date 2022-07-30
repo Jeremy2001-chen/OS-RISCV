@@ -6,7 +6,7 @@
 #include <FileSystem.h>
 
 #define BSIZE 512
-#define NBUF 128
+#define NBUF 4096
 
 typedef struct FileSystem FileSystem;
 struct dirent;

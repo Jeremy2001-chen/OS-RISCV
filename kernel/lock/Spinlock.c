@@ -13,8 +13,6 @@ void initLock(struct Spinlock* lock, char* name) {
 void acquireLock(struct Spinlock* lock) {
     interruptPush();
     if (holding(lock)) {
-        // lock->times++;
-        // return;
         panic("You have acquire the lock! The lock is %s\n", lock->name);
     }
 

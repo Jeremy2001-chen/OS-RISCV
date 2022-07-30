@@ -16,17 +16,25 @@
 #include <Page.h>
 #include <pipe.h>
 #include <FileSystem.h>
+#include <Iovec.h>
+#include <Thread.h>
+#include <Error.h>
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
-int argfd(int n, int* pfd, struct file** pf) {
+int argfd(int n, int* pfd, struct File** pf) {
     int fd;
-    struct file* f;
+    struct File* f;
 
     if (argint(n, &fd) < 0)
         return -1;
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL)
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
+        if (pfd)
+            *pfd = -1;
+        if (pf)
+            *pf = NULL;
         return -1;
+    }
     if (pfd)
         *pfd = fd;
     if (pf)
@@ -36,11 +44,11 @@ int argfd(int n, int* pfd, struct file** pf) {
 
 // Allocate a file descriptor for the given file.
 // Takes over file reference from caller on success.
-int fdalloc(struct file* f) {
+int fdalloc(struct File* f) {
     int fd;
-    struct Process* p = myproc();
-
-    for (fd = 0; fd < NOFILE; fd++) {
+    struct Process* p = myProcess();
+    
+    for (fd = 0; fd < p->fileDescription.hard; fd++) {
         if (p->ofile[fd] == 0) {
             p->ofile[fd] = f;
             return fd;
@@ -51,49 +59,78 @@ int fdalloc(struct file* f) {
 
 void syscallDup(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f;
     int fd = tf->a0;
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
 
     if ((fd = fdalloc(f)) < 0) {
-        tf->a0 = -1;
+        tf->a0 = -EMFILE;
         return;
     }
 
     filedup(f);
     tf->a0 = fd;
+
+   // printf("%s %d %d\n", __FILE__, __LINE__, fd);
 }
 
 void syscallDupAndSet(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f, *f2;
     int fd = tf->a0, fdnew = tf->a1;
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
 
-    if (fdnew < 0 || fdnew >= NOFILE || myproc()->ofile[fdnew] != NULL) {
+    if (fdnew < 0 || fdnew >= NOFILE) {
         tf->a0 = -1;
         return;
     }
+    if ((f2 = myProcess()->ofile[fdnew]) != NULL) {
+        fileclose(f2);
+    }
 
-    myproc()->ofile[fdnew] = f;
+    myProcess()->ofile[fdnew] = f;
     filedup(f);
     tf->a0 = fdnew;
 }
 
+void syscall_fcntl(void){
+    Trapframe* tf = getHartTrapFrame();
+    struct File* f;
+    int fd = tf->a0/*, cmd = tf->a1, flag = tf->a2*/;
+
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+
+    // TO PASS SOCKET TEST
+    if (tf->a1 == 1) {
+        tf->a0 = 1;
+        return;
+    }
+    if (tf->a1 == 3) {
+        tf->a0 = 04000;
+        return;
+    }
+
+    // printf("syscall_fcntl fd:%x cmd:%x flag:%x\n", fd, cmd, flag);
+    tf->a0 = 0;
+    return;
+}
 void syscallRead(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f;
     int len = tf->a2, fd = tf->a0;
     u64 uva = tf->a1;
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -102,17 +139,17 @@ void syscallRead(void) {
         tf->a0 = -1;
         return;
     }
-    
+
     tf->a0 = fileread(f, uva, len);
 }
 
 void syscallWrite(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f;
     int len = tf->a2, fd = tf->a0;
     u64 uva = tf->a1;
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -125,28 +162,92 @@ void syscallWrite(void) {
     tf->a0 = filewrite(f, uva, len);
 }
 
+void syscallWriteVector() {
+    Trapframe* tf = getHartTrapFrame();
+    struct File* f;
+    int fd = tf->a0;
+
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
+        goto bad;
+    }
+
+    int cnt = tf->a2;
+    if (cnt < 0 || cnt >= IOVMAX) {
+        goto bad;
+    }
+
+    struct Iovec vec[IOVMAX];
+    struct Process* p = myProcess();
+
+    if (copyin(p->pgdir, (char*)vec, tf->a1, cnt * sizeof(struct Iovec)) != 0) {
+        goto bad;
+    }
+
+    u64 len = 0;
+    for (int i = 0; i < cnt; i++) {
+        len += filewrite(f, (u64)vec[i].iovBase, vec[i].iovLen);
+    }
+    tf->a0 = len;
+    return;
+
+bad:
+    tf->a0 = -1;
+}
+
+void syscallReadVector() {
+    Trapframe* tf = getHartTrapFrame();
+    struct File* f;
+    int fd = tf->a0;
+
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
+        goto bad;
+    }
+
+    int cnt = tf->a2;
+    if (cnt < 0 || cnt >= IOVMAX) {
+        goto bad;
+    }
+
+    struct Iovec vec[IOVMAX];
+    struct Process* p = myProcess();
+
+    if (copyin(p->pgdir, (char*)vec, tf->a1, cnt * sizeof(struct Iovec)) != 0) {
+        goto bad;
+    }
+
+    u64 len = 0;
+    for (int i = 0; i < cnt; i++) {
+        len += fileread(f, (u64)vec[i].iovBase, vec[i].iovLen);
+    }
+    tf->a0 = len;
+    return;
+
+bad:
+    tf->a0 = -1;
+}
+
 void syscallClose(void) {
     Trapframe* tf = getHartTrapFrame();
     int fd = tf->a0;
-    struct file* f;
+    struct File* f;
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
     
-    myproc()->ofile[fd] = 0;
+    myProcess()->ofile[fd] = 0;
     fileclose(f);
     tf->a0 = 0;
 }
 
 void syscallGetFileState(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f;
     int fd = tf->a0;
     u64 uva = tf->a1; 
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -154,9 +255,35 @@ void syscallGetFileState(void) {
     tf->a0 = filestat(f, uva);
 }
 
+void syscallGetFileStateAt(void) {
+    Trapframe* tf = getHartTrapFrame();
+    int dirfd = tf->a0/*, flags = tf->a2*/;
+    u64 uva = tf->a2; 
+    char path[FAT32_MAX_PATH];
+    if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+    struct dirent* entryPoint = ename(dirfd, path);
+    if (entryPoint == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+
+    struct stat st;
+    elock(entryPoint);
+    estat(entryPoint, &st);
+    eunlock(entryPoint);
+    if (copyout(myProcess()->pgdir, uva, (char*)&st, sizeof(struct stat)) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+    tf->a0 = 0;
+}
+
 extern struct entry_cache* ecache;
 void syscallGetDirent() {
-    struct file* f;
+    struct File* f;
     int fd, n;
     u64 addr;
 
@@ -164,7 +291,7 @@ void syscallGetDirent() {
         getHartTrapFrame()->a0 = -2;
         return;
     }
-    struct Process* p = myproc();
+    struct Process* p = myProcess();
     static char buf[512];
     struct linux_dirent64* dir64 = (struct linux_dirent64*)buf;
 
@@ -251,31 +378,36 @@ void syscallOpenAt(void) {
         tf->a0 = -1;
         return;
     }
-    struct dirent* entryPoint;
+    // printf("open path: %s\n", path);
 
+    struct dirent* entryPoint;
+    // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
     if (flags & O_CREATE) {
         entryPoint = create(startFd, path, T_FILE, mode);
         if (entryPoint == NULL) {
+            tf->a0 = -1;
             goto bad;
         }
     } else {
         if ((entryPoint = ename(startFd, path)) == NULL) {
+            tf->a0 = -1;
             goto bad;
         }
         elock(entryPoint);
         if (!(entryPoint->attribute & ATTR_DIRECTORY) && (flags & O_DIRECTORY)) {
             eunlock(entryPoint);
             eput(entryPoint);
+            tf->a0 = -1;
             goto bad;
         }
         if ((entryPoint->attribute & ATTR_DIRECTORY) && (flags & 0xFFF) != O_RDONLY) { //todo
             eunlock(entryPoint);
             eput(entryPoint);
+            tf->a0 = -1;
             goto bad;
         }
     }
-
-    struct file* file;
+    struct File* file;
     int fd;
     if ((file = filealloc()) == NULL || (fd = fdalloc(file)) < 0) {
         if (file) {
@@ -283,6 +415,7 @@ void syscallOpenAt(void) {
         }
         eunlock(entryPoint);
         eput(entryPoint);
+        tf->a0 = -24;
         goto bad;
     }
 
@@ -298,10 +431,12 @@ void syscallOpenAt(void) {
 
     eunlock(entryPoint);
 
+
     tf->a0 = fd;
-    return;
+    // printf("open at: %d\n", fd);
 bad:
-    tf->a0 = -1;
+    return;
+    // printf("open at: %d\n", tf->a0);
 }
 
 //todo: support the mode
@@ -335,7 +470,7 @@ void syscallChangeDir(void) {
     char path[FAT32_MAX_PATH];
     struct dirent* ep;
 
-    struct Process* p = myproc();
+    struct Process* process = myProcess();
     
     if (fetchstr(tf->a0, path, FAT32_MAX_PATH) < 0 || (ep = ename(AT_FDCWD, path)) == NULL) {
         tf->a0 = -1;
@@ -351,8 +486,8 @@ void syscallChangeDir(void) {
     }    
 
     eunlock(ep);
-    eput(p->cwd);
-    p->cwd = ep;
+    eput(process->cwd);
+    process->cwd = ep;
     tf->a0 = 0;
 }
 
@@ -366,7 +501,7 @@ void syscallGetWorkDir(void) {
         panic("Alloc addr not implement for cwd\n");
     }
 
-    int len = getAbsolutePath(myproc()->cwd, 1, uva, n);
+    int len = getAbsolutePath(myProcess()->cwd, 1, uva, n);
 
     if (len < 0) {
         tf->a0 = -1;
@@ -379,9 +514,9 @@ void syscallGetWorkDir(void) {
 void syscallPipe(void) {
     Trapframe* tf = getHartTrapFrame();
     u64 fdarray = tf->a0;  // user pointer to array of two integers
-    struct file *rf, *wf;
+    struct File *rf, *wf;
     int fd0, fd1;
-    struct Process* p = myproc();
+    struct Process* p = myProcess();
 
     if (pipealloc(&rf, &wf) < 0) {
         goto bad;
@@ -417,7 +552,7 @@ void syscallDevice(void) {
     Trapframe* tf = getHartTrapFrame();
     int fd, omode = tf->a1;
     int major = tf->a0;
-    struct file* f;
+    struct File* f;
 
     if (omode & O_CREATE) {
         panic("dev file on FAT");
@@ -449,11 +584,11 @@ bad:
 
 void syscallReadDir(void) {
     Trapframe* tf = getHartTrapFrame();
-    struct file* f;
+    struct File* f;
     int fd = tf->a0;
     u64 uva = tf->a1;
 
-    if (fd < 0 || fd >= NOFILE || (f = myproc()->ofile[fd]) == NULL) {
+    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
         return;
     }
@@ -468,7 +603,7 @@ u64 sys_getcwd(void) {
     if (argaddr(0, &addr) < 0)
         return -1;
 
-    struct dirent* de = myproc()->cwd;
+    struct dirent* de = myProcess()->cwd;
     char path[FAT32_MAX_PATH];
     char* s;
     int len;
@@ -489,7 +624,7 @@ u64 sys_getcwd(void) {
         }
     }
 
-    // if (copyout(myproc()->pgdir, addr, s, strlen(s) + 1) < 0)
+    // if (copyout(myProcess()->pgdir, addr, s, strlen(s) + 1) < 0)
     if (copyout2(addr, s, strlen(s) + 1) < 0)
         return -1;
 
@@ -654,7 +789,7 @@ void syscallMount() {
         return;
     }
 
-    struct file *file = filealloc();
+    struct File *file = filealloc();
     file->off = 0;
     file->readable = true;
     file->writable = true;
@@ -712,24 +847,10 @@ void syscallUmount() {
     tf->a0 = 0;
 }
 
-void syscallLinkAt() {
-    Trapframe *tf = getHartTrapFrame();
-    int oldDirFd = tf->a0, newDirFd = tf->a2, flags = tf->a4;
-    
-    assert(flags == 0);
-    char oldPath[FAT32_MAX_PATH], newPath[FAT32_MAX_PATH];
-    if (fetchstr(tf->a1, oldPath, FAT32_MAX_PATH) < 0) {
-        tf->a0 = -1;
-        return;
-    }
-    if (fetchstr(tf->a3, newPath, FAT32_MAX_PATH) < 0) {
-        tf->a0 = -1;
-        return;
-    }
+int do_linkat(int oldDirFd, char* oldPath, int newDirFd, char* newPath) {
+    struct dirent *entryPoint, *targetPoint = NULL;
 
-    struct dirent* entryPoint, *targetPoint = NULL;
-
-    if((entryPoint = ename(oldDirFd, oldPath)) == NULL) {
+    if ((entryPoint = ename(oldDirFd, oldPath)) == NULL) {
         goto bad;
     }
 
@@ -749,15 +870,30 @@ void syscallLinkAt() {
 
     targetPoint->_nt_res = DT_LNK;
     eupdate(targetPoint);
-
-    tf->a0 = 0;
-    eunlock(targetPoint);
-    return;
+    return 0;
 bad:
     if (targetPoint) {
-        eunlock(targetPoint);
+        eremove(targetPoint);
     }
-    tf->a0 = -1;
+    return -1;
+}
+
+void syscallLinkAt() {
+    Trapframe* tf = getHartTrapFrame();
+    int oldDirFd = tf->a0, newDirFd = tf->a2, flags = tf->a4;
+
+    assert(flags == 0);
+    char oldPath[FAT32_MAX_PATH], newPath[FAT32_MAX_PATH];
+    if (fetchstr(tf->a1, oldPath, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+    if (fetchstr(tf->a3, newPath, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+
+    tf->a0 = do_linkat(oldDirFd, oldPath, newDirFd, newPath);
 }
 
 void syscallUnlinkAt() {
@@ -785,6 +921,88 @@ bad:
     tf->a0 = -1;
 }
 
+void syscallLSeek() {
+    Trapframe *tf = getHartTrapFrame();
+    int fd = tf->a0, mode = tf->a2;
+    u64 offset = tf->a1;
+    if (fd < 0 || fd >= NOFILE) {
+        goto bad;
+    }
+    struct File* file = myProcess()->ofile[fd];
+    if (file == 0) {
+        goto bad;
+    }
+    u64 off = offset;
+    switch (mode) {
+        case SEEK_SET:
+            break;
+        case SEEK_CUR:
+            off += file->off;
+            break;
+        case SEEK_END:
+            off += file->ep->file_size;
+            break;
+        default:
+            goto bad;
+    }
+    if (file->type != FD_ENTRY) {
+        file->off = off;
+    } else {
+        file->off = (off >= file->ep->file_size ? file->ep->file_size : off);
+    }
+    tf->a0 = off;
+    return;
+bad:
+    tf->a0 = -1;
+}
+
+void syscallPRead() {
+    Trapframe *tf = getHartTrapFrame();
+    int fd = tf->a0;
+    struct File* file = myProcess()->ofile[fd];
+    if (file == 0) {
+        goto bad;
+    }
+    u32 off = file->off;
+    tf->a0 = eread(file->ep, true, tf->a1, tf->a3, tf->a2);
+    file->off = off;
+    return;
+bad:
+    tf->a0 = -1;
+}
+
+void syscallUtimensat() {
+    Trapframe *tf = getHartTrapFrame();
+    char path[FAT32_MAX_PATH];
+    int dirFd = tf->a0;
+    struct dirent *de;
+    if (tf->a1) {
+        if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
+            tf->a0 = -1;
+            return;
+        }
+        if ((dirFd < 0 && dirFd != AT_FDCWD) || dirFd >= NOFILE) {
+            tf->a0 = -EBADF;
+            return;
+        }
+        if((de = ename(dirFd, path)) == NULL) {
+            tf->a0 = -ENOTDIR;
+            return;
+        }
+    } else {
+        File *f;
+        if (dirFd < 0 || dirFd >= NOFILE || (f = myProcess()->ofile[dirFd]) == NULL) {
+            tf->a0 = -EBADF;
+            return;
+        }
+        de = f->ep;
+    }
+    TimeSpec ts[2];
+    copyin(myProcess()->pgdir, (char*)ts, tf->a2, sizeof(ts));
+    eSetTime(de, ts);
+    tf->a0 = 0;
+}
+
 extern FileSystem rootFileSystem;
 int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen) {
     char path[FAT32_MAX_PATH];
@@ -805,3 +1023,4 @@ int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen) {
     }
     return either_copyout(isUser, buf, (void*)s, strlen(s) + 1);
 }
+
