@@ -520,6 +520,8 @@ void syscallSignalReturn() {
     Thread* thread = myThread();
     SignalContext* sc = getHandlingSignal(thread);
     sc->contextRecover.epc = sc->uContext->uc_mcontext.MC_PC;
+    thread->blocked = sc->uContext->uc_sigmask;
     bcopy(&sc->contextRecover, tf, sizeof(Trapframe));
+    signalProcessEnd(sc->signal, &thread->processing);
     signalFinish(thread, sc);
 }

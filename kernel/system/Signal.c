@@ -48,10 +48,10 @@ int signalSend(int tid, int sig) {
         panic("");
         return -EINVAL;
     }
-    if (!LIST_EMPTY(&thread->waitingSignal)) {
-        // dangerous
-        return 0;
-    }
+    // if (!LIST_EMPTY(&thread->waitingSignal)) {
+    //     // dangerous
+    //     return 0;
+    // }
     SignalContext* sc;
     r = signalContextAlloc(&sc);
     if (r < 0) {
@@ -102,7 +102,7 @@ SignalContext* getFirstSignalContext(Thread* thread) {
     SignalContext* sc = NULL;
     acquireLock(&thread->lock);
     LIST_FOREACH(sc, &thread->waitingSignal, link) {
-        if (!sc->start && signalSetAnd(sc->signal, &thread->blocked)) {
+        if (!sc->start && (signalSetAnd(sc->signal, &thread->blocked) || signalSetAnd(sc->signal, &thread->processing))) {
             continue;
         }
         break;
@@ -124,7 +124,7 @@ SignalContext* getHandlingSignal(Thread* thread) {
     return sc;
 }
 
-void initFrame(SignalContext* sc) {
+void initFrame(SignalContext* sc, Thread* thread) {
     Trapframe* tf = getHartTrapFrame();
     u64 sp = DOWN_ALIGN(tf->sp - PAGE_SIZE, PAGE_SIZE);
     PhysicalPage *page;
@@ -144,7 +144,7 @@ void initFrame(SignalContext* sc) {
     uContext = pageTop = DOWN_ALIGN(pageTop, 16);
     sc->uContext = (ucontext*) (uContext + page2pa(page));
     ucontext uc = {0};
-    // uc.uc_sigmask = thread->waitingSignal;
+    uc.uc_sigmask = thread->blocked;
     uc.uc_mcontext.MC_PC = tf->epc;
     bcopy(&uc, (void*)page2pa(page) + pageTop, sizeof(ucontext));
     tf->a0 = sc->signal;
@@ -181,13 +181,14 @@ void handleSignal(Thread* thread) {
         if (sa->handler == NULL) {
             signalFinish(thread, sc);
             continue;
-        } 
+        }
         sc->start = true;
+        signalProcessStart(sc->signal, &thread->processing);
         Trapframe* tf = getHartTrapFrame();
         bcopy(tf, &sc->contextRecover, sizeof(Trapframe));
         struct pthread self;
         copyin(thread->process->pgdir, (char*)&self, thread->trapframe.tp - sizeof(struct pthread), sizeof(struct pthread));
-        initFrame(sc);
+        initFrame(sc, thread);
         tf->epc = (u64)sa->handler;
         return;
     }

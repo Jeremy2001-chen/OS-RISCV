@@ -66,6 +66,7 @@ typedef struct Thread {
     u32 retValue;
     SignalSet blocked;
     SignalSet pending;
+    SignalSet processing;
     u64 setChildTid;
     u64 clearChildTid;
     struct Process* process;
