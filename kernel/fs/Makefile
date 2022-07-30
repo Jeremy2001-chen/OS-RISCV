@@ -1,6 +1,6 @@
 INCLUDES := -I../../include
 
-target = $(shell ls *.c | awk '{gsub(/.c/, ".o"); print $0}')
+target = $(shell ls *.c | awk '{gsub(/\.c/, ".o"); print $0}')
 
 .PHONY: build clean
 

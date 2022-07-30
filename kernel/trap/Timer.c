@@ -6,7 +6,7 @@
 static u32 ticks;
 
 void setNextTimeout() {
-    SBI_CALL_1(SBI_SET_TIMER, r_time() + INTERVAL);
+    SBI_CALL_1(SBI_SET_TIMER, r_realTime() + INTERVAL);
 }
 
 void timerTick() {

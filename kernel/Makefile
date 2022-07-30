@@ -5,10 +5,9 @@ trap_dir	:= trap
 lock_dir	:= lock
 system_dir	:= system
 utility_dir	:= utility
-socket_dir 	:= socket
 fs_dir		:= fs
-modules		:= $(driver_dir) $(memory_dir) $(boot_dir) $(trap_dir) $(lock_dir) $(system_dir) $(utility_dir) $(fs_dir) \
-	$(socket_dir)
+yield_dir	:= yield
+modules		:= $(shell ls -d */)
 
 .PHONY:	build clean $(modules)
 

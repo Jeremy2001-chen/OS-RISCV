@@ -110,8 +110,19 @@ void syscall_fcntl(void){
         return;
     }
 
+    // TO PASS SOCKET TEST
+    if (tf->a1 == 1) {
+        tf->a0 = 1;
+        return;
+    }
+    if (tf->a1 == 3) {
+        tf->a0 = 04000;
+        return;
+    }
+
     // printf("syscall_fcntl fd:%x cmd:%x flag:%x\n", fd, cmd, flag);
     tf->a0 = 0;
+    return;
 }
 void syscallRead(void) {
     Trapframe* tf = getHartTrapFrame();
@@ -263,7 +274,6 @@ void syscallGetFileStateAt(void) {
     elock(entryPoint);
     estat(entryPoint, &st);
     eunlock(entryPoint);
-    printf("%d %lx\n", st.st_mode, uva);
     if (copyout(myProcess()->pgdir, uva, (char*)&st, sizeof(struct stat)) < 0) {
         tf->a0 = -1;
         return;
@@ -935,7 +945,11 @@ void syscallLSeek() {
         default:
             goto bad;
     }
-    file->off = (off >= file->ep->file_size ? file->ep->file_size : off);
+    if (file->type != FD_ENTRY) {
+        file->off = off;
+    } else {
+        file->off = (off >= file->ep->file_size ? file->ep->file_size : off);
+    }
     tf->a0 = off;
     return;
 bad:

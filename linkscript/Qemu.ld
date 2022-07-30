@@ -18,6 +18,10 @@ SECTIONS {
         *(.trampoline)
         . = ALIGN(4096);
         ASSERT(. - _trampoline == 8192, "error: trampoline not have two page");
+        _signalTrampoline = .;
+        *(.signalTrampoline)
+        . = ALIGN(4096);
+        ASSERT(. - _signalTrampoline == 4096, "error: signal trampoline not one page");
         PROVIDE(textEnd = .);
     }
 

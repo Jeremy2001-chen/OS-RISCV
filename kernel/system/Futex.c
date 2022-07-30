@@ -11,13 +11,17 @@ typedef struct FutexQueue
 
 FutexQueue futexQueue[FUTEX_COUNT];
 
-void futexWait(u64 addr, Thread* th) {
+void futexWait(u64 addr, Thread* th, TimeSpec* ts) {
     for (int i = 0; i < FUTEX_COUNT; i++) {
         if (!futexQueue[i].valid) {
             futexQueue[i].valid = true;
             futexQueue[i].addr = addr;
             futexQueue[i].thread = th;
-            th->state = SLEEPING;
+            if (ts) {
+                th->awakeTime = ts->second * 1000000 + ts->microSecond;
+            } else {
+                th->state = SLEEPING;
+            }
             yield();
             // not reach here!!!
         }
@@ -49,6 +53,14 @@ void futexRequeue(u64 addr, int n, u64 newAddr) {
     for (int i = 0; i < FUTEX_COUNT; i++) {
         if (futexQueue[i].valid && futexQueue[i].addr == addr) {
             futexQueue[i].addr = newAddr;
+        }
+    }
+}
+
+void futexClear(Thread* thread) {
+    for (int i = 0; i < FUTEX_COUNT; i++) {
+        if (futexQueue[i].valid && futexQueue[i].thread == thread) {
+            futexQueue[i].valid = false;
         }
     }
 }

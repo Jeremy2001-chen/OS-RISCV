@@ -3,9 +3,25 @@
 
 #include <Type.h>
 #include <Timer.h>
+#include <Process.h>
+#include <Driver.h>
 
-#define SIGNAL_COUNT 64
-typedef u64 SignalSet;
+// Don't include Thread.h!!!!
+
+#define SIGNAL_COUNT 1024
+typedef struct SignalSet {
+    u64 signal[128 / sizeof(u64)];
+} SignalSet;
+
+inline static bool signalSetAnd(int signal, SignalSet *ss) {
+    if (signal > 128) {
+        panic("");
+    }
+    if (signal <= 64) {
+        return (ss->signal[0] & (1UL << (signal - 1))) != 0;
+    }
+    return (ss->signal[1] & (1UL << (signal - 65))) != 0;
+}
 
 typedef struct SignalInfo {
     int signo;      /* signal number */
@@ -36,22 +52,78 @@ typedef struct SignalInfo {
 
 typedef struct SignalAction {
     void (*handler)(int);
-    void (*sa_sigaction)(int, SignalInfo *, void *);
-    SignalSet sa_mask;
-    int sa_flags;
-    void (*sa_restorer)(void);
+	unsigned long flags;
+	void (*restorer)(void);
+	unsigned mask[2];
 } SignalAction;
+
+typedef unsigned long gregset_t[32];
+struct __riscv_f_ext_state {
+	unsigned int f[32];
+	unsigned int fcsr;
+};
+
+struct __riscv_d_ext_state {
+	unsigned long long f[32];
+	unsigned int fcsr;
+};
+
+struct __riscv_q_ext_state {
+	unsigned long long f[64] __attribute__((aligned(16)));
+	unsigned int fcsr;
+	unsigned int reserved[3];
+};
+
+union __riscv_fp_state {
+	struct __riscv_f_ext_state f;
+	struct __riscv_d_ext_state d;
+	struct __riscv_q_ext_state q;
+};
+
+typedef union __riscv_fp_state fpregset_t;
+
+typedef struct sigcontext {
+	gregset_t gregs;
+	fpregset_t fpregs;
+} mcontext;
+
+struct sigaltstack {
+	void *ss_sp;
+	int ss_flags;
+	u64 ss_size;
+};
+
+typedef struct ucontext {
+	unsigned long uc_flags;
+	struct ucontext *uc_link;
+	struct sigaltstack uc_stack;
+	SignalSet uc_sigmask;
+	mcontext uc_mcontext;
+} ucontext;
 
 #define SIG_BLOCK 0
 #define SIG_UNBLOCK 1
 #define SIG_SETMASK 2
 
-struct Thread;
+typedef struct SignalContext SignalContext;
+typedef struct Thread Thread;
+LIST_HEAD(SignalContextList, SignalContext);
 
-int signProccessMask(u64, SignalSet*);
+#define SIGNAL_CONTEXT_COUNT (1024)
+void signalInit();
+void signalContextFree(SignalContext* sc);
+int signalContextAlloc(SignalContext **signalContext);
+int signalSend(int tid, int sig);
+int signProccessMask(u64 how, SignalSet *newSet);
 int doSignalAction(int sig, u64 act, u64 oldAction);
+SignalContext* getFirstSignalContext(Thread* thread);
+void initFrame(SignalContext* sc);
+void signalFinish(Thread* thread, SignalContext* sc);
+void handleSignal(Thread* thread);
 int doSignalTimedWait(SignalSet *which, SignalInfo *info, TimeSpec *ts);
-void handleSignal(struct Thread* thread);
+SignalContext* getHandlingSignal(Thread* thread);
+
+#define MC_PC gregs[0]
 
 #define SIGHUP		 1
 #define SIGINT		 2
