@@ -390,14 +390,11 @@ int exec(char* path, char** argv) {
         if (!elf_interpreter)
             panic("Alloc page for elf_interpreter error!");
 
-        /*
         retval = eread(de, 0, (u64)elf_interpreter, ph.offset, ph.filesz);
         if (retval < 0)
-            panic("read execed file error");
-        */
+            panic("read interp path error");
 
         /* make sure path is NULL terminated */
-        safestrcpy(elf_interpreter, "/libc.so", 20);
         if (elf_interpreter[ph.filesz - 1] != '\0')
             panic("interpreter path is not NULL terminated");
 
