@@ -23,6 +23,26 @@ inline static bool signalSetAnd(int signal, SignalSet *ss) {
     return (ss->signal[1] & (1UL << (signal - 65))) != 0;
 }
 
+inline static void signalProcessStart(int signal, SignalSet *ss) {
+    if (signal > 128) {
+        panic("");
+    }
+    if (signal <= 64) {
+        ss->signal[0] |= (1UL << (signal - 1));
+    }
+    ss->signal[1] |= (1UL << (signal - 65));
+}
+
+inline static void signalProcessEnd(int signal, SignalSet *ss) {
+    if (signal > 128) {
+        panic("");
+    }
+    if (signal <= 64) {
+        ss->signal[0] &= ~(1UL << (signal - 1));
+    }
+    ss->signal[1] &= ~(1UL << (signal - 65));
+}
+
 typedef struct SignalInfo {
     int signo;      /* signal number */
     int errno;      /* errno value */
@@ -117,7 +137,7 @@ int signalSend(int tid, int sig);
 int signProccessMask(u64 how, SignalSet *newSet);
 int doSignalAction(int sig, u64 act, u64 oldAction);
 SignalContext* getFirstSignalContext(Thread* thread);
-void initFrame(SignalContext* sc);
+void initFrame(SignalContext* sc, Thread* thread);
 void signalFinish(Thread* thread, SignalContext* sc);
 void handleSignal(Thread* thread);
 int doSignalTimedWait(SignalSet *which, SignalInfo *info, TimeSpec *ts);
