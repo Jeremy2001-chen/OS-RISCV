@@ -47,7 +47,7 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 ### 决赛第一阶段
 
 * [动态链接](docs/dynamic.md)
-* [信号量]()
+* [信号量](docs/futex.md)
 * [信号]()
 
 ## 编译内核和镜像
