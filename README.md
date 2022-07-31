@@ -14,6 +14,10 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 
 ## 文档
 
+### 总体情况
+
+* [总体情况](docs/global.md)
+
 ### 基本功能
 
 * [内存管理](docs/memory.md)
