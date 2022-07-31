@@ -70,5 +70,5 @@ void futexRequeue(u64 addr, int n, u64 newAddr);
 
 ## 总结
 
-* 实现了一个简单的 futex 模型，考虑的情况没有那么全面
+* 实现了一个简单的 futex 模型
 
