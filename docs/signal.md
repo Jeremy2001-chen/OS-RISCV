@@ -15,3 +15,5 @@
 我们设计了一种叫做 `SignalContext`（信号上下文）的资源，用于保存**该信号处理结束后应当恢复的现场**。每次进入信号处理时，将当前的 `trapframe` 复制到该信号对应的 `SignalContext` 中。每次 `sig_return` 系统调用，将 `SignalContext` 中的现场复制到 `trapframe` 中。
 
 这种方式的正确性，依赖于结束信号处理的系统调用只有两种可能，`exit` 和 `sig_return`。前者会直接让线程结束，也就不再需要任何现场了。
+
+![signal](image/signal.png)
