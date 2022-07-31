@@ -114,7 +114,7 @@ done:
 
 对于每一个 CMD 命令，存在一个命令的返回值，如下图所示：
 
-![img](http://rjhcoding.com/images/R1_FORMAT.png)
+![img](./image/CMD.png)
 
 只有当最高位为 0 时，才是收到了命令的返回值，此时将命令的低 8 位返回。若读取 1000 次依然没有读取到正确的命令返回值，说明 CMD 命令超时。
 
@@ -177,7 +177,7 @@ done:
 
 ### CMD18
 
-![img](http://elm-chan.org/docs/mmc/m/rm.png)
+![img](./image/CMD18.png)
 
 * 首先发送 CMD18 命令，分析命令的返回值，若不为 0 说明命令错误
 * 接着不停读取字节直到读取到 `0xFE` 表明接收到读数据包的开始
@@ -188,7 +188,7 @@ done:
 
 ### CMD24
 
-![img](http://elm-chan.org/docs/mmc/m/ws.png)
+![img](./image/CMD24.png)
 
 * 首先发送 CMD24 命令，分析命令的返回值，若不为 0 说明命令错误
 * 发送超过一个字节的 0xFF 之后开始发送字节 0xFE 表明开始数据包的传输
