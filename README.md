@@ -4,6 +4,8 @@
 
 RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统调用的测试。
 
+在决赛第一阶段，我们的内核增加了信号、动态链接、信号量、内核级线程的支持，并通过了 Musl-Libc 上的测试。
+
 ## 环境与配置
 
 * 交叉编译器：riscv64-unknown-elf-gcc 11.1.0
@@ -15,7 +17,7 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 ### 基本功能
 
 * [内存管理](docs/memory.md)
-* [进程管理](docs/process.md)
+* [进程管理和线程管理](docs/process.md)
 * [异常和系统调用](docs/trap.md)
 
 ### 外设
@@ -25,7 +27,7 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 
 ### 文件系统
 
-* [FAT32 介绍](docs/fat-design.md)
+* [文件系统介绍](docs/fat-design.md)
 * [文件系统实现](docs/fat-impl.md)
 * [文件系统相关系统调用](docs/fat-syscall.md)
 
