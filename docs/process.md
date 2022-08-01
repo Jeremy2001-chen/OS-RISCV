@@ -139,7 +139,7 @@ typedef struct Thread {
     u64 clearChildTid; // 清空 tid 地址标识
     struct Process* process; // 线程对应进程控制块指针
     u64 robustHeadPointer; // robust 锁地址
-	struct SignalContextList waitingSignal; // 需要处理的信号链表
+    struct SignalContextList waitingSignal; // 需要处理的信号链表
 } Thread;
 ```
 
