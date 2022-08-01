@@ -16,4 +16,4 @@
 
 这种方式的正确性，依赖于结束信号处理的系统调用只有两种可能，`exit` 和 `sig_return`。前者会直接让线程结束，也就不再需要任何现场了。
 
-![signal](image/signal.png)
+![signal](./image/signal.png)
