@@ -85,8 +85,11 @@ void (*syscallVector[])(void) = {
     [SYSCALL_STATE_FS] syscallStateFileSystem,
     [SYSCALL_PREAD] syscallPRead,
     [SYSCALL_UTIMENSAT] syscallUtimensat,
-    [SYSCALL_GET_USER_ID] syscallGetUserId,
+    [SYSCALL_GET_EFFECTIVE_USER_ID] syscallGetUserId,
     [SYSCALL_GET_EFFECTIVE_USER_ID] syscallGetEffectiveUserId,
+    [SYSCALL_GET_USER_ID] syscallGetUserId,
+    [SYSCALL_GET_PROCESS_GROUP_ID] syscallGetUserId,
+    [SYSCALL_SET_PROCESS_GROUP_ID] syscallGetUserId,
     [SYSCALL_MEMORY_BARRIER] syscallMemoryBarrier,
     [SYSCALL_SIGNAL_RETURN] syscallSignalReturn
 };
