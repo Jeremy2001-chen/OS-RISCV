@@ -172,7 +172,6 @@ void handleSignal(Thread* thread) {
             return;
         }
         switch (sc->signal) {
-            case SIGQUIT:
             case SIGKILL:
                 threadDestroy(thread);
                 return;

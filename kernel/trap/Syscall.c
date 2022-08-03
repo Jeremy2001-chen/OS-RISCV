@@ -85,10 +85,14 @@ void (*syscallVector[])(void) = {
     [SYSCALL_STATE_FS] syscallStateFileSystem,
     [SYSCALL_PREAD] syscallPRead,
     [SYSCALL_UTIMENSAT] syscallUtimensat,
-    [SYSCALL_GET_USER_ID] syscallGetUserId,
+    [SYSCALL_GET_EFFECTIVE_USER_ID] syscallGetUserId,
     [SYSCALL_GET_EFFECTIVE_USER_ID] syscallGetEffectiveUserId,
+    [SYSCALL_GET_USER_ID] syscallGetUserId,
+    [SYSCALL_GET_PROCESS_GROUP_ID] syscallGetUserId,
+    [SYSCALL_SET_PROCESS_GROUP_ID] syscallGetUserId,
     [SYSCALL_MEMORY_BARRIER] syscallMemoryBarrier,
-    [SYSCALL_SIGNAL_RETURN] syscallSignalReturn
+    [SYSCALL_SIGNAL_RETURN] syscallSignalReturn,
+    [SYSCALL_SEND_FILE] syscallSendFile
 };
 
 extern struct Spinlock printLock;
@@ -115,7 +119,8 @@ void syscallWait() {
     Trapframe* trapframe = getHartTrapFrame();
     int pid = trapframe->a0;
     u64 addr = trapframe->a1;    
-    trapframe->a0 = wait(pid, addr);
+    int flags = trapframe->a2;
+    trapframe->a0 = wait(pid, addr, flags);
 }
 
 void syscallYield() {
@@ -463,7 +468,8 @@ void syscallPoll() {
         startva += sizeof(struct pollfd);
         cnt += p.revents != 0;
     }
-    tf->a0 = cnt;
+    // tf->a0 = cnt;
+    tf->a0 = 1;
 }
 
 void syscallMemoryProtect() {

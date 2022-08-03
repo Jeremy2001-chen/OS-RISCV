@@ -44,7 +44,7 @@ fat: $(user_dir)
 	@sudo umount $(dst)
 
 new-lib:
-	cd ../testsuits-for-oskernel/libc-test && make compile
+	cd ../testsuits-for-oskernel/busybox && bash compile.sh
 
 new: clean new-lib fat run
 

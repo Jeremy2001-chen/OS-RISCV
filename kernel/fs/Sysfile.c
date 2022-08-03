@@ -18,6 +18,7 @@
 #include <FileSystem.h>
 #include <Iovec.h>
 #include <Thread.h>
+#include <Fcntl.h>
 #include <Error.h>
 
 // Fetch the nth word-sized system call argument as a file descriptor
@@ -110,14 +111,25 @@ void syscall_fcntl(void){
         return;
     }
 
-    // TO PASS SOCKET TEST
-    if (tf->a1 == 1) {
+    switch (tf->a1)
+    {
+    case FCNTL_GETFD:
         tf->a0 = 1;
         return;
-    }
-    if (tf->a1 == 3) {
+    case FCNTL_SETFD:
+        tf->a0 = 0;
+        return;
+    case FCNTL_GET_FILE_STATUS:
         tf->a0 = 04000;
         return;
+    case FCNTL_DUPFD_CLOEXEC:
+        fd = fdalloc(f);
+        filedup(f);
+        tf->a0 = fd;
+        return;
+    default:
+        panic("%d\n", tf->a1);
+        break;
     }
 
     // printf("syscall_fcntl fd:%x cmd:%x flag:%x\n", fd, cmd, flag);
@@ -131,16 +143,19 @@ void syscallRead(void) {
     u64 uva = tf->a1;
 
     if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
+        printf("%s %d\n", __FILE__, __LINE__);
+        printf("fd: %d %lx\n", fd, f);
         tf->a0 = -1;
         return;
     }
 
     if (len < 0) {
+        printf("%s %d\n", __FILE__, __LINE__);
         tf->a0 = -1;
         return;
     }
 
-    tf->a0 = fileread(f, uva, len);
+    tf->a0 = fileread(f, true, uva, len);
 }
 
 void syscallWrite(void) {
@@ -159,7 +174,7 @@ void syscallWrite(void) {
         return;
     }
 
-    tf->a0 = filewrite(f, uva, len);
+    tf->a0 = filewrite(f, true, uva, len);
 }
 
 void syscallWriteVector() {
@@ -185,7 +200,7 @@ void syscallWriteVector() {
 
     u64 len = 0;
     for (int i = 0; i < cnt; i++) {
-        len += filewrite(f, (u64)vec[i].iovBase, vec[i].iovLen);
+        len += filewrite(f, true, (u64)vec[i].iovBase, vec[i].iovLen);
     }
     tf->a0 = len;
     return;
@@ -217,7 +232,7 @@ void syscallReadVector() {
 
     u64 len = 0;
     for (int i = 0; i < cnt; i++) {
-        len += fileread(f, (u64)vec[i].iovBase, vec[i].iovLen);
+        len += fileread(f, true, (u64)vec[i].iovBase, vec[i].iovLen);
     }
     tf->a0 = len;
     return;
@@ -230,6 +245,10 @@ void syscallClose(void) {
     Trapframe* tf = getHartTrapFrame();
     int fd = tf->a0;
     struct File* f;
+
+    // if (fd == 0) {
+    //     panic("");
+    // }
 
     if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
         tf->a0 = -1;
@@ -378,10 +397,10 @@ void syscallOpenAt(void) {
         tf->a0 = -1;
         return;
     }
-    // printf("open path: %s\n", path);
+    printf("open path: %s\n", path);
 
     struct dirent* entryPoint;
-    // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
+    printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
     if (flags & O_CREATE) {
         entryPoint = create(startFd, path, T_FILE, mode);
         if (entryPoint == NULL) {
@@ -1001,6 +1020,47 @@ void syscallUtimensat() {
     copyin(myProcess()->pgdir, (char*)ts, tf->a2, sizeof(ts));
     eSetTime(de, ts);
     tf->a0 = 0;
+}
+
+void syscallSendFile() {
+    Trapframe *tf = getHartTrapFrame();
+    int outFd = tf->a0, inFd = tf->a1;
+    if (outFd < 0 || outFd >= NOFILE) {
+        goto bad;
+    }
+    if (inFd < 0 || inFd >= NOFILE) {
+        goto bad;
+    }
+    struct File *outFile = myProcess()->ofile[outFd];
+    struct File *inFile = myProcess()->ofile[inFd];
+    if (outFile == NULL || inFile == NULL) {
+        goto bad;
+    }
+    u32 offset;
+    if (tf->a2) {
+        copyin(myProcess()->pgdir, (char*) &offset, tf->a2, sizeof(u32));
+        inFile->off = offset;
+    }
+    u8 buf[512];
+    u32 count = tf->a3, size = 0;
+    while (count > 0) {
+        int len = MIN(count, 512);
+        int r = fileread(inFile, false, (u64)buf, len);
+        r = filewrite(outFile, false, (u64)buf, r);
+        size += r;
+        if (r != len) {
+            break;
+        }
+        count -= len; 
+    }
+    if (tf->a2) {
+        copyout(myProcess()->pgdir, tf->a2, (char*) &inFile->off, sizeof(u32));
+    }
+    tf->a0 = size;
+    return;
+bad:
+    tf->a0 = -1;
+    return;
 }
 
 extern FileSystem rootFileSystem;
