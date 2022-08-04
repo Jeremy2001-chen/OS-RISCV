@@ -91,7 +91,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_PROCESS_GROUP_ID] syscallGetUserId,
     [SYSCALL_SET_PROCESS_GROUP_ID] syscallGetUserId,
     [SYSCALL_MEMORY_BARRIER] syscallMemoryBarrier,
-    [SYSCALL_SIGNAL_RETURN] syscallSignalReturn
+    [SYSCALL_SIGNAL_RETURN] syscallSignalReturn,
+    [SYSCALL_SEND_FILE] syscallSendFile
 };
 
 extern struct Spinlock printLock;

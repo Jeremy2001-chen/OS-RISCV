@@ -48,9 +48,9 @@ struct File* filealloc(void);
 void fileclose(struct File*);
 struct File* filedup(struct File*);
 void fileinit(void);
-int fileread(struct File*, u64, int n);
+int fileread(struct File*, bool, u64, int n);
 int filestat(struct File*, u64 addr);
-int filewrite(struct File*, u64, int n);
+int filewrite(struct File*, bool, u64, int n);
 int dirnext(struct File* f, u64 addr);
 
 /* File types.  */
