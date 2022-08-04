@@ -272,10 +272,50 @@ out:
 	return error;
 }
 
+int exec(char* path, char** argv);
+/* sizeof(linux_binprm->buf) */
+#define BINPRM_BUF_SIZE 128
+int load_script(char* bprmbuf, char* path, char** argv) {
+    printf("Loading script");
+    char *cp, *i_name, *i_arg;
+    if ((cp = strchr(bprmbuf, '\n')) == NULL)
+        cp = bprmbuf + strlen(bprmbuf);
+    *cp = '\0';
+    printf("cp = %x\n", (u64)(cp - bprmbuf));
+    while (cp > bprmbuf) {
+        cp--;
+        if ((*cp == ' ') || (*cp == '\t'))
+            *cp = '\0';
+        else
+            break;
+    }
+    for (cp = bprmbuf + 2; (*cp == ' ') || (*cp == '\t'); cp++)
+        ;
+    if (*cp == '\0')
+        return -ENOEXEC; /* No interpreter name found */
+    i_name = cp;
+    i_arg = NULL;
+    for (; *cp && (*cp != ' ') && (*cp != '\t'); cp++)
+        /* nothing */;
+    printf("end i_name cp = %x\n", (u64)(cp - bprmbuf));
+    while ((*cp == ' ') || (*cp == '\t'))
+        *cp++ = '\0';
+    if (*cp)
+        i_arg = cp;
+
+    char* script_argv[MAXARG] = {0};
+    int script_argc = 0;
+    script_argv[script_argc++] = i_name;
+    if (i_arg) {
+        script_argv[script_argc++] = i_arg;
+    }
+    while (*argv) {
+        script_argv[script_argc++] = *(argv++);
+    }
+    return exec(i_name, script_argv);
+}
 
 int exec(char* path, char** argv) {
-    MSG_PRINT("in exec");    
-    STR_PRINT(path);
     // char **s = argv;
 
     // while(*s)
@@ -298,6 +338,20 @@ int exec(char* path, char** argv) {
         return -1;
     }
     elock(de);
+
+/* ========== check executable format (script or elf) =========== */
+
+    char bprmbuf[BINPRM_BUF_SIZE];
+    memset(bprmbuf, 0, sizeof(bprmbuf));
+    eread(de, 0, (u64)bprmbuf, 0, BINPRM_BUF_SIZE - 1);
+    if (bprmbuf[0] == '#' && bprmbuf[1] == '!') {
+        eunlock(de);
+        eput(de);
+        return load_script(bprmbuf, path, argv);
+    } else {
+        printf("Loading elf format");
+    }
+
     PhysicalPage *page;
     int r = allocPgdir(&page);
     if (r < 0) {
