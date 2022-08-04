@@ -262,20 +262,22 @@ void threadRun(Thread* th) {
             ep = create(AT_FDCWD, "/dev/zero", T_CHAR, O_RDONLY);
             ep->dev = ZERO;
             eunlock(ep);
-            ep = ename(AT_FDCWD, "/lib");
-            if (ep == NULL) {
-                if ((ep = create(AT_FDCWD, "/lib", T_DIR, O_RDONLY)) == 0) {
-                    printf("create /lib error");
-                } else {
-                    eunlock(ep);
-                    eput(ep);
-                }
-            }
-            if (ep == NULL || do_linkat(AT_FDCWD, "/libc.so", AT_FDCWD,
-                                        "/lib/ld-musl-riscv64-sf.so.1") < 0) {
-                printf("pre_link error!\n");
-            }
-
+            // ep = ename(AT_FDCWD, "/lib");
+            // if (ep == NULL) {
+            //     if ((ep = create(AT_FDCWD, "/lib", T_DIR, O_RDONLY)) == 0) {
+            //         printf("create /lib error");
+            //     } else {
+            //         eunlock(ep);
+            //         eput(ep);
+            //     }
+            // }
+            // if (ep == NULL || do_linkat(AT_FDCWD, "/libc.so", AT_FDCWD,
+            //                             "/lib/ld-musl-riscv64-sf.so.1") < 0) {
+            //     printf("pre_link error!\n");
+            // }
+            ep = create(AT_FDCWD, "/dev/tty", T_CHAR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
             setNextTimeout();
         }
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
