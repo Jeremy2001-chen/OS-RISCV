@@ -62,9 +62,8 @@ void pipeclose(struct pipe* pi, int writable) {
         releaseLock(&pi->lock);
 }
 
-int pipewrite(struct pipe* pi, u64 addr, int n) {
+int pipewrite(struct pipe* pi, bool isUser, u64 addr, int n) {
     int i = 0;
-    struct Process* pr = myProcess();
 
     // printf("%d WWWW pipe addr %x\n", r_hartid(), pi);
     acquireLock(&pi->lock);
@@ -82,7 +81,7 @@ int pipewrite(struct pipe* pi, u64 addr, int n) {
         } else {
             // printf("%d %d\n", i, n);
             char ch;
-            if (copyin(pr->pgdir, &ch, addr + i, 1) == -1)
+            if (either_copyin(&ch, isUser, addr + i, 1) == -1)
                 break;
             pi->data[pi->nwrite++ % PIPESIZE] = ch;
             i++;
@@ -94,9 +93,8 @@ int pipewrite(struct pipe* pi, u64 addr, int n) {
     return i;
 }
 
-int piperead(struct pipe* pi, u64 addr, int n) {
+int piperead(struct pipe* pi, bool isUser, u64 addr, int n) {
     int i;
-    struct Process* pr = myProcess();
     char ch;
 
     // printf("%d RRRR pipe addr %x\n", r_hartid(), pi);
@@ -116,7 +114,7 @@ int piperead(struct pipe* pi, u64 addr, int n) {
         // printf("hart id %x, now read %d\n", r_hartid(), i);
         ch = pi->data[pi->nread++ % PIPESIZE];
         // printf("%x %x\n", r_hartid(), ch);
-        if (copyout(pr->pgdir, addr + i, &ch, 1) == -1) {
+        if (either_copyout(isUser, addr + i, &ch, 1) == -1) {
             break;
         }
     }

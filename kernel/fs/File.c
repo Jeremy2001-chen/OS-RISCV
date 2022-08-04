@@ -108,10 +108,7 @@ int fileread(struct File* f, bool isUser, u64 addr, int n) {
 
     switch (f->type) {
         case FD_PIPE:
-            if (!isUser) {
-                panic("");
-            }
-            r = piperead(f->pipe, addr, n);
+            r = piperead(f->pipe, isUser, addr, n);
             break;
         case FD_DEVICE:
             if (f->major < 0 || f->major >= NDEV || !devsw[f->major].read)
@@ -140,10 +137,7 @@ int filewrite(struct File* f, bool isUser, u64 addr, int n) {
         return -1;
 
     if (f->type == FD_PIPE) {
-        if (!isUser) {
-            panic("");
-        }
-        ret = pipewrite(f->pipe, addr, n);
+        ret = pipewrite(f->pipe, isUser, addr, n);
         assert(ret != 0);
     } else if (f->type == FD_DEVICE) {
         if (f->major < 0 || f->major >= NDEV || !devsw[f->major].write)
