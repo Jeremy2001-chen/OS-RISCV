@@ -141,7 +141,7 @@ int getcmd(char* buf, int nbuf) {
     printf("[%s]:$ ", cwd_buf);
     memset(buf, 0, nbuf);
     gets(buf, nbuf);
-    // strcpy(buf, "./busybox sh");
+    // strcpy(buf, "./busybox sh busybox_testcode.sh");
     if (buf[0] == 0)  // EOF
         return -1;
     return 0;

@@ -262,6 +262,8 @@ void threadRun(Thread* th) {
             ep = create(AT_FDCWD, "/dev/zero", T_CHAR, O_RDONLY);
             ep->dev = ZERO;
             eunlock(ep);
+            // Don't eput here
+
             // ep = ename(AT_FDCWD, "/lib");
             // if (ep == NULL) {
             //     if ((ep = create(AT_FDCWD, "/lib", T_DIR, O_RDONLY)) == 0) {
@@ -276,6 +278,12 @@ void threadRun(Thread* th) {
             //     printf("pre_link error!\n");
             // }
             ep = create(AT_FDCWD, "/dev/tty", T_CHAR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/proc", T_DIR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/proc/mounts", T_CHAR, O_RDONLY);
             eunlock(ep);
             eput(ep);
             setNextTimeout();

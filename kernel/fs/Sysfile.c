@@ -1068,6 +1068,7 @@ int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen) {
     char path[FAT32_MAX_PATH];
     
     if (d->parent == NULL) {
+        printf("%s %d\n", __FILE__, __LINE__);
         return either_copyout(isUser, buf, "/", 2);
     }
     char *s = path + FAT32_MAX_PATH - 1;
