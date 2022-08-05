@@ -398,10 +398,10 @@ void syscallOpenAt(void) {
         tf->a0 = -1;
         return;
     }
-    printf("open path: %s\n", path);
 
     struct dirent* entryPoint;
-    // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
+    printf("open path: %s\n", path);
+    printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
     if (flags & O_CREATE) {
         entryPoint = create(startFd, path, T_FILE, mode);
         if (entryPoint == NULL) {
@@ -1047,7 +1047,8 @@ void syscallSendFile() {
     while (count > 0) {
         int len = MIN(count, 512);
         int r = fileread(inFile, false, (u64)buf, len);
-        r = filewrite(outFile, false, (u64)buf, r);
+        if (r > 0)
+            r = filewrite(outFile, false, (u64)buf, r);
         size += r;
         if (r != len) {
             break;
