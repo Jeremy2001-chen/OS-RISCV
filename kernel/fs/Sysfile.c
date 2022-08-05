@@ -400,8 +400,8 @@ void syscallOpenAt(void) {
     }
 
     struct dirent* entryPoint;
-    printf("open path: %s\n", path);
-    printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
+    // printf("open path: %s\n", path);
+    // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
     if (flags & O_CREATE) {
         entryPoint = create(startFd, path, T_FILE, mode);
         if (entryPoint == NULL) {

@@ -25,7 +25,7 @@
 
 #define FAT32_MAX_FILENAME 255
 #define FAT32_MAX_PATH 260
-#define ENTRY_CACHE_NUM 50
+#define ENTRY_CACHE_NUM 512
 
 typedef struct FileSystem FileSystem;
 struct superblock {

@@ -139,16 +139,16 @@ void userTrap() {
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
             syscallVector[trapframe->a7]();
-            if ((i64)trapframe->a0 <= -1) {
-                printf("return -1: %d\n", trapframe->a7);
-            }
+            // if ((i64)trapframe->a0 <= -1) {
+            //     printf("return -1: %d\n", trapframe->a7);
+            // }
             break;
         case 12:
         case SCAUSE_LOAD_PAGE_FAULT:
         case SCAUSE_STORE_PAGE_FAULT:
             pa = pageLookup(current->pgdir, r_stval(), &pte);
             if (pa == 0) {
-                printf("spec: %lx\n", sepc);
+                // printf("spec: %lx\n", sepc);
                 pageout(current->pgdir, r_stval());
             } else if (*pte & PTE_COW) {
                 cowHandler(current->pgdir, r_stval());
