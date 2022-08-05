@@ -1064,6 +1064,22 @@ bad:
     return;
 }
 
+void syscallAccess() {
+    Trapframe *tf = getHartTrapFrame();
+    int dirfd = tf->a0;
+    char path[FAT32_MAX_PATH];
+    if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+    struct dirent* entryPoint = ename(dirfd, path);
+    if (entryPoint == NULL) {
+        tf->a0 = -1;
+        return;
+    }
+    tf->a0 = 0;
+}
+
 extern FileSystem rootFileSystem;
 int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen) {
     char path[FAT32_MAX_PATH];
