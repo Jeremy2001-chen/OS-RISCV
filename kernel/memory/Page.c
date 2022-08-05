@@ -185,7 +185,7 @@ void pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
-    printf("[Page out]Process Id: %lx, pageout at %lx\n", myProcess()->processId, badAddr);
+    // printf("[Page out]Process Id: %lx, pageout at %lx\n", myProcess()->processId, badAddr);
     if (badAddr < USER_STACK_BOTTOM || badAddr >= USER_STACK_TOP) {
         panic("");
     }
@@ -260,7 +260,7 @@ int copyin(u64* pagetable, char* dst, u64 srcva, u64 len) {
         va0 = DOWN_ALIGN(srcva, PGSIZE);
         pa0 = vir2phy(pagetable, va0, &cow);
         if (pa0 == NULL) {
-            printf("[copyin] wrong buf: %lx\n", srcva);
+            // printf("[copyin] wrong buf: %lx\n", srcva);
             return -1;
         }
         n = PGSIZE - (srcva - va0);
@@ -286,7 +286,7 @@ int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
         va0 = DOWN_ALIGN(dstva, PGSIZE);
         pa0 = vir2phy(pagetable, va0, &cow);
         if (pa0 == NULL) {
-            printf("[copyout] wrong buf: %lx\n", dstva);
+            // printf("[copyout] wrong buf: %lx\n", dstva);
             pageout(pagetable, dstva);
             pa0 = vir2phy(pagetable, va0, &cow);
         }
@@ -349,7 +349,7 @@ int growproc(int n) {
         start += PGSIZE;
     }
 
-    myProcess()->heapBottom += n;
+    myProcess()->heapBottom = end;
     return 0;
 }
 
