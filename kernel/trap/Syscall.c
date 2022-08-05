@@ -17,6 +17,7 @@
 #include <Resource.h>
 #include <FileSystem.h>
 #include <KernelLog.h>
+#include <Error.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
@@ -78,6 +79,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_WRITE_VECTOR] syscallWriteVector,
     [SYSCALL_READ_VECTOR] syscallReadVector,
     [SYSCALL_FUTEX] syscallFutex,
+    [SYSCALL_PROCESS_KILL] syscallProcessKill,
     [SYSCALL_THREAD_KILL] syscallThreadKill,
     [SYSCALL_POLL] syscallPoll,
     [SYSCALL_MEMORY_PROTECT] syscallMemoryProtect,
@@ -95,7 +97,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_SIGNAL_RETURN] syscallSignalReturn,
     [SYSCALL_SEND_FILE] syscallSendFile,
     [SYSCALL_LOG] syscallLog,
-    [SYSCALL_ACCESS] syscallAccess
+    [SYSCALL_ACCESS] syscallAccess,
+    [SYSCALL_GET_SYSTEM_INFO] syscallSystemInfo
 };
 
 extern struct Spinlock printLock;
@@ -224,6 +227,7 @@ void syscallMapMemory() {
 
     argfd(4, 0, &fd);
     if (fd == NULL && start != 0) {
+        printf("%s %d\n", __FILE__, __LINE__);
         trapframe->a0 = -1;
         return;
     }
@@ -448,6 +452,11 @@ void syscallFutex() {
     tf->a0 = 0;
 }
 
+void syscallProcessKill() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = processSignalSend(tf->a0, tf->a1);
+}
+
 void syscallThreadKill() {
     Trapframe *tf = getHartTrapFrame();
     int tid = tf->a0, signal = tf->a1;
@@ -554,4 +563,9 @@ void syscallLog() {
         panic("%d\n", type);
         break;
     }
+}
+
+void syscallSystemInfo() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
 }

@@ -223,7 +223,7 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
     /* if fd == NULL, we think this is a anonymous map */
     if (fd != NULL) {
         fd->off = off;
-        if (fileread(fd, true, addr, len)) {
+        if (fileread(fd, true, addr, len) >= 0) {
             return addr;
         } else {
             return -1;

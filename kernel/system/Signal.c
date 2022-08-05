@@ -64,6 +64,22 @@ int signalSend(int tid, int sig) {
     return 0;
 }
 
+int processSignalSend(int pid, int sig) {
+    extern Thread threads[];
+    int ret = -ESRCH;
+    for (int i = 0; i < PROCESS_TOTAL_NUMBER; i++) {
+        acquireLock(&threads[i].lock);
+        if (threads[i].state != UNUSED) {
+            if (pid == 0 || pid == 1 || pid == threads[i].process->processId) {
+                ret = signalSend(threads[i].id, sig);
+                ret = ret == 0 ? 0 : ret;
+            }
+        }
+        releaseLock(&threads[i].lock);
+    }
+    return ret;
+}
+
 int signProccessMask(u64 how, SignalSet *newSet) {
     Thread* th = myThread();
     switch (how) {
@@ -86,11 +102,7 @@ int doSignalAction(int sig, u64 act, u64 oldAction) {
     if (sig < 1 || sig > SIGNAL_COUNT) {
         return -1;
     }
-    printf("sigaction sig: %d\n", sig);
 	SignalAction *k = getSignalHandler(th->process) + (sig - 1);
-    if (!oldAction) {
-        printf("%s %d\n", __FILE__, __LINE__);
-    }
     if (oldAction) {
         copyout(myProcess()->pgdir, oldAction, (char*)k, sizeof(SignalAction));
     }
