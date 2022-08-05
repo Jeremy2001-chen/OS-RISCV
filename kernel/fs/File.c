@@ -138,6 +138,9 @@ int filewrite(struct File* f, bool isUser, u64 addr, int n) {
 
     if (f->type == FD_PIPE) {
         ret = pipewrite(f->pipe, isUser, addr, n);
+        if (ret == 0) {
+            printf("%d %lx %d\n", isUser, addr, n);
+        }
         assert(ret != 0);
     } else if (f->type == FD_DEVICE) {
         if (f->major < 0 || f->major >= NDEV || !devsw[f->major].write)
