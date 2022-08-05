@@ -40,6 +40,7 @@ void syscallListen();
 void syscallConnect();
 void syscallAccept();
 void syscallFutex();
+void syscallProcessKill();
 void syscallThreadKill();
 void syscallPoll();
 void syscallMemoryProtect();
@@ -51,6 +52,7 @@ void syscallGetEffectiveUserId();
 void syscallMemoryBarrier();
 void syscallSignalReturn();
 void syscallLog();
+void syscallSystemInfo();
 
 extern void (*syscallVector[])(void);
 

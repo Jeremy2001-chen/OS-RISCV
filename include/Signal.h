@@ -125,6 +125,7 @@ void signalInit();
 void signalContextFree(SignalContext* sc);
 int signalContextAlloc(SignalContext **signalContext);
 int signalSend(int tid, int sig);
+int processSignalSend(int pid, int sig);
 int signProccessMask(u64 how, SignalSet *newSet);
 int doSignalAction(int sig, u64 act, u64 oldAction);
 SignalContext* getFirstSignalContext(Thread* thread);
