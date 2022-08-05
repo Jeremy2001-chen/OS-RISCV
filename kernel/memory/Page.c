@@ -185,7 +185,7 @@ void pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
-    // printf("[Page out]Process Id: %lx, pageout at %lx\n", myProcess()->processId, badAddr);
+    printf("[Page out]Process Id: %lx, pageout at %lx\n", myProcess()->processId, badAddr);
     if (badAddr < USER_STACK_BOTTOM || badAddr >= USER_STACK_TOP) {
         panic("");
     }

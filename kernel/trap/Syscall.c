@@ -205,12 +205,15 @@ void syscallSleepTime() {
 void syscallBrk() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 addr = trapframe->a0;
+
     if (addr == 0) {
         trapframe->a0 = myProcess()->heapBottom;
     } else if (addr >= myProcess()->heapBottom) {
-        trapframe->a0 = (sys_sbrk(addr - myProcess()->heapBottom) != -1);
+        sys_sbrk(addr - myProcess()->heapBottom);
+        trapframe->a0 = myProcess()->heapBottom;
     } else 
         trapframe->a0 = -1;
+    printf("brk addr: %lx, a0: %lx\n", addr, trapframe->a0);
 }
 
 void syscallSetBrk() {

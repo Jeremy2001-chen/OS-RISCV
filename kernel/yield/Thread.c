@@ -307,6 +307,17 @@ void threadRun(Thread* th) {
             ep = create(AT_FDCWD, "/proc/meminfo", T_CHAR, O_RDONLY);
             eunlock(ep);
             eput(ep);
+            ep = create(AT_FDCWD, "/proc/sys", T_DIR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/proc/sys/kernel", T_DIR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/proc/sys/kernel/osrelease", T_DIR, O_RDONLY);
+            char release[] = "5.15.0-43-generic";
+            ewrite(ep, false, (u64)release, 0, sizeof(release));
+            eunlock(ep);
+            eput(ep);
             ep = create(AT_FDCWD, "/etc", T_DIR, O_RDONLY);
             eunlock(ep);
             eput(ep);

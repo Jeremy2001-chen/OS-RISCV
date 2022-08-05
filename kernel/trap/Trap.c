@@ -119,6 +119,7 @@ void userTrap() {
     w_stvec((u64) kernelVector);
     userProcessCpuTimeEnd();
     Trapframe* trapframe = getHartTrapFrame();
+    // printf("in tp: %lx\n", trapframe->tp);
     if (scause & SCAUSE_INTERRUPT) {
         trapDevice();
         yield();
@@ -131,17 +132,17 @@ void userTrap() {
         {
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
-            // if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63 
-            // && trapframe->a7 != SYSCALL_WRITE_VECTOR && trapframe->a7 != SYSCALL_POLL) {
-            //     printf("syscall-trigger %d\n", trapframe->a7);
-            // }
+            if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63 
+            && trapframe->a7 != SYSCALL_WRITE_VECTOR && trapframe->a7 != SYSCALL_POLL) {
+                printf("syscall-trigger %d\n", trapframe->a7);
+            }
             if (!syscallVector[trapframe->a7]) {
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
             syscallVector[trapframe->a7]();
-            // if ((i64)trapframe->a0 <= -1) {
-            //     printf("return -1: %d\n", trapframe->a7);
-            // }
+            if ((i64)trapframe->a0 <= -1) {
+                printf("return -1: %d\n", trapframe->a7);
+            }
             break;
         case 12:
         case SCAUSE_LOAD_PAGE_FAULT:
@@ -206,7 +207,7 @@ void userTrapReturn() {
         use(tem);
 #endif
     }
-    
+    // printf("out tp: %lx\n", trapframe->tp);
     // printf("return to user!\n");
     ((void(*)(u64, u64))fn)((u64)trapframe, satp);
 }
