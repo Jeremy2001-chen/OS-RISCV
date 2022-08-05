@@ -283,6 +283,7 @@ void syscallGetFileStateAt(void) {
         tf->a0 = -1;
         return;
     }
+    // printf("Path: %s\n", path);
     struct dirent* entryPoint = ename(dirfd, path);
     if (entryPoint == NULL) {
         tf->a0 = -1;
