@@ -226,7 +226,6 @@ void syscallMapMemory() {
     }
     trapframe->a0 =
         do_mmap(fd, start, len, perm, /*'type' currently not used */ flags, off);
-    printf("domap return: %lx\n", trapframe->a0);
     return;
 }
 

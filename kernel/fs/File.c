@@ -189,7 +189,7 @@ int dirnext(struct File* f, u64 addr) {
 }
 
 u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
-    printf("domap: fd: %d, start: %lx, len: %lx, perm: %lx, flags: %lx, off: %lx\n", fd, start, len, perm, flags, off);
+    // printf("domap: fd: %d, start: %lx, len: %lx, perm: %lx, flags: %lx, off: %lx\n", fd, start, len, perm, flags, off);
     bool alloc = (start == 0);
     if (alloc) {
         myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom, PAGE_SIZE);
@@ -204,11 +204,13 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
         if (pa > 0 && (*pte & PTE_COW)) {
             cowHandler(myProcess()->pgdir, start);
         }
-        PhysicalPage* page;
-        if (pageAlloc(&page) < 0) {
-            return -1;
+        if (pa == 0) {
+            PhysicalPage* page;
+            if (pageAlloc(&page) < 0) {
+                return -1;
+            }
+            pageInsert(myProcess()->pgdir, start, page2pa(page), perm | PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE);
         }
-        pageInsert(myProcess()->pgdir, start, page2pa(page), perm | PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE);
         start += PGSIZE;
     }
 

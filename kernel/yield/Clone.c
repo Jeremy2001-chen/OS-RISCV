@@ -18,6 +18,8 @@ int processFork() {
         if (current->ofile[i])
             process->ofile[i] = filedup(current->ofile[i]);
     process->priority = current->priority;
+    process->heapBottom = current->heapBottom;
+    assert(current->threadCount == 1);
     Trapframe* trapframe = getHartTrapFrame();
     bcopy(trapframe, &thread->trapframe, sizeof(Trapframe));
     thread->trapframe.a0 = 0;
@@ -38,7 +40,6 @@ int processFork() {
                     continue;
                 }
                 u64 va = (i << 30) + (j << 21) + (k << 12);
-                // printf("Fork va addr is %lx\n", va);
                 if (va == TRAMPOLINE_BASE || va == TRAMPOLINE_BASE + PAGE_SIZE) {
                     continue;
                 }

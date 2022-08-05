@@ -1,12 +1,3 @@
-echo "#### independent command test"
-ash -c exit
-sh -c exit
-basename /aaa/bbb
-cal
-clear
-date 
-df 
-dirname /aaa/bbb
 dmesg 
 du
 expr 1 + 1
@@ -53,3 +44,12 @@ grep hello busybox_cmd.txt
 cp busybox_cmd.txt busybox_cmd.bak
 rm busybox_cmd.bak
 find -name "busybox_cmd.txt"
+echo "#### independent command test"
+ash -c exit
+sh -c exit
+basename /aaa/bbb
+cal
+clear
+date 
+df 
+dirname /aaa/bbb
