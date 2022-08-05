@@ -286,7 +286,7 @@ void syscallGetFileStateAt(void) {
     // printf("Path: %s\n", path);
     struct dirent* entryPoint = ename(dirfd, path);
     if (entryPoint == NULL) {
-        tf->a0 = -1;
+        tf->a0 = -ENOENT;
         return;
     }
 
@@ -694,19 +694,19 @@ u64 sys_remove(void) {
     return 0;
 } */
 
-// Must hold too many locks at a time! It's possible to raise a deadlock.
-// Because this op takes some steps, we can't promise
-u64 sys_rename(void) {
+void syscallRenameAt(void) {
+    Trapframe* tf = getHartTrapFrame();
+    int oldFd = tf->a0, newFd = tf->a2;
     char old[FAT32_MAX_PATH], new[FAT32_MAX_PATH];
-    if (argstr(0, old, FAT32_MAX_PATH) < 0 ||
-        argstr(1, new, FAT32_MAX_PATH) < 0) {
-        return -1;
+    if (argstr(1, old, FAT32_MAX_PATH) < 0 || argstr(3, new, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return ;
     }
 
     struct dirent *src = NULL, *dst = NULL, *pdst = NULL;
     int srclock = 0;
     char* name;
-    if ((src = ename(AT_FDCWD, old)) == NULL || (pdst = enameparent(AT_FDCWD, new, old)) == NULL ||
+    if ((src = ename(oldFd, old)) == NULL || (pdst = enameparent(newFd, new, old)) == NULL ||
         (name = formatname(old)) == NULL) {
         goto fail;  // src doesn't exist || dst parent doesn't exist || illegal
                     // new name
@@ -766,7 +766,8 @@ u64 sys_rename(void) {
     eput(pdst);
     eput(src);
 
-    return 0;
+    tf->a0 = 0;
+    return;
 
 fail:
     if (srclock)
@@ -777,7 +778,8 @@ fail:
         eput(pdst);
     if (src)
         eput(src);
-    return -1;
+    tf->a0 = -1;
+    return;
 }
 
 void syscallMount() {
@@ -918,9 +920,9 @@ void syscallLinkAt() {
 
 void syscallUnlinkAt() {
     Trapframe *tf = getHartTrapFrame();
-    int dirFd = tf->a0, flags = tf->a2;
+    int dirFd = tf->a0/*, flags = tf->a2*/;
     
-    assert(flags == 0);
+    // assert(flags == 0);
     char path[FAT32_MAX_PATH];
     if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
         tf->a0 = -1;
@@ -932,6 +934,7 @@ void syscallUnlinkAt() {
         goto bad;
     }
 
+    etrunc(entryPoint);
     entryPoint->_nt_res = 0;
     eremove(entryPoint);
 

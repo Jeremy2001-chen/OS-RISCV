@@ -48,13 +48,11 @@ void syscallPRead();
 void syscallUtimensat();
 void syscallSendFile();
 void syscallAccess();
+void syscallRenameAt(void);
 
 int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen);
 
 u64 sys_remove(void);
-// Must hold too many locks at a time! It's possible to raise a deadlock.
-// Because this op takes some steps, we can't promise
-u64 sys_rename(void);
 int do_linkat(int oldDirFd, char* oldPath, int newDirFd, char* newPath);
 
 #define AT_FDCWD -100

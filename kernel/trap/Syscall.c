@@ -98,7 +98,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_SEND_FILE] syscallSendFile,
     [SYSCALL_LOG] syscallLog,
     [SYSCALL_ACCESS] syscallAccess,
-    [SYSCALL_GET_SYSTEM_INFO] syscallSystemInfo
+    [SYSCALL_GET_SYSTEM_INFO] syscallSystemInfo,
+    [SYSCALL_RENAMEAT] syscallRenameAt
 };
 
 extern struct Spinlock printLock;
