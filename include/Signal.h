@@ -8,39 +8,30 @@
 
 // Don't include Thread.h!!!!
 
-#define SIGNAL_COUNT 1024
+#define SIGNAL_COUNT 128
 typedef struct SignalSet {
-    u64 signal[128 / sizeof(u64)];
+    u64 signal[SIGNAL_COUNT / sizeof(u64)];
 } SignalSet;
 
 inline static bool signalSetAnd(int signal, SignalSet *ss) {
-    if (signal > 128) {
+    if (signal > 64) {
         panic("");
     }
-    if (signal <= 64) {
-        return (ss->signal[0] & (1UL << (signal - 1))) != 0;
-    }
-    return (ss->signal[1] & (1UL << (signal - 65))) != 0;
+    return (ss->signal[0] & (1UL << (signal - 1))) != 0;
 }
 
 inline static void signalProcessStart(int signal, SignalSet *ss) {
-    if (signal > 128) {
+    if (signal > 64) {
         panic("");
     }
-    if (signal <= 64) {
-        ss->signal[0] |= (1UL << (signal - 1));
-    }
-    ss->signal[1] |= (1UL << (signal - 65));
+    ss->signal[0] |= (1UL << (signal - 1));
 }
 
 inline static void signalProcessEnd(int signal, SignalSet *ss) {
-    if (signal > 128) {
+    if (signal > 64) {
         panic("");
     }
-    if (signal <= 64) {
-        ss->signal[0] &= ~(1UL << (signal - 1));
-    }
-    ss->signal[1] &= ~(1UL << (signal - 65));
+    ss->signal[0] &= ~(1UL << (signal - 1));
 }
 
 typedef struct SignalInfo {

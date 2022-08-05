@@ -69,14 +69,12 @@ int signProccessMask(u64 how, SignalSet *newSet) {
     switch (how) {
     case SIG_BLOCK:
         th->blocked.signal[0] |= newSet->signal[0];
-        th->blocked.signal[1] |= newSet->signal[1];
         return 0;
     case SIG_UNBLOCK:
         th->blocked.signal[0] &= ~(newSet->signal[0]);
-        th->blocked.signal[1] &= ~(newSet->signal[1]);
         return 0;
     case SIG_SETMASK:
-        th->blocked = *newSet;
+        th->blocked.signal[0] = newSet->signal[0];
         return 0;
     default:
         return -1;
@@ -88,7 +86,11 @@ int doSignalAction(int sig, u64 act, u64 oldAction) {
     if (sig < 1 || sig > SIGNAL_COUNT) {
         return -1;
     }
+    printf("sigaction sig: %d\n", sig);
 	SignalAction *k = getSignalHandler(th->process) + (sig - 1);
+    if (!oldAction) {
+        printf("%s %d\n", __FILE__, __LINE__);
+    }
     if (oldAction) {
         copyout(myProcess()->pgdir, oldAction, (char*)k, sizeof(SignalAction));
     }

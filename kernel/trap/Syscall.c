@@ -288,9 +288,9 @@ void syscallSignProccessMask() {
     u64 how = tf->a0;
     SignalSet set;
     Process *p = myProcess();
-    copyin(p->pgdir, (char*)&set, tf->a1, sizeof(SignalSet));
+    copyin(p->pgdir, (char*)&set, tf->a1, tf->a3);
     if (tf->a2 != 0) {
-        copyout(p->pgdir, tf->a2, (char*)(&myThread()->blocked), sizeof(SignalSet));
+        copyout(p->pgdir, tf->a2, (char*)(&myThread()->blocked), tf->a3);
     }
     tf->a0 = signProccessMask(how, &set);
 }
@@ -308,7 +308,7 @@ void syscallSignalTimedWait() {
         copyin(p->pgdir, (char*) &ts, tf->a2, sizeof(TimeSpec));
     }
     SignalSet signalSet;
-    copyin(p->pgdir, (char*) &signalSet, tf->a0, sizeof(SignalSet));
+    copyin(p->pgdir, (char*) &signalSet, tf->a0, tf->a3);
     SignalInfo info;
     copyin(p->pgdir, (char*) &info, tf->a0, sizeof(SignalInfo));
     tf->a0 = doSignalTimedWait(&signalSet, &info, tf->a2 ? &ts: 0);
