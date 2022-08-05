@@ -47,6 +47,7 @@ void syscallReadVector(void);
 void syscallPRead();
 void syscallUtimensat();
 void syscallSendFile();
+void syscallAccess();
 
 int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen);
 

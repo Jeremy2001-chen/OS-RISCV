@@ -50,6 +50,7 @@ void syscallGetUserId();
 void syscallGetEffectiveUserId();
 void syscallMemoryBarrier();
 void syscallSignalReturn();
+void syscallLog();
 
 extern void (*syscallVector[])(void);
 

@@ -16,6 +16,7 @@
 #include <Clone.h>
 #include <Resource.h>
 #include <FileSystem.h>
+#include <KernelLog.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
@@ -92,7 +93,9 @@ void (*syscallVector[])(void) = {
     [SYSCALL_SET_PROCESS_GROUP_ID] syscallGetUserId,
     [SYSCALL_MEMORY_BARRIER] syscallMemoryBarrier,
     [SYSCALL_SIGNAL_RETURN] syscallSignalReturn,
-    [SYSCALL_SEND_FILE] syscallSendFile
+    [SYSCALL_SEND_FILE] syscallSendFile,
+    [SYSCALL_LOG] syscallLog,
+    [SYSCALL_ACCESS] syscallAccess
 };
 
 extern struct Spinlock printLock;
@@ -531,4 +534,24 @@ void syscallSignalReturn() {
     bcopy(&sc->contextRecover, tf, sizeof(Trapframe));
     signalProcessEnd(sc->signal, &thread->processing);
     signalFinish(thread, sc);
+}
+
+void syscallLog() {
+    Trapframe *tf = getHartTrapFrame();
+    int type = tf->a0;
+    u64 buf = tf->a1;
+    u32 len = tf->a2;
+    char tmp[] = "We havn't support syslog yet!\n";
+    switch (type) {
+    case SYSLOG_ACTION_READ_ALL:
+        copyout(myProcess()->pgdir, buf, (char*)&tmp, MIN(sizeof(tmp), len));
+        tf->a0 = MIN(sizeof(tmp), len);
+        return;
+    case SYSLOG_ACTION_SIZE_BUFFER:
+        tf->a0 = sizeof(tmp);
+        return;
+    default:
+        panic("%d\n", type);
+        break;
+    }
 }
