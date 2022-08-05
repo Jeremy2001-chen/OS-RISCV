@@ -185,7 +185,10 @@ void pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
-    // printf("[Page out]pageout at %lx\n", badAddr);
+    printf("[Page out]Process Id: %lx, pageout at %lx\n", myProcess()->processId, badAddr);
+    if (badAddr < USER_STACK_BOTTOM || badAddr >= USER_STACK_TOP) {
+        panic("");
+    }
     PhysicalPage *page;
     if (pageAlloc(&page) < 0) {
         panic("");
@@ -256,8 +259,10 @@ int copyin(u64* pagetable, char* dst, u64 srcva, u64 len) {
     while (len > 0) {
         va0 = DOWN_ALIGN(srcva, PGSIZE);
         pa0 = vir2phy(pagetable, va0, &cow);
-        if (pa0 == NULL)
+        if (pa0 == NULL) {
+            printf("[copyin] wrong buf: %lx\n", srcva);
             return -1;
+        }
         n = PGSIZE - (srcva - va0);
         if (n > len)
             n = len;
@@ -280,8 +285,11 @@ int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
     while (len > 0) {
         va0 = DOWN_ALIGN(dstva, PGSIZE);
         pa0 = vir2phy(pagetable, va0, &cow);
-        if (pa0 == NULL)
-            return -1;
+        if (pa0 == NULL) {
+            printf("[copyout] wrong buf: %lx\n", dstva);
+            pageout(pagetable, dstva);
+            pa0 = vir2phy(pagetable, va0, &cow);
+        }
         if (cow) {
             // printf("COW?\n");
             cowHandler(pagetable, va0);
@@ -325,6 +333,22 @@ int memsetOut(u64 *pgdir, u64 dst, u8 value, u64 len) {
 int growproc(int n) {
     if (myProcess()->heapBottom + n >= USER_HEAP_TOP)
         return -1;
+    u64 start = UP_ALIGN(myProcess()->heapBottom, PAGE_SIZE);
+    u64 end = UP_ALIGN(myProcess()->heapBottom + n, PAGE_SIZE);
+    while (start < end) {
+        u64* pte;
+        u64 pa = pageLookup(myProcess()->pgdir, start, &pte);
+        if (pa > 0 && (*pte & PTE_COW)) {
+            cowHandler(myProcess()->pgdir, start);
+        }
+        PhysicalPage* page;
+        if (pageAlloc(&page) < 0) {
+            return -1;
+        }
+        pageInsert(myProcess()->pgdir, start, page2pa(page), PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE);
+        start += PGSIZE;
+    }
+
     myProcess()->heapBottom += n;
     return 0;
 }

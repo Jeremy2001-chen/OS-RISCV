@@ -215,7 +215,7 @@ void syscallSetBrk() {
 void syscallMapMemory() {
     Trapframe* trapframe = getHartTrapFrame();
     u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2,
-        off = trapframe->a5/*, flags = trapframe->a3*/;
+        off = trapframe->a5, flags = trapframe->a3;
     struct File* fd;
     // printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
 
@@ -225,14 +225,16 @@ void syscallMapMemory() {
         return;
     }
     trapframe->a0 =
-        do_mmap(fd, start, len, perm, /*'type' currently not used */ 0, off);
+        do_mmap(fd, start, len, perm, /*'type' currently not used */ flags, off);
+    printf("domap return: %lx\n", trapframe->a0);
     return;
 }
 
 void syscallUnMapMemory() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 start = trapframe->a0, len = trapframe->a1, end = start + len;
-    start = DOWN_ALIGN(start, 12);
+    start = UP_ALIGN(start, PAGE_SIZE);
+    end = DOWN_ALIGN(end, PAGE_SIZE);
     while (start < end) {
         if (pageRemove(myProcess()->pgdir, start) < 0) {
             trapframe->a0 = -1;
@@ -458,7 +460,7 @@ void syscallPoll() {
         short revents;
     };
     struct pollfd p;
-    u64 startva = 0;
+    u64 startva = tf->a0;
     int n = tf->a1;
     int cnt = 0;
     for (int i = 0; i < n; i++) {

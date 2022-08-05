@@ -106,8 +106,8 @@ void userTrap() {
     u64 scause = r_scause();
     Process* current = myProcess();
     // int hartId = r_hartid();
-    // printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx, a7 is %d\n", 
-    //    hartId, sstatus, sepc, scause, r_stval(), getHartTrapFrame()->a7);
+    // printf("[User Trap] hartId is %lx, threadId: %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx, a7 is %d\n", 
+    //    hartId, myThread()->id, sstatus, sepc, scause, r_stval(), getHartTrapFrame()->a7);
 #ifdef CJY_DEBUG
     printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
 #else
@@ -133,11 +133,11 @@ void userTrap() {
             trapframe->epc += 4;
             // if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63 
             // && trapframe->a7 != SYSCALL_WRITE_VECTOR && trapframe->a7 != SYSCALL_POLL) {
-            //     printf("syscall-trigger %d\n", trapframe->a7);
             // }
             if (!syscallVector[trapframe->a7]) {
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
+            printf("syscall-trigger %d\n", trapframe->a7);
             syscallVector[trapframe->a7]();
             if ((i64)trapframe->a0 <= -1) {
                 printf("return -1: %d\n", trapframe->a7);
@@ -148,7 +148,7 @@ void userTrap() {
         case SCAUSE_STORE_PAGE_FAULT:
             pa = pageLookup(current->pgdir, r_stval(), &pte);
             if (pa == 0) {
-                // printf("spec: %lx\n", sepc);
+                printf("spec: %lx\n", sepc);
                 pageout(current->pgdir, r_stval());
             } else if (*pte & PTE_COW) {
                 cowHandler(current->pgdir, r_stval());

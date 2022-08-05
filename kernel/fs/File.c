@@ -189,6 +189,7 @@ int dirnext(struct File* f, u64 addr) {
 }
 
 u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
+    printf("domap: fd: %d, start: %lx, len: %lx, perm: %lx, flags: %lx, off: %lx\n", fd, start, len, perm, flags, off);
     bool alloc = (start == 0);
     if (alloc) {
         myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom, PAGE_SIZE);
@@ -196,7 +197,7 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
         myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom + len, PAGE_SIZE);
     }
     u64 addr = start, end = start + len;
-    start = DOWN_ALIGN(start, 12);
+    start = DOWN_ALIGN(start, PAGE_SIZE);
     while (start < end) {
         u64* pte;
         u64 pa = pageLookup(myProcess()->pgdir, start, &pte);
