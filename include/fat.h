@@ -64,7 +64,7 @@ struct dirent {
     u8 _nt_res;
     FileSystem *fileSystem;
     /* for OS */
-    enum { ZERO = 10} dev;
+    enum { ZERO = 10, OSRELEASE=12 } dev;
     uint8 dirty;
     short valid;
     FileSystem *head;
@@ -105,7 +105,7 @@ void estat(struct dirent* ep, struct stat* st);
 void elock(struct dirent* entry);
 void eunlock(struct dirent* entry);
 int enext(struct dirent* dp, struct dirent* ep, uint off, int* count);
-struct dirent* ename(int fd, char* path);
+struct dirent* ename(int fd, char* path, bool jump);
 struct dirent* enameparent(int fd, char* path, char* name);
 int eread(struct dirent* entry, int user_dst, u64 dst, uint off, uint n);
 int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n);

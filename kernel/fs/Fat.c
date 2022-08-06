@@ -364,6 +364,13 @@ int eread(struct dirent* entry, int user_dst, u64 dst, uint off, uint n) {
         if (!either_memset(user_dst, dst, 0, n)) {
             return n;
         }
+        panic("error!\n");
+    } else if (entry->dev == OSRELEASE) {
+        char osrelease[] = "10.2.0";
+        if (!either_copyout(user_dst, dst, (char*)osrelease, sizeof(osrelease))) {
+            return sizeof(osrelease);
+        }
+        panic("error!\n");
     }
     if (off > entry->file_size || off + n < off ||
         (entry->attribute & ATTR_DIRECTORY)) {
@@ -1068,13 +1075,13 @@ static struct dirent* jumpToLinkDirent(struct dirent* link) {
     char buf[FAT32_MAX_FILENAME];
     while (link && link->_nt_res == DT_LNK) {
         eread(link, 0, (u64)buf, 0, FAT32_MAX_FILENAME);
-        link = ename(AT_FDCWD, buf);
+        link = ename(AT_FDCWD, buf, true);
     }
     assert(link != NULL);
     return link;
 }
 
-static struct dirent* lookup_path(int fd, char* path, int parent, char* name) {
+static struct dirent* lookup_path(int fd, char* path, int parent, char* name, bool jump) {
     struct dirent *entry, *next;
     
     if (*path != '/' && fd != AT_FDCWD && fd >= 0 && fd < NOFILE) {
@@ -1122,7 +1129,9 @@ static struct dirent* lookup_path(int fd, char* path, int parent, char* name) {
 
     }
 
-    entry = jumpToLinkDirent(entry);
+    if (jump) {
+        entry = jumpToLinkDirent(entry);
+    }
 
     if (parent) {
         eput(entry);
@@ -1131,11 +1140,11 @@ static struct dirent* lookup_path(int fd, char* path, int parent, char* name) {
     return entry;
 }
 
-struct dirent* ename(int fd, char* path) {
+struct dirent* ename(int fd, char* path, bool jump) {
     char name[FAT32_MAX_FILENAME + 1];
-    return lookup_path(fd, path, 0, name);
+    return lookup_path(fd, path, 0, name, jump);
 }
 
 struct dirent* enameparent(int fd, char* path, char* name) {
-    return lookup_path(fd, path, 1, name);
+    return lookup_path(fd, path, 1, name, true);
 }
