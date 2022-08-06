@@ -22,7 +22,7 @@ void testfat() {
     eunlock(testfile);
     eput(testfile);
     MSG_PRINT("eput file finish");
-    testfile = ename(AT_FDCWD, "/testfile");
+    testfile = ename(AT_FDCWD, "/testfile", true);
     if (testfile == NULL) {
         printf("[testfat] open file error\n");
     }

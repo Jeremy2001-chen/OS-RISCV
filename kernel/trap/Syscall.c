@@ -99,7 +99,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_LOG] syscallLog,
     [SYSCALL_ACCESS] syscallAccess,
     [SYSCALL_GET_SYSTEM_INFO] syscallSystemInfo,
-    [SYSCALL_RENAMEAT] syscallRenameAt
+    [SYSCALL_RENAMEAT] syscallRenameAt,
+    [SYSCALL_READLINKAT] syscallReadLinkAt
 };
 
 extern struct Spinlock printLock;
@@ -271,12 +272,13 @@ void syscallUname() {
     } uname;
     strncpy(uname.sysname, "my_linux", 65);
     strncpy(uname.nodename, "my_node", 65);
-    strncpy(uname.release, "MIPS-OS", 65);
-    strncpy(uname.version, "1.1.0", 65);
+    strncpy(uname.release, "10.2.0", 65);
+    strncpy(uname.version, "MIPS-OS", 65);
     strncpy(uname.machine, "Risc-V sifive_u", 65);
     strncpy(uname.domainname, "Beijing", 65);
     Trapframe *tf = getHartTrapFrame();
     copyout(myProcess()->pgdir, tf->a0, (char*)&uname, sizeof(struct utsname));
+    tf->a0 = 0;
 }
 
 void syscallSetTidAddress() {

@@ -330,7 +330,7 @@ int exec(char* path, char** argv) {
     u64* oldpagetable = p->pgdir;
     u64 phdr_addr = 0; // virtual address in user space, point to the program header. We will pass 'phdr_addr' to ld.so
 
-    if ((de = ename(AT_FDCWD, path)) == 0) {
+    if ((de = ename(AT_FDCWD, path, true)) == 0) {
         MSG_PRINT("find file error\n");
         return -1;
     }
@@ -447,7 +447,7 @@ int exec(char* path, char** argv) {
         if (elf_interpreter[ph.filesz - 1] != '\0')
             panic("interpreter path is not NULL terminated");
 
-        interpreter = ename(AT_FDCWD, elf_interpreter);
+        interpreter = ename(AT_FDCWD, elf_interpreter, true);
 
         // kfree(elf_interpreter);
         if (interpreter == NULL)
@@ -483,10 +483,6 @@ int exec(char* path, char** argv) {
     printf("end of load interpreter\n");
 #endif
 /* ============ End of find and load interpreter ============== */
-
-    eunlock(de);
-    eput(de);
-    de = 0;
 
     p = myProcess();
     sp = USER_STACK_TOP;
@@ -636,7 +632,23 @@ int exec(char* path, char** argv) {
 
     getHartTrapFrame()->epc = elf_entry;  // initial program counter = main
     getHartTrapFrame()->sp = sp;          // initial stack pointer
-
+    
+    
+    char buf[FAT32_MAX_PATH];
+    r = getAbsolutePath(de, false, (u64)buf, sizeof(buf));
+    if (r) {
+        panic("");
+    }
+    eunlock(de);
+    eput(de);
+    de = ename(AT_FDCWD, "/proc/self/exe", false);
+    if (!de) {
+        panic("");
+    }
+    r = ewrite(de, false, (u64)buf, 0, strlen(buf));
+    if (r < 0) {
+        panic("");
+    }
     //free old pagetable
     pgdirFree(oldpagetable);
     asm volatile("fence.i");

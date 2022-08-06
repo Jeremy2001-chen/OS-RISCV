@@ -49,11 +49,13 @@ void syscallUtimensat();
 void syscallSendFile();
 void syscallAccess();
 void syscallRenameAt(void);
+void syscallReadLinkAt(void);
 
 int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen);
 
 u64 sys_remove(void);
 int do_linkat(int oldDirFd, char* oldPath, int newDirFd, char* newPath);
+int do_unlinkat(int fd, char* path);
 
 #define AT_FDCWD -100
 
