@@ -16,6 +16,12 @@ typedef struct TimeSpec {
     long microSecond;    
 } TimeSpec;
 
+
+typedef struct IntervalTimer {
+    TimeSpec interval;
+    TimeSpec expiration;    
+} IntervalTimer;
+
 typedef struct CpuTimes {
     long user;
     long kernel;
@@ -23,5 +29,8 @@ typedef struct CpuTimes {
     long deadChildrenKernel;
 } CpuTimes;
 
+
+void setTimer(IntervalTimer new);
+IntervalTimer getTimer();
 
 #endif

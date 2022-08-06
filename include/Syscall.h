@@ -55,6 +55,8 @@ void syscallSignalReturn();
 void syscallLog();
 void syscallSystemInfo();
 void syscallGetResouceUsage();
+void syscallSelect();
+void syscallSetTimer();
 
 extern void (*syscallVector[])(void);
 

@@ -140,8 +140,8 @@ int getcmd(char* buf, int nbuf) {
         printf("get current work directory error!\n");
     printf("[%s]:$ ", cwd_buf);
     memset(buf, 0, nbuf);
-    // gets(buf, nbuf);
-    strcpy(buf, "./busybox sh lmbench_testcode.sh");
+    gets(buf, nbuf);
+    // strcpy(buf, "./busybox sh lmbench_testcode.sh");
     if (buf[0] == 0)  // EOF
         return -1;
     return 0;

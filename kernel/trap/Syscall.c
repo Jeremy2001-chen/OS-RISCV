@@ -102,7 +102,9 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_SYSTEM_INFO] syscallSystemInfo,
     [SYSCALL_RENAMEAT] syscallRenameAt,
     [SYSCALL_READLINKAT] syscallReadLinkAt,
-    [SYSCALL_GET_RESOURCE_USAGE] syscallGetResouceUsage
+    [SYSCALL_GET_RESOURCE_USAGE] syscallGetResouceUsage,
+    [SYSCALL_SELECT] syscallSelect,
+    [SYSCALL_SET_TIMER] syscallSetTimer
 };
 
 extern struct Spinlock printLock;
@@ -618,4 +620,23 @@ void syscallGetResouceUsage() {
     printf("usage: u: %ld.%ld, s: %ld.%ld\n", rusage.ru_utime.second, rusage.ru_utime.microSecond, rusage.ru_stime.second, rusage.ru_stime.microSecond);
     copyout(myProcess()->pgdir, usage, (char*)&rusage, sizeof (struct rusage));
     tf->a0 = 0;
+}
+
+void syscallSelect() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallSetTimer() {
+    Trapframe *tf = getHartTrapFrame();
+    printf("%lx %lx %lx\n", tf->a0, tf->a1, tf->a2);
+    IntervalTimer time = getTimer();
+    if (tf->a2) {
+        copyout(myProcess()->pgdir, tf->a2, (char*)&time, sizeof(IntervalTimer));
+    }
+    if (tf->a1) {
+        copyin(myProcess()->pgdir, (char*)&time, tf->a1, sizeof(IntervalTimer));
+        setTimer(time);
+    }
+    tf->a0 = 0;    
 }
