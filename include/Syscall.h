@@ -54,6 +54,7 @@ void syscallMemoryBarrier();
 void syscallSignalReturn();
 void syscallLog();
 void syscallSystemInfo();
+void syscallGetResouceUsage();
 
 extern void (*syscallVector[])(void);
 

@@ -105,9 +105,9 @@ void userTrap() {
     u64 sstatus = r_sstatus();
     u64 scause = r_scause();
     Process* current = myProcess();
-    // int hartId = r_hartid();
-    // printf("[User Trap] hartId is %lx, threadId: %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx, a7 is %d\n", 
-    //    hartId, myThread()->id, sstatus, sepc, scause, r_stval(), getHartTrapFrame()->a7);
+    int hartId = r_hartid();
+    printf("[User Trap] hartId is %lx, threadId: %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx, a7 is %d\n", 
+       hartId, myThread()->id, sstatus, sepc, scause, r_stval(), getHartTrapFrame()->a7);
 #ifdef CJY_DEBUG
     printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
 #else
@@ -130,13 +130,13 @@ void userTrap() {
         // printf("sepc:%lx sstatus:%lx scause:%lx \n", sepc, sstatus, scause);
         switch (scause & SCAUSE_EXCEPTION_CODE)
         {
-        case SCAUSE_BREAKPOINT:
-            trapframe->epc += 4;
-            break;
+        // case SCAUSE_BREAKPOINT:
+        //     trapframe->epc += 4;
+        //     break;
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
             if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63 
-            && trapframe->a7 != SYSCALL_WRITE_VECTOR && trapframe->a7 != SYSCALL_POLL) {
+            && trapframe->a7 != SYSCALL_WRITE_VECTOR && trapframe->a7 != SYSCALL_POLL && trapframe->a7 != 113 && trapframe->a7 != 165) {
                 printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
             }
             if (!syscallVector[trapframe->a7]) {

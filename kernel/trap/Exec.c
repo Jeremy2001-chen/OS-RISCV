@@ -511,7 +511,7 @@ int exec(char* path, char** argv) {
     ustack[argc + 1] = 0;
 
     int envCount = 2;
-    char *envVariable[] = {"LD_LIBRARY_PATH=/", "PATH=/"};
+    char *envVariable[] = {"LD_LIBRARY_PATH=/", "PATH=/", "LOOP_O=5", "TIMING_O=5", "ENOUGH=5"};
     for (i = 0; i < envCount; i++) {
         sp -= strlen(envVariable[i]) + 1;
         sp -= sp % 16;  // riscv sp must be 16-byte aligned

@@ -101,7 +101,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_ACCESS] syscallAccess,
     [SYSCALL_GET_SYSTEM_INFO] syscallSystemInfo,
     [SYSCALL_RENAMEAT] syscallRenameAt,
-    [SYSCALL_READLINKAT] syscallReadLinkAt
+    [SYSCALL_READLINKAT] syscallReadLinkAt,
+    [SYSCALL_GET_RESOURCE_USAGE] syscallGetResouceUsage
 };
 
 extern struct Spinlock printLock;
@@ -191,6 +192,7 @@ void syscallGetTime() {
     TimeSpec ts;
     ts.second = time / 1000000;
     ts.microSecond = time % 1000000;
+    printf("time: %ld %ld\n", ts.second, ts.microSecond);
     copyout(myProcess()->pgdir, tf->a1, (char*)&ts, sizeof(TimeSpec));
     tf->a0 = 0;
 }
@@ -580,5 +582,40 @@ void syscallLog() {
 
 void syscallSystemInfo() {
     Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallGetResouceUsage() {
+    Trapframe *tf = getHartTrapFrame();
+    int who = tf->a0;
+    u64 usage = tf->a1;
+    assert(who == 0);
+
+    struct rusage {
+        struct TimeSpec ru_utime; /* user CPU time used */
+        struct TimeSpec ru_stime; /* system CPU time used */
+        long   ru_maxrss;        /* maximum resident set size */
+        long   ru_ixrss;         /* integral shared memory size */
+        long   ru_idrss;         /* integral unshared data size */
+        long   ru_isrss;         /* integral unshared stack size */
+        long   ru_minflt;        /* page reclaims (soft page faults) */
+        long   ru_majflt;        /* page faults (hard page faults) */
+        long   ru_nswap;         /* swaps */
+        long   ru_inblock;       /* block input operations */
+        long   ru_oublock;       /* block output operations */
+        long   ru_msgsnd;        /* IPC messages sent */
+        long   ru_msgrcv;        /* IPC messages received */
+        long   ru_nsignals;      /* signals received */
+        long   ru_nvcsw;         /* voluntary context switches */
+        long   ru_nivcsw;        /* involuntary context switches */
+    } rusage;
+
+    rusage.ru_utime.second = myProcess()->cpuTime.user / 1000000;
+    rusage.ru_utime.microSecond = myProcess()->cpuTime.user % 1000000;
+    rusage.ru_stime.second = myProcess()->cpuTime.kernel / 1000000;
+    rusage.ru_stime.microSecond = myProcess()->cpuTime.kernel % 1000000;
+
+    printf("usage: u: %ld.%ld, s: %ld.%ld\n", rusage.ru_utime.second, rusage.ru_utime.microSecond, rusage.ru_stime.second, rusage.ru_stime.microSecond);
+    copyout(myProcess()->pgdir, usage, (char*)&rusage, sizeof (struct rusage));
     tf->a0 = 0;
 }
