@@ -42,6 +42,7 @@ void syscallAccept();
 void syscallFutex();
 void syscallProcessKill();
 void syscallThreadKill();
+void syscallThreadGroupKill();
 void syscallPoll();
 void syscallMemoryProtect();
 void syscallGetRobustList();
