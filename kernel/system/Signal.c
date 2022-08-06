@@ -49,7 +49,7 @@ int signalSend(int tgid, int tid, int sig) {
         panic("");
         return -EINVAL;
     }
-    if(tgid != 0 && thread->process->parentId != tgid){
+    if (tgid != 0 && thread->process->processId != tgid) {
         // 线程所属的线程组（进程）与tgid不相等
         return -ESRCH; // tid所代表的线程已经结束了
     }

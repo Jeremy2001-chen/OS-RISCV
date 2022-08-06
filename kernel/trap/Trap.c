@@ -130,6 +130,9 @@ void userTrap() {
         // printf("sepc:%lx sstatus:%lx scause:%lx \n", sepc, sstatus, scause);
         switch (scause & SCAUSE_EXCEPTION_CODE)
         {
+        case SCAUSE_BREAKPOINT:
+            trapframe->epc += 4;
+            break;
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
             if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63 
