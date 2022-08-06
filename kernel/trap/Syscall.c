@@ -81,6 +81,7 @@ void (*syscallVector[])(void) = {
     [SYSCALL_FUTEX] syscallFutex,
     [SYSCALL_PROCESS_KILL] syscallProcessKill,
     [SYSCALL_THREAD_KILL] syscallThreadKill,
+    [SYSCALL_THREAD_GROUP_KILL] syscallThreadGroupKill,
     [SYSCALL_POLL] syscallPoll,
     [SYSCALL_MEMORY_PROTECT] syscallMemoryProtect,
     [SYSCALL_SET_ROBUST_LIST] syscallSetRobustList,
@@ -464,7 +465,13 @@ void syscallProcessKill() {
 void syscallThreadKill() {
     Trapframe *tf = getHartTrapFrame();
     int tid = tf->a0, signal = tf->a1;
-    tf->a0 = signalSend(tid, signal);
+    tf->a0 = signalSend(0, tid, signal);
+}
+
+void syscallThreadGroupKill() {
+    Trapframe *tf = getHartTrapFrame();
+    int tgid = tf->a0, tid = tf->a1, signal = tf->a2;
+    tf->a0 = signalSend(tgid, tid, signal);
 }
 
 void syscallPoll() {

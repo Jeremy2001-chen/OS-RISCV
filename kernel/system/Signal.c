@@ -38,7 +38,8 @@ int signalContextAlloc(SignalContext **signalContext) {
     return -1;
 }
 
-int signalSend(int tid, int sig) {
+int signalSend(int tgid, int tid, int sig) {
+/* if tgid != 0, we will check if tid is belong to tgid. tgid is the same as processId */
     if (tid == -1) {
         panic("thread to group not support!\n");
     }
@@ -47,6 +48,10 @@ int signalSend(int tid, int sig) {
     if (r < 0) {
         panic("");
         return -EINVAL;
+    }
+    if(tgid != 0 && thread->process->parentId != tgid){
+        // 线程所属的线程组（进程）与tgid不相等
+        return -ESRCH; // tid所代表的线程已经结束了
     }
     // if (!LIST_EMPTY(&thread->waitingSignal)) {
     //     // dangerous
@@ -71,7 +76,7 @@ int processSignalSend(int pid, int sig) {
         acquireLock(&threads[i].lock);
         if (threads[i].state != UNUSED) {
             if (pid == 0 || pid == 1 || pid == threads[i].process->processId) {
-                ret = signalSend(threads[i].id, sig);
+                ret = signalSend(0, threads[i].id, sig);
                 ret = ret == 0 ? 0 : ret;
             }
         }
