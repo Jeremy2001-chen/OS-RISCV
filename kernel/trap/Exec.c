@@ -645,7 +645,7 @@ int exec(char* path, char** argv) {
     if (!de) {
         panic("");
     }
-    r = ewrite(de, false, (u64)buf, 0, strlen(buf));
+    r = ewrite(de, false, (u64)buf, 0, strlen(buf) + 1);
     if (r < 0) {
         panic("");
     }

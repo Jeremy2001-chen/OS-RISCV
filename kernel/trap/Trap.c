@@ -135,18 +135,18 @@ void userTrap() {
         //     break;
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
-            if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63 
-            && trapframe->a7 != SYSCALL_WRITE_VECTOR && trapframe->a7 != SYSCALL_POLL && trapframe->a7 != 113 && trapframe->a7 != 165 
-            && trapframe->a7 != 173 && trapframe->a7 != 72) {
-                printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
-            }
+            // if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63 
+            // && trapframe->a7 != SYSCALL_WRITE_VECTOR && trapframe->a7 != SYSCALL_POLL && trapframe->a7 != 113 && trapframe->a7 != 165 
+            // && trapframe->a7 != 173 && trapframe->a7 != 72) {
+            //     printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
+            // }
             if (!syscallVector[trapframe->a7]) {
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
             syscallVector[trapframe->a7]();
-            if ((i64)trapframe->a0 <= -1) {
-                printf("return -1: %d\n", trapframe->a7);
-            }
+            // if ((i64)trapframe->a0 <= -1) {
+            //     printf("return -1: %d\n", trapframe->a7);
+            // }
             break;
         case 12:
         case SCAUSE_LOAD_PAGE_FAULT:

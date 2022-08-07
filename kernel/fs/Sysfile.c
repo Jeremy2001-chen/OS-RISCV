@@ -288,7 +288,7 @@ void syscallGetFileStateAt(void) {
         tf->a0 = -1;
         return;
     }
-    printf("Path: %s\n", path);
+    // printf("Path: %s\n", path);
     struct dirent* entryPoint = ename(dirfd, path, true);
     if (entryPoint == NULL) {
         tf->a0 = -ENOENT;
@@ -405,8 +405,8 @@ void syscallOpenAt(void) {
     }
 
     struct dirent* entryPoint;
-    printf("open path: %s\n", path);
-    printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
+    // printf("open path: %s\n", path);
+    // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
     if (flags & O_CREATE) {
         entryPoint = create(startFd, path, T_FILE, mode);
         if (entryPoint == NULL) {

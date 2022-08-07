@@ -222,7 +222,7 @@ void syscallBrk() {
         trapframe->a0 = myProcess()->heapBottom;
     } else 
         trapframe->a0 = -1;
-    printf("brk addr: %lx, a0: %lx\n", addr, trapframe->a0);
+    // printf("brk addr: %lx, a0: %lx\n", addr, trapframe->a0);
 }
 
 void syscallSetBrk() {
@@ -684,7 +684,7 @@ void syscallSelect() {
 
 void syscallSetTimer() {
     Trapframe *tf = getHartTrapFrame();
-    printf("%lx %lx %lx\n", tf->a0, tf->a1, tf->a2);
+    // printf("set Timer: %lx %lx %lx\n", tf->a0, tf->a1, tf->a2);
     IntervalTimer time = getTimer();
     if (tf->a2) {
         copyout(myProcess()->pgdir, tf->a2, (char*)&time, sizeof(IntervalTimer));
