@@ -1138,3 +1138,7 @@ int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen) {
     return either_copyout(isUser, buf, (void*)s, strlen(s) + 1);
 }
 
+void syscallUmask() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}

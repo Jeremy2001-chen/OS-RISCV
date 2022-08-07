@@ -106,7 +106,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_READLINKAT] syscallReadLinkAt,
     [SYSCALL_GET_RESOURCE_USAGE] syscallGetResouceUsage,
     [SYSCALL_SELECT] syscallSelect,
-    [SYSCALL_SET_TIMER] syscallSetTimer
+    [SYSCALL_SET_TIMER] syscallSetTimer,
+    [SYSCALL_UMASK] syscallUmask
 };
 
 extern struct Spinlock printLock;
