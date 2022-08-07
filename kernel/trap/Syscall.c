@@ -380,7 +380,7 @@ void syscallSocket() {
 
 void syscallBind() {
     Trapframe *tf = getHartTrapFrame();
-    assert(tf->a2 == sizeof(SocketAddr));
+    // assert(tf->a2 == sizeof(SocketAddr));
     SocketAddr sa;
     copyin(myProcess()->pgdir, (char*)&sa, tf->a1, tf->a2);
     tf->a0 = bindSocket(tf->a0, &sa);

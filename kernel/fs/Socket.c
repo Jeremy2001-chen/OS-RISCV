@@ -38,7 +38,8 @@ void socketFree(Socket *s) {
 }
 
 int createSocket(int family, int type, int protocal) {
-    assert(family == 2);
+    printf("family %x type  %x protocal %x\n", family, type, protocal);
+    // assert(family == 2);
     File *f = filealloc();
     Socket *s;
     if (socketAlloc(&s) < 0) {

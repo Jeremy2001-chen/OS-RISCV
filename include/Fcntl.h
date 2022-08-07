@@ -5,5 +5,5 @@
 #define FCNTL_SETFD 2
 #define FCNTL_GET_FILE_STATUS 3
 #define FCNTL_DUPFD_CLOEXEC 1030
-
+#define FCNTL_SETFL		4	/* Set file status flags.  */
 #endif

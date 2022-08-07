@@ -127,6 +127,11 @@ void syscall_fcntl(void){
         filedup(f);
         tf->a0 = fd;
         return;
+    case FCNTL_SETFL:
+        fd = fdalloc(f);
+        int flag = tf->a2;
+        printf("set file flag, bug not impl. flag :%x\n",flag);
+        break;
     default:
         panic("%d\n", tf->a1);
         break;
@@ -410,7 +415,7 @@ void syscallOpenAt(void) {
         }
     } else {
         if ((entryPoint = ename(startFd, path, true)) == NULL) {
-            tf->a0 = -1;
+            tf->a0 = -2; /*must be -ENOENT */
             goto bad;
         }
         elock(entryPoint);

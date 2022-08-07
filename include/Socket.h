@@ -10,7 +10,7 @@ typedef struct {
     u16 family;
     u16 port;
     u32 addr;
-    char zero[8];
+    char zero[24];
 } SocketAddr;
 
 typedef struct Socket {
