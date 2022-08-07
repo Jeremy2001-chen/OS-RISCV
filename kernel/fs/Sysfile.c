@@ -1018,7 +1018,7 @@ void syscallUtimensat() {
             return;
         }
         if((de = ename(dirFd, path, true)) == NULL) {
-            tf->a0 = -ENOTDIR;
+            tf->a0 = -ENOENT;
             return;
         }
     } else {
