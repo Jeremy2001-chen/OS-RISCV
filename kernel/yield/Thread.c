@@ -148,6 +148,10 @@ void threadSetup(Thread* th) {
         panic("");
     }
     pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE, page2pa(page), PTE_READ | PTE_WRITE);
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 2, page2pa(page), PTE_READ | PTE_WRITE);
 }
 
 u64 getSignalHandlerSp(Thread *th) {
