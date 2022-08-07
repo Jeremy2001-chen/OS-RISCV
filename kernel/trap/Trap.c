@@ -135,9 +135,8 @@ void userTrap() {
         //     break;
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
-            // if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63 
-            // && trapframe->a7 != SYSCALL_WRITE_VECTOR && trapframe->a7 != SYSCALL_POLL && trapframe->a7 != 113 && trapframe->a7 != 165 
-            // && trapframe->a7 != 173 && trapframe->a7 != 72) {
+            // printf("syscall %d\n", trapframe->a7);
+            // if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63  && trapframe->a7 != SYSCALL_WRITE_VECTOR ) {
             //     printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
             // }
             if (!syscallVector[trapframe->a7]) {
@@ -153,7 +152,7 @@ void userTrap() {
         case SCAUSE_STORE_PAGE_FAULT:
             pa = pageLookup(current->pgdir, r_stval(), &pte);
             if (pa == 0) {
-                printf("spec: %lx\n", sepc);
+                // printf("spec: %lx\n", sepc);
                 pageout(current->pgdir, r_stval());
             } else if (*pte & PTE_COW) {
                 cowHandler(current->pgdir, r_stval());

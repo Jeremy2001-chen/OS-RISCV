@@ -240,7 +240,7 @@ void syscallMapMemory() {
 
     argfd(4, 0, &fd);
     if (fd == NULL && start != 0) {
-        printf("%s %d\n", __FILE__, __LINE__);
+        //todo
         trapframe->a0 = -1;
         return;
     }
