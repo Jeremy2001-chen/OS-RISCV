@@ -5,3 +5,4 @@ fs.img
 os.bin
 sdcard.img
 null.d
+/libc-test/lmbench_all

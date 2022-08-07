@@ -81,10 +81,10 @@ int threadFork(u64 stackVa, u64 ptid, u64 tls, u64 ctid) {
 }
 
 int clone(u32 flags, u64 stackVa, u64 ptid, u64 tls, u64 ctid) {
-    // printf("clone flags: %d\n", flags);
-    if (flags == PROCESS_FORK) {
-        return processFork();
-    } else {
+    // printf("clone flags: %lx\n", flags);
+    if (flags & CLONE_VM) {
         return threadFork(stackVa, ptid, tls, ctid);
+    } else {
+        return processFork();
     }
 }

@@ -652,7 +652,7 @@ int exec(char* path, char** argv) {
     //free old pagetable
     pgdirFree(oldpagetable);
     asm volatile("fence.i");
-    return argc;  // this ends up in a0, the first argument to main(argc, argv)
+    return 0;  // this ends up in a0, the first argument to main(argc, argv)
 
 bad:
     p->pgdir = old_pagetable;

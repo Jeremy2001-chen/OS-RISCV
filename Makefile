@@ -44,7 +44,7 @@ fat: $(user_dir)
 	@sudo umount $(dst)
 
 new-lib:
-	cd ../testsuits-for-oskernel/busybox && bash compile.sh
+	cd ../lmbench && bash compile.sh
 
 new: clean new-lib fat run
 

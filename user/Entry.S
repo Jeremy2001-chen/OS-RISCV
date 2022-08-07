@@ -1,6 +1,7 @@
     .section .text
     .globl _userStart
 _userStart:
+    ld   a0, 0(sp)
     addi a1, sp, 8
     ld	 a2, 0(sp)
     addi a2, a2, 1	

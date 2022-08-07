@@ -18,6 +18,8 @@
 #include <FileSystem.h>
 #include <KernelLog.h>
 #include <Error.h>
+#include <Select.h>
+#include <pipe.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]           syscallPutchar,
@@ -194,7 +196,7 @@ void syscallGetTime() {
     TimeSpec ts;
     ts.second = time / 1000000;
     ts.microSecond = time % 1000000;
-    printf("time: %ld %ld\n", ts.second, ts.microSecond);
+    // printf("time: %ld %ld\n", ts.second, ts.microSecond);
     copyout(myProcess()->pgdir, tf->a1, (char*)&ts, sizeof(TimeSpec));
     tf->a0 = 0;
 }
@@ -617,14 +619,66 @@ void syscallGetResouceUsage() {
     rusage.ru_stime.second = myProcess()->cpuTime.kernel / 1000000;
     rusage.ru_stime.microSecond = myProcess()->cpuTime.kernel % 1000000;
 
-    printf("usage: u: %ld.%ld, s: %ld.%ld\n", rusage.ru_utime.second, rusage.ru_utime.microSecond, rusage.ru_stime.second, rusage.ru_stime.microSecond);
+    // printf("usage: u: %ld.%ld, s: %ld.%ld\n", rusage.ru_utime.second, rusage.ru_utime.microSecond, rusage.ru_stime.second, rusage.ru_stime.microSecond);
     copyout(myProcess()->pgdir, usage, (char*)&rusage, sizeof (struct rusage));
     tf->a0 = 0;
 }
 
 void syscallSelect() {
     Trapframe *tf = getHartTrapFrame();
-    tf->a0 = 0;
+    int nfd = tf->a0;
+    assert(nfd <= 128);
+    u64 read = tf->a1, write = tf->a2, except = tf->a3/*, timeout = tf->a4*/;
+    int cnt = 0;
+    struct File* file = NULL;
+    if (read) {
+        FdSet readSet;
+        copyin(myProcess()->pgdir, (char*)&readSet, read, sizeof(FdSet));
+        for (int i = 0; i < nfd; i++) {
+            file = NULL;
+            if (i >= 64) {
+                if (!!((1UL << (i - 64)) & readSet.bits[1])) {
+                    file = myProcess()->ofile[i];
+                    if (file && file->type != FD_PIPE)
+                        cnt++;
+                }
+            } else {
+                if (!!((1UL << (i)) & readSet.bits[0])) {
+                    file = myProcess()->ofile[i];
+                    if (file && file->type != FD_PIPE)
+                        cnt++;
+                }
+            }
+            if (file && file->pipe->nread == file->pipe->nwrite) {
+                if (i >= 64) {
+                    readSet.bits[1] &= ~(1UL << (i - 64));
+                } else {
+                    readSet.bits[0] &= ~(1UL << i);
+                }
+            } else {
+                cnt++;
+            }
+        }
+        copyout(myProcess()->pgdir, read, (char*)&readSet, sizeof(FdSet));
+    }
+    if (write) {
+        FdSet writeSet;
+        copyin(myProcess()->pgdir, (char*)&writeSet, write, sizeof(FdSet));
+        for (int i = 0; i < nfd; i++) {
+            if (i >= 64) {
+                cnt += !!((1UL << (i - 64)) & writeSet.bits[1]);
+            } else {
+                cnt += !!((1UL << (i)) & writeSet.bits[0]);
+            }
+        }
+    }
+    if (except) {
+        FdSet set;
+        copyin(myProcess()->pgdir, (char*)&set, except, sizeof(FdSet));
+        memset(&set, 0, sizeof(FdSet));
+        copyout(myProcess()->pgdir, except, (char*)&set, sizeof(FdSet));
+    }
+    tf->a0 = cnt;
 }
 
 void syscallSetTimer() {

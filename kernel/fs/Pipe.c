@@ -76,6 +76,7 @@ int pipewrite(struct pipe* pi, bool isUser, u64 addr, int n) {
         if (pi->nwrite == pi->nread + PIPESIZE) {  // DOC: pipewrite-full
             wakeup(&pi->nread);
             // printf("Write %x Sleep? Now %x for %x, start %x, end %x, ask for %x\n", r_hartid(), i, n, pi->nread, pi->nwrite, &pi->nwrite);
+            // printf("Write %lx Start sleep\n", myProcess()->processId);
             sleep(&pi->nwrite, &pi->lock);
             // printf("Write %x Stop sleep\n", r_hartid());
         } else {
@@ -104,7 +105,7 @@ int piperead(struct pipe* pi, bool isUser, u64 addr, int n) {
             releaseLock(&pi->lock);
             return -1;
         }
-        // printf("Read %x Sleep?\n", r_hartid());
+        // printf("Read %lx Sleep\n", myProcess()->processId);
         sleep(&pi->nread, &pi->lock);  // DOC: piperead-sleep
         // printf("Read %x Stop sleep\n", r_hartid());
     }
