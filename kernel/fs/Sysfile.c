@@ -474,8 +474,18 @@ void syscallMakeDirAt(void) {
         tf->a0 = -1;
         return;
     }
-
     struct dirent* entryPoint;
+    bool flag = true;
+    for (int i = 0; path[i]; i++) {
+        if (path[i] != '/') {
+            flag = false;
+            break;
+        }
+    }
+    if (flag) {
+        tf->a0 = -EEXIST;
+        return;
+    }
 
     if ((entryPoint = create(dirFd, path, T_DIR, mode)) == 0) {
         goto bad;
