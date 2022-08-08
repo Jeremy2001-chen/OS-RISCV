@@ -79,6 +79,9 @@ void memoryInit() {
     resetRef();
     startPage();
     printf("Memory init finish!\n");
+    printf("Test memory start...\n");
+    // testMemory();
+    printf("Test memory finish!\n");
 }
 
 void bcopy(void *src, void *dst, u32 len) {
