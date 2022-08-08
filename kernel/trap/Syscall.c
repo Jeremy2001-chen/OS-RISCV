@@ -716,6 +716,10 @@ void syscallSelect() {
         memset(&set, 0, sizeof(FdSet));
         copyout(myProcess()->pgdir, except, (char*)&set, sizeof(FdSet));
     }
+    if (cnt == 0) {
+        tf->epc -= 4;
+        yield();
+    }
     tf->a0 = cnt;
 }
 
