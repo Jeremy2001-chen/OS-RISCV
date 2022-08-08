@@ -105,9 +105,11 @@ void userTrap() {
     u64 sstatus = r_sstatus();
     u64 scause = r_scause();
     Process* current = myProcess();
+    // if ((scause & SCAUSE_EXCEPTION_CODE) != SCAUSE_ENVIRONMENT_CALL) {
     // int hartId = r_hartid();
     // printf("[User Trap] hartId is %lx, threadId: %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx, a7 is %d\n", 
     //    hartId, myThread()->id, sstatus, sepc, scause, r_stval(), getHartTrapFrame()->a7);
+    // }
 #ifdef CJY_DEBUG
     printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
 #else
@@ -135,28 +137,39 @@ void userTrap() {
         //     break;
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
-            if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63 
-            && trapframe->a7 != SYSCALL_WRITE_VECTOR && trapframe->a7 != SYSCALL_POLL && trapframe->a7 != 113 && trapframe->a7 != 165 
-            && trapframe->a7 != 173 && trapframe->a7 != 72) {
+            // printf("syscall %d\n", trapframe->a7);
+            // if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63 
+            // && trapframe->a7 != SYSCALL_WRITE_VECTOR && trapframe->a7 != SYSCALL_SELECT) {
+            // }
                 printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
-            }
             if (!syscallVector[trapframe->a7]) {
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
             syscallVector[trapframe->a7]();
+            printf("syscall %d end\n", trapframe->a7);
             if ((i64)trapframe->a0 <= -1) {
-                printf("return -1: %d\n", trapframe->a7);
+                printf("return %d: %d\n", trapframe->a0, trapframe->a7);
             }
             break;
-        case 12:
         case SCAUSE_LOAD_PAGE_FAULT:
+            pa = pageLookup(current->pgdir, r_stval(), &pte);
+            if (pa == 0) {
+                pageout(current->pgdir, r_stval());
+            } else if (!(*pte & PTE_READ)) {
+                processSignalSend(0, SIGSEGV);
+            } else {
+                panic("unknown");
+            }
+            break;
         case SCAUSE_STORE_PAGE_FAULT:
             pa = pageLookup(current->pgdir, r_stval(), &pte);
             if (pa == 0) {
-                printf("spec: %lx\n", sepc);
+                // printf("spec: %lx\n", sepc);
                 pageout(current->pgdir, r_stval());
             } else if (*pte & PTE_COW) {
                 cowHandler(current->pgdir, r_stval());
+            } else if (!(*pte & PTE_WRITE)) {
+                processSignalSend(0, SIGSEGV);
             } else {
                 // printf("spec: %lx %lx %lx %lx\n", sepc, pa, *pte, TRAMPOLINE_BASE);
                 panic("unknown");

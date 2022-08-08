@@ -11,9 +11,14 @@ void timerTick();
 #define SOFTWARE_TRAP 1
 #define UNKNOWN_DEVICE 0
 
-typedef struct TimeSpec {
+typedef struct TimeVal {
     u64 second;
     long microSecond;    
+} TimeVal;
+
+typedef struct TimeSpec {
+    u64 second;
+    long nanoSecond;    
 } TimeSpec;
 
 

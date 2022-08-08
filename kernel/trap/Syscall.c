@@ -22,92 +22,92 @@
 #include <pipe.h>
 
 void (*syscallVector[])(void) = {
-    [SYSCALL_PUTCHAR]           syscallPutchar,
-    [SYSCALL_SCHED_YIELD]       syscallYield,
-    [SYSCALL_CLONE]             syscallClone,
-    [SYSCALL_PUT_STRING]        syscallPutString,
-    [SYSCALL_GET_PID]           syscallGetProcessId,
-    [SYSCALL_GET_PARENT_PID]    syscallGetParentProcessId,
-    [SYSCALL_WAIT]              syscallWait,
-    [SYSCALL_DEV]               syscallDevice,
-    [SYSCALL_DUP]               syscallDup,
-    [SYSCALL_EXIT]              syscallExit,
-    [SYSCALL_PIPE2]             syscallPipe,
-    [SYSCALL_WRITE]             syscallWrite,
-    [SYSCALL_READ]              syscallRead,
-    [SYSCALL_CLOSE]             syscallClose,
-    [SYSCALL_OPENAT]            syscallOpenAt,
-    [SYSCALL_GET_CPU_TIMES]     syscallGetCpuTimes,
-    [SYSCALL_GET_TIME_OF_DAY]   syscallGetTime,
-    [SYSCALL_SLEEP_TIME]        syscallSleepTime,
-    [SYSCALL_DUP3]              syscallDupAndSet,
-    [SYSCALL_fcntl]             syscall_fcntl,
-    [SYSCALL_CHDIR]             syscallChangeDir,
-    [SYSCALL_CWD]               syscallGetWorkDir,
-    [SYSCALL_MKDIRAT]           syscallMakeDirAt,
-    [SYSCALL_BRK]               syscallBrk,
-    [SYSCALL_SBRK]              syscallSetBrk,
-    [SYSCALL_FSTAT]             syscallGetFileState,
-    [SYSCALL_FSTATAT]           syscallGetFileStateAt,
-    [SYSCALL_MAP_MEMORY]        syscallMapMemory,
-    [SYSCALL_UNMAP_MEMORY]      syscallUnMapMemory,
-    [SYSCALL_READDIR]           syscallReadDir,
-    [SYSCALL_EXEC]              syscallExec,
-    [SYSCALL_GET_DIRENT]        syscallGetDirent,
-    [SYSCALL_MOUNT]             syscallMount,
-    [SYSCALL_UMOUNT]            syscallUmount,
-    [SYSCALL_LINKAT]            syscallLinkAt,
-    [SYSCALL_UNLINKAT]          syscallUnlinkAt,
-    [SYSCALL_UNAME]             syscallUname,
-    [SYSCALL_SET_TID_ADDRESS]   syscallSetTidAddress,
-    [SYSCALL_EXIT_GROUP]        syscallExitGroup,
-    [SYSCALL_SIGNAL_PROCESS_MASK] syscallSignProccessMask,
-    [SYSCALL_SIGNAL_ACTION] syscallSignalAction,
-    [SYSCALL_SIGNAL_TIMED_WAIT] syscallSignalTimedWait,
-    [SYSCALL_GET_THREAD_ID] syscallGetTheardId,
-    [SYSCALL_PROCESS_RESOURSE_LIMIT] syscallProcessResourceLimit,
-    [SYSCALL_GET_TIME] syscallGetTime,
-    [SYSCALL_LSEEK] syscallLSeek,
-    [SYSCALL_IOCONTROL] syscallIOControl,
-    [SYSCALL_SOCKET] syscallSocket,
-    [SYSCALL_BIND] syscallBind,
-    [SYSCALL_GET_SOCKET_NAME] syscallGetSocketName,
-    [SYSCALL_SET_SOCKET_OPTION] syscallSetSocketOption,
-    [SYSCALL_SEND_TO] syscallSendTo,
-    [SYSCALL_RECEIVE_FROM] syscallReceiveFrom,
-    [SYSCALL_LISTEN] syscallListen,
-    [SYSCALL_CONNECT] syscallConnect,
-    [SYSCALL_ACCEPT] syscallAccept,
-    [SYSCALL_WRITE_VECTOR] syscallWriteVector,
-    [SYSCALL_READ_VECTOR] syscallReadVector,
-    [SYSCALL_FUTEX] syscallFutex,
-    [SYSCALL_PROCESS_KILL] syscallProcessKill,
-    [SYSCALL_THREAD_KILL] syscallThreadKill,
-    [SYSCALL_THREAD_GROUP_KILL] syscallThreadGroupKill,
-    [SYSCALL_POLL] syscallPoll,
-    [SYSCALL_MEMORY_PROTECT] syscallMemoryProtect,
-    [SYSCALL_SET_ROBUST_LIST] syscallSetRobustList,
-    [SYSCALL_GET_ROBUST_LIST] syscallGetRobustList,
-    [SYSCALL_STATE_FS] syscallStateFileSystem,
-    [SYSCALL_PREAD] syscallPRead,
-    [SYSCALL_UTIMENSAT] syscallUtimensat,
-    [SYSCALL_GET_EFFECTIVE_USER_ID] syscallGetUserId,
-    [SYSCALL_GET_EFFECTIVE_USER_ID] syscallGetEffectiveUserId,
-    [SYSCALL_GET_USER_ID] syscallGetUserId,
-    [SYSCALL_GET_PROCESS_GROUP_ID] syscallGetUserId,
-    [SYSCALL_SET_PROCESS_GROUP_ID] syscallGetUserId,
-    [SYSCALL_MEMORY_BARRIER] syscallMemoryBarrier,
-    [SYSCALL_SIGNAL_RETURN] syscallSignalReturn,
-    [SYSCALL_SEND_FILE] syscallSendFile,
-    [SYSCALL_LOG] syscallLog,
-    [SYSCALL_ACCESS] syscallAccess,
-    [SYSCALL_GET_SYSTEM_INFO] syscallSystemInfo,
-    [SYSCALL_RENAMEAT] syscallRenameAt,
-    [SYSCALL_READLINKAT] syscallReadLinkAt,
-    [SYSCALL_GET_RESOURCE_USAGE] syscallGetResouceUsage,
-    [SYSCALL_SELECT] syscallSelect,
-    [SYSCALL_SET_TIMER] syscallSetTimer,
-    [SYSCALL_UMASK] syscallUmask
+    [SYSCALL_PUTCHAR]                   syscallPutchar,
+    [SYSCALL_SCHED_YIELD]               syscallYield,
+    [SYSCALL_CLONE]                     syscallClone,
+    [SYSCALL_PUT_STRING]                syscallPutString,
+    [SYSCALL_GET_PID]                   syscallGetProcessId,
+    [SYSCALL_GET_PARENT_PID]            syscallGetParentProcessId,
+    [SYSCALL_WAIT]                      syscallWait,
+    [SYSCALL_DEV]                       syscallDevice,
+    [SYSCALL_DUP]                       syscallDup,
+    [SYSCALL_EXIT]                      syscallExit,
+    [SYSCALL_PIPE2]                     syscallPipe,
+    [SYSCALL_WRITE]                     syscallWrite,
+    [SYSCALL_READ]                      syscallRead,
+    [SYSCALL_CLOSE]                     syscallClose,
+    [SYSCALL_OPENAT]                    syscallOpenAt,
+    [SYSCALL_GET_CPU_TIMES]             syscallGetCpuTimes,
+    [SYSCALL_GET_TIME_OF_DAY]           syscallGetTimeOfDay,
+    [SYSCALL_SLEEP_TIME]                syscallSleepTime,
+    [SYSCALL_DUP3]                      syscallDupAndSet,
+    [SYSCALL_fcntl]                     syscall_fcntl,
+    [SYSCALL_CHDIR]                     syscallChangeDir,
+    [SYSCALL_CWD]                       syscallGetWorkDir,
+    [SYSCALL_MKDIRAT]                   syscallMakeDirAt,
+    [SYSCALL_BRK]                       syscallBrk,
+    [SYSCALL_SBRK]                      syscallSetBrk,
+    [SYSCALL_FSTAT]                     syscallGetFileState,
+    [SYSCALL_FSTATAT]                   syscallGetFileStateAt,
+    [SYSCALL_MAP_MEMORY]                syscallMapMemory,
+    [SYSCALL_UNMAP_MEMORY]              syscallUnMapMemory,
+    [SYSCALL_READDIR]                   syscallReadDir,
+    [SYSCALL_EXEC]                      syscallExec,
+    [SYSCALL_GET_DIRENT]                syscallGetDirent,
+    [SYSCALL_MOUNT]                     syscallMount,
+    [SYSCALL_UMOUNT]                    syscallUmount,
+    [SYSCALL_LINKAT]                    syscallLinkAt,
+    [SYSCALL_UNLINKAT]                  syscallUnlinkAt,
+    [SYSCALL_UNAME]                     syscallUname,
+    [SYSCALL_SET_TID_ADDRESS]           syscallSetTidAddress,
+    [SYSCALL_EXIT_GROUP]                syscallExitGroup,
+    [SYSCALL_SIGNAL_PROCESS_MASK]       syscallSignProccessMask,
+    [SYSCALL_SIGNAL_ACTION]             syscallSignalAction,
+    [SYSCALL_SIGNAL_TIMED_WAIT]         syscallSignalTimedWait,
+    [SYSCALL_GET_THREAD_ID]             syscallGetTheardId,
+    [SYSCALL_PROCESS_RESOURSE_LIMIT]    syscallProcessResourceLimit,
+    [SYSCALL_GET_TIME]                  syscallGetClockTime,
+    [SYSCALL_LSEEK]                     syscallLSeek,
+    [SYSCALL_IOCONTROL]                 syscallIOControl,
+    [SYSCALL_SOCKET]                    syscallSocket,
+    [SYSCALL_BIND]                      syscallBind,
+    [SYSCALL_GET_SOCKET_NAME]           syscallGetSocketName,
+    [SYSCALL_SET_SOCKET_OPTION]         syscallSetSocketOption,
+    [SYSCALL_SEND_TO]                   syscallSendTo,
+    [SYSCALL_RECEIVE_FROM]              syscallReceiveFrom,
+    [SYSCALL_LISTEN]                    syscallListen,
+    [SYSCALL_CONNECT]                   syscallConnect,
+    [SYSCALL_ACCEPT]                    syscallAccept,
+    [SYSCALL_WRITE_VECTOR]              syscallWriteVector,
+    [SYSCALL_READ_VECTOR]               syscallReadVector,
+    [SYSCALL_FUTEX]                     syscallFutex,
+    [SYSCALL_PROCESS_KILL]              syscallProcessKill,
+    [SYSCALL_THREAD_KILL]               syscallThreadKill,
+    [SYSCALL_THREAD_GROUP_KILL]         syscallThreadGroupKill,
+    [SYSCALL_POLL]                      syscallPoll,
+    [SYSCALL_MEMORY_PROTECT]            syscallMemoryProtect,
+    [SYSCALL_SET_ROBUST_LIST]           syscallSetRobustList,
+    [SYSCALL_GET_ROBUST_LIST]           syscallGetRobustList,
+    [SYSCALL_STATE_FS]                  syscallStateFileSystem,
+    [SYSCALL_PREAD]                     syscallPRead,
+    [SYSCALL_UTIMENSAT]                 syscallUtimensat,
+    [SYSCALL_GET_EFFECTIVE_USER_ID]     syscallGetUserId,
+    [SYSCALL_GET_EFFECTIVE_USER_ID]     syscallGetEffectiveUserId,
+    [SYSCALL_GET_USER_ID]               syscallGetUserId,
+    [SYSCALL_GET_PROCESS_GROUP_ID]      syscallGetUserId,
+    [SYSCALL_SET_PROCESS_GROUP_ID]      syscallGetUserId,
+    [SYSCALL_MEMORY_BARRIER]            syscallMemoryBarrier,
+    [SYSCALL_SIGNAL_RETURN]             syscallSignalReturn,
+    [SYSCALL_SEND_FILE]                 syscallSendFile,
+    [SYSCALL_LOG]                       syscallLog,
+    [SYSCALL_ACCESS]                    syscallAccess,
+    [SYSCALL_GET_SYSTEM_INFO]           syscallSystemInfo,
+    [SYSCALL_RENAMEAT]                  syscallRenameAt,
+    [SYSCALL_READLINKAT]                syscallReadLinkAt,
+    [SYSCALL_GET_RESOURCE_USAGE]        syscallGetResouceUsage,
+    [SYSCALL_SELECT]                    syscallSelect,
+    [SYSCALL_SET_TIMER]                 syscallSetTimer,
+    [SYSCALL_UMASK]                     syscallUmask
 };
 
 extern struct Spinlock printLock;
@@ -191,14 +191,25 @@ void syscallGetCpuTimes() {
     tf->a0 = (r_cycle() & 0x3FFFFFFF);
 }
 
-void syscallGetTime() {
+void syscallGetClockTime() {
     Trapframe *tf = getHartTrapFrame();
     u64 time = r_time();
     TimeSpec ts;
     ts.second = time / 1000000;
-    ts.microSecond = time % 1000000;
-    // printf("time: %ld %ld\n", ts.second, ts.microSecond);
+    ts.nanoSecond = time % 1000000 * 1000; //todo
+    // printf("kernel time: %ld second: %ld ms: %ld\n", time, ts.second, ts.nanoSecond);
     copyout(myProcess()->pgdir, tf->a1, (char*)&ts, sizeof(TimeSpec));
+    tf->a0 = 0;
+}
+
+void syscallGetTimeOfDay() {
+    Trapframe *tf = getHartTrapFrame();
+    u64 time = r_time();
+    TimeVal ts;
+    ts.second = time / 1000000;
+    ts.microSecond = time % 1000000; //todo
+    // printf("kernel time: %ld second: %ld ms: %ld\n", time, ts.second, ts.microSecond);
+    copyout(myProcess()->pgdir, tf->a1, (char*)&ts, sizeof(TimeVal));
     tf->a0 = 0;
 }
 
@@ -206,7 +217,7 @@ void syscallSleepTime() {
     Trapframe *tf = getHartTrapFrame();
     TimeSpec ts;
     copyin(myProcess()->pgdir, (char*)&ts, tf->a0, sizeof(TimeSpec));
-    myThread()->awakeTime = r_time() +  ts.second * 1000000 + ts.microSecond;
+    myThread()->awakeTime = r_time() +  ts.second * 1000000 + ts.nanoSecond / 1000;
     kernelProcessCpuTimeEnd();
     yield();
 }
@@ -222,7 +233,7 @@ void syscallBrk() {
         trapframe->a0 = myProcess()->heapBottom;
     } else 
         trapframe->a0 = -1;
-    printf("brk addr: %lx, a0: %lx\n", addr, trapframe->a0);
+    // printf("brk addr: %lx, a0: %lx\n", addr, trapframe->a0);
 }
 
 void syscallSetBrk() {
@@ -233,14 +244,24 @@ void syscallSetBrk() {
 
 void syscallMapMemory() {
     Trapframe* trapframe = getHartTrapFrame();
-    u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2,
+    u64 start = trapframe->a0, len = trapframe->a1, prot = trapframe->a2,
         off = trapframe->a5, flags = trapframe->a3;
     struct File* fd;
     // printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
+    u64 perm = 0;
+    if (prot & PROT_EXEC) {
+        perm |= PTE_EXECUTE;
+    }
+    if (prot & PROT_READ) {
+        perm |= PTE_READ;
+    }
+    if (prot & PROT_WRITE) {
+        perm |= PTE_WRITE;
+    }
 
     argfd(4, 0, &fd);
     if (fd == NULL && start != 0) {
-        printf("%s %d\n", __FILE__, __LINE__);
+        //todo
         trapframe->a0 = -1;
         return;
     }
@@ -616,9 +637,9 @@ void syscallGetResouceUsage() {
     } rusage;
 
     rusage.ru_utime.second = myProcess()->cpuTime.user / 1000000;
-    rusage.ru_utime.microSecond = myProcess()->cpuTime.user % 1000000;
+    rusage.ru_utime.nanoSecond = myProcess()->cpuTime.user % 1000000 * 1000;
     rusage.ru_stime.second = myProcess()->cpuTime.kernel / 1000000;
-    rusage.ru_stime.microSecond = myProcess()->cpuTime.kernel % 1000000;
+    rusage.ru_stime.nanoSecond = myProcess()->cpuTime.kernel % 1000000 * 1000;
 
     // printf("usage: u: %ld.%ld, s: %ld.%ld\n", rusage.ru_utime.second, rusage.ru_utime.microSecond, rusage.ru_stime.second, rusage.ru_stime.microSecond);
     copyout(myProcess()->pgdir, usage, (char*)&rusage, sizeof (struct rusage));
@@ -699,7 +720,7 @@ void syscallSelect() {
 
 void syscallSetTimer() {
     Trapframe *tf = getHartTrapFrame();
-    printf("%lx %lx %lx\n", tf->a0, tf->a1, tf->a2);
+    // printf("set Timer: %lx %lx %lx\n", tf->a0, tf->a1, tf->a2);
     IntervalTimer time = getTimer();
     if (tf->a2) {
         copyout(myProcess()->pgdir, tf->a2, (char*)&time, sizeof(IntervalTimer));

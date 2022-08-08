@@ -510,8 +510,8 @@ int exec(char* path, char** argv) {
     ustack[0] = argc;
     ustack[argc + 1] = 0;
 
-    int envCount = 5;
-    char *envVariable[] = {"LD_LIBRARY_PATH=/", "PATH=/", "LOOP_O=100", "TIMING_O=100", "ENOUGH=100"};
+    char *envVariable[] = {"LD_LIBRARY_PATH=/", "PATH=/", /*"LOOP_O=100", "TIMING_O=100", "ENOUGH=100"*/};
+    int envCount = sizeof(envVariable) / sizeof(char*);
     for (i = 0; i < envCount; i++) {
         sp -= strlen(envVariable[i]) + 1;
         sp -= sp % 16;  // riscv sp must be 16-byte aligned
@@ -645,13 +645,14 @@ int exec(char* path, char** argv) {
     if (!de) {
         panic("");
     }
-    r = ewrite(de, false, (u64)buf, 0, strlen(buf));
+    r = ewrite(de, false, (u64)buf, 0, strlen(buf) + 1);
     if (r < 0) {
         panic("");
     }
     //free old pagetable
     pgdirFree(oldpagetable);
     asm volatile("fence.i");
+    // printf("[exec]exec finish %s\n", path);
     return 0;  // this ends up in a0, the first argument to main(argc, argv)
 
 bad:

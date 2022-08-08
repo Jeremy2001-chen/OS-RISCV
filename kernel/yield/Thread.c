@@ -148,6 +148,10 @@ void threadSetup(Thread* th) {
         panic("");
     }
     pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE, page2pa(page), PTE_READ | PTE_WRITE);
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 2, page2pa(page), PTE_READ | PTE_WRITE);
 }
 
 u64 getSignalHandlerSp(Thread *th) {
@@ -332,6 +336,9 @@ void threadRun(Thread* th) {
             ep = create(AT_FDCWD, "/etc/localtime", T_CHAR, O_RDONLY);
             eunlock(ep);
             eput(ep);
+            ep = create(AT_FDCWD, "/var/tmp/XXX", T_FILE, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
             setNextTimeout();
         }
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
@@ -363,6 +370,10 @@ void sleep(void* chan, struct Spinlock* lk) {
     th->reason = KERNEL_GIVE_UP;
     releaseLock(&th->lock);
 
+    if (hasKillSignal(th)) {
+        threadDestroy(th);
+    }    
+
 	asm volatile("sd sp, 0(%0)" : :"r"(&th->currentKernelSp));
 
     sleepSave();
@@ -373,7 +384,10 @@ void sleep(void* chan, struct Spinlock* lk) {
     releaseLock(&th->lock);
 
     kernelProcessCpuTimeBegin();
-
+    
+    if (hasKillSignal(th)) {
+        threadDestroy(th);    
+    }    
     // Reacquire original lock.
     acquireLock(lk);
 }

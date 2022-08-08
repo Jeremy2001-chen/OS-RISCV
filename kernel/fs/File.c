@@ -212,7 +212,7 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
             if (pageAlloc(&page) < 0) {
                 return -1;
             }
-            pageInsert(myProcess()->pgdir, start, page2pa(page), perm | PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE);
+            pageInsert(myProcess()->pgdir, start, page2pa(page), perm | PTE_USER);
         }
         start += PGSIZE;
     }

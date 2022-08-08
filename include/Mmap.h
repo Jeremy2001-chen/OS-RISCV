@@ -21,5 +21,8 @@
 #define MAP_UNINITIALIZED 0x4000000	/* For anonymous mmap, memory could be
 					 * uninitialized */
 
+#define	PROT_READ	 0x04	/* Pages can be read.  */
+#define	PROT_WRITE	 0x02	/* Pages can be written.  */
+#define	PROT_EXEC	 0x01	/* Pages can be executed.  */
 
 #endif
