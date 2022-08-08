@@ -197,7 +197,7 @@ void syscallGetClockTime() {
     TimeSpec ts;
     ts.second = time / 1000000;
     ts.nanoSecond = time % 1000000 * 1000; //todo
-    printf("kernel time: %ld second: %ld ms: %ld\n", time, ts.second, ts.nanoSecond);
+    // printf("kernel time: %ld second: %ld ms: %ld\n", time, ts.second, ts.nanoSecond);
     copyout(myProcess()->pgdir, tf->a1, (char*)&ts, sizeof(TimeSpec));
     tf->a0 = 0;
 }
@@ -208,7 +208,7 @@ void syscallGetTimeOfDay() {
     TimeVal ts;
     ts.second = time / 1000000;
     ts.microSecond = time % 1000000; //todo
-    printf("kernel time: %ld second: %ld ms: %ld\n", time, ts.second, ts.microSecond);
+    // printf("kernel time: %ld second: %ld ms: %ld\n", time, ts.second, ts.microSecond);
     copyout(myProcess()->pgdir, tf->a1, (char*)&ts, sizeof(TimeVal));
     tf->a0 = 0;
 }

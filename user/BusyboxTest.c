@@ -14,7 +14,7 @@ void userMain() {
     dup(0); //stderr
 
     int pid = fork();
-    /*if (pid == 0) {
+    if (pid == 0) {
         exec("./busybox", argvBusybox);
     } else {
         wait(0);
@@ -27,7 +27,7 @@ void userMain() {
         wait(0);
     }
     
-    pid = fork();*/
+    pid = fork();
     if (pid == 0) {
         exec("./busybox", argvLmbanch);
     } else {

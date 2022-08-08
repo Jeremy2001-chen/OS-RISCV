@@ -143,9 +143,9 @@ void userTrap() {
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
             syscallVector[trapframe->a7]();
-            if ((i64)trapframe->a0 <= -1) {
-                printf("return %d: %d\n", trapframe->a0, trapframe->a7);
-            }
+            // if ((i64)trapframe->a0 <= -1) {
+            //     printf("return %d: %d\n", trapframe->a0, trapframe->a7);
+            // }
             break;
         case 12:
         case SCAUSE_LOAD_PAGE_FAULT:
