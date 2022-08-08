@@ -90,7 +90,8 @@ int fatInit(FileSystem *fs) {
     LIST_INIT(&fs->freeClusters);
     uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt + fs->superBlock.bpb.fat_sz - 1;
     uint32 const ent_per_sec = fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
-    for (int i = MIN(fs->superBlock.bpb.fat_sz, 100) - 1; i >= 0; i--, sec--) {
+    printf("size: s%lx\n", fs->superBlock.bpb.fat_sz);
+    for (int i = MIN(fs->superBlock.bpb.fat_sz, 4096) - 1; i >= 0; i--, sec--) {
         b = fs->read(fs, sec);
         for (uint32 j = 0; j < ent_per_sec; j++) {
             if (((uint32*)(b->data))[j] == 0) {
