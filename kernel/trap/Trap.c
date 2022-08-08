@@ -141,15 +141,15 @@ void userTrap() {
             // if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63 
             // && trapframe->a7 != SYSCALL_WRITE_VECTOR && trapframe->a7 != SYSCALL_SELECT) {
             // }
-                printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
+                // printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
             if (!syscallVector[trapframe->a7]) {
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
             syscallVector[trapframe->a7]();
-            printf("syscall %d end\n", trapframe->a7);
-            if ((i64)trapframe->a0 <= -1) {
-                printf("return %d: %d\n", trapframe->a0, trapframe->a7);
-            }
+            // printf("syscall %d end\n", trapframe->a7);
+            // if ((i64)trapframe->a0 <= -1) {
+            //     printf("return %d: %d\n", trapframe->a0, trapframe->a7);
+            // }
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
             pa = pageLookup(current->pgdir, r_stval(), &pte);

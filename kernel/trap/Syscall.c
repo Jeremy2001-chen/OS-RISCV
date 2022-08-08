@@ -690,6 +690,7 @@ void syscallSelect() {
 
             if (ready_to_read) {
                 ++cnt;
+            } else {
                 if (i < 64)
                     readSet.bits[0] = ~cur;
                 else

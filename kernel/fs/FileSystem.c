@@ -90,7 +90,7 @@ int fatInit(FileSystem *fs) {
     LIST_INIT(&fs->freeClusters);
     uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt + fs->superBlock.bpb.fat_sz - 1;
     uint32 const ent_per_sec = fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
-    for (int i = fs->superBlock.bpb.fat_sz - 1; i >= 0; i--, sec--) {
+    for (int i = MIN(fs->superBlock.bpb.fat_sz, 100) - 1; i >= 0; i--, sec--) {
         b = fs->read(fs, sec);
         for (uint32 j = 0; j < ent_per_sec; j++) {
             if (((uint32*)(b->data))[j] == 0) {
@@ -104,7 +104,7 @@ int fatInit(FileSystem *fs) {
         }
         brelse(b);
     }
-
+    printf("Ok finish!\n");
     // static uint32 alloc_clus(FileSystem *fs, uint8 dev) {
     // struct buf* b;
     // uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt;
