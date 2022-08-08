@@ -1,9 +1,19 @@
 #ifndef _FILE_SYSTEM_H_
 #define _FILE_SYSTEM_H_
 #include <Type.h>
+#include <Queue.h>
 #include <bio.h>
 #include <fat.h>
 #define MAX_NAME_LENGTH 64
+
+typedef struct FatCluster {
+    int cluster;
+    LIST_ENTRY(FatCluster) next; // in file system
+    LIST_ENTRY(FatCluster) link; // in resourses allocation
+} FatCluster;
+#define FAT_CLUSTER_NUMBER (1 << 20)
+
+LIST_HEAD(FatClusterList, FatCluster);
 
 struct buf;
 typedef struct FileSystem {
@@ -14,6 +24,7 @@ typedef struct FileSystem {
     struct File *image;
     FileSystem *next;
     int deviceNumber;
+    struct FatClusterList freeClusters;
     struct buf* (*read)(struct FileSystem *fs, u64 blockNum);
 } FileSystem;
 
@@ -30,6 +41,7 @@ typedef struct FileSystemStatus {
 	unsigned long f_namelen, f_frsize, f_flags, f_spare[4];
 } FileSystemStatus;
 
+void fatClusterInit();
 int fsAlloc(FileSystem **fs);
 int fatInit(FileSystem *fs);
 void initDirentCache();
