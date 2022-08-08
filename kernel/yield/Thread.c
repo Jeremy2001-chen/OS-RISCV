@@ -242,6 +242,8 @@ void threadRun(Thread* th) {
             strncpy(rootFileSystem.name, "fat32", 6);
             
             rootFileSystem.read = blockRead;
+            
+            fatClusterInit();
             fatInit(&rootFileSystem);
             initDirentCache();
             void testfat();
