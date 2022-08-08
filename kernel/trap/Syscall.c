@@ -637,27 +637,42 @@ void syscallSelect() {
         copyin(myProcess()->pgdir, (char*)&readSet, read, sizeof(FdSet));
         for (int i = 0; i < nfd; i++) {
             file = NULL;
-            if (i >= 64) {
-                if (!!((1UL << (i - 64)) & readSet.bits[1])) {
-                    file = myProcess()->ofile[i];
-                    if (file && file->type != FD_PIPE)
-                        cnt++;
-                }
-            } else {
-                if (!!((1UL << (i)) & readSet.bits[0])) {
-                    file = myProcess()->ofile[i];
-                    if (file && file->type != FD_PIPE)
-                        cnt++;
-                }
+            u64 cur = i < 64 ? readSet.bits[0] & (1UL << i)
+                             : readSet.bits[1] & (1UL << (i - 64));
+            if (!cur)
+                continue;
+            file = myProcess()->ofile[i];
+            if (!file)
+                continue;
+
+            int ready_to_read = 1;
+            switch (file->type) {
+                case FD_PIPE:
+                    if (file->pipe->nread == file->pipe->nwrite) {
+                        ready_to_read = 0;
+                    } else {
+                        ready_to_read = 1;
+                    }
+                    break;
+                case FD_SOCKET:
+                    if (file->socket->used != 0 &&
+                        file->socket->head == file->socket->tail) {
+                        ready_to_read = 0;
+                    } else {
+                        ready_to_read = 1;
+                    }
+                    break;
+                default:
+                    ready_to_read = 1;
+                    break;
             }
-            if (file && file->pipe->nread == file->pipe->nwrite) {
-                if (i >= 64) {
-                    readSet.bits[1] &= ~(1UL << (i - 64));
-                } else {
-                    readSet.bits[0] &= ~(1UL << i);
-                }
-            } else {
-                cnt++;
+
+            if (ready_to_read) {
+                ++cnt;
+                if (i < 64)
+                    readSet.bits[0] = ~cur;
+                else
+                    readSet.bits[1] &= ~cur;
             }
         }
         copyout(myProcess()->pgdir, read, (char*)&readSet, sizeof(FdSet));
