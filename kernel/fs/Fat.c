@@ -728,17 +728,17 @@ void eSetTime(struct dirent *entry, TimeSpec ts[2]) {
     u64 time = r_time();
     TimeSpec now;
     now.second = time / 1000000;
-    now.microSecond = time % 1000000;
-    if (ts[0].microSecond != UTIME_OMIT) {
-        if (ts[0].microSecond == UTIME_NOW) {
+    now.nanoSecond = time % 1000000 * 1000;
+    if (ts[0].nanoSecond != UTIME_OMIT) {
+        if (ts[0].nanoSecond == UTIME_NOW) {
             ts[0].second = now.second;
         }
         de.sne._crt_date = ts[0].second & ((1 << 16) - 1);
         de.sne._crt_time = (ts[0].second >> 16) & ((1 << 16) - 1);
         de.sne._crt_time_tenth = (ts[0].second >> 32) & ((1 << 8) - 1);
     }
-    if (ts[1].microSecond != UTIME_OMIT) {
-        if (ts[1].microSecond == UTIME_NOW) {
+    if (ts[1].nanoSecond != UTIME_OMIT) {
+        if (ts[1].nanoSecond == UTIME_NOW) {
             ts[1].second = now.second;
         }
         de.sne._lst_wrt_date = ts[1].second & ((1 << 16) - 1);

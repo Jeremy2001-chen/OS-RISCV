@@ -18,7 +18,7 @@ void futexWait(u64 addr, Thread* th, TimeSpec* ts) {
             futexQueue[i].addr = addr;
             futexQueue[i].thread = th;
             if (ts) {
-                th->awakeTime = ts->second * 1000000 + ts->microSecond;
+                th->awakeTime = ts->second * 1000000 + ts->nanoSecond / 1000;
             } else {
                 th->state = SLEEPING;
             }
