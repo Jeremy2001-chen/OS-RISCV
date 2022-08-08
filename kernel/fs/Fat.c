@@ -134,7 +134,7 @@ static inline uint32 first_sec_of_clus(FileSystem *fs, uint32 cluster) {
  * @param   fat_num     number of FAT table from 1, shouldn't be larger than
  * bpb::fat_cnt
  */
-static inline uint32 fat_sec_of_clus(FileSystem *fs, uint32 cluster, uint8 fat_num) {
+static inline uint32  fat_sec_of_clus(FileSystem *fs, uint32 cluster, uint8 fat_num) {
     return fs->superBlock.bpb.rsvd_sec_cnt + (cluster << 2) / fs->superBlock.bpb.byts_per_sec +
            fs->superBlock.bpb.fat_sz * (fat_num - 1);
 }
@@ -279,6 +279,7 @@ static uint rw_clus(FileSystem *fs, uint32 cluster,
                     uint n) {
     if (off + n > fs->superBlock.byts_per_clus)
         panic("offset out of range");
+    // printf("%s %d: rw_clus get in\n", __FILE__, __LINE__);
     uint tot, m;
     struct buf* bp;
     uint sec = first_sec_of_clus(fs, cluster) + off / fs->superBlock.bpb.byts_per_sec;
@@ -304,6 +305,7 @@ static uint rw_clus(FileSystem *fs, uint32 cluster,
             break;
         }
     }
+    // printf("%s %d: rw_clus get out\n", __FILE__, __LINE__);
     return tot;
 }
 
@@ -315,6 +317,7 @@ static uint rw_clus(FileSystem *fs, uint32 cluster,
  * @return              the offset from the new cur_clus
  */
 static int reloc_clus(FileSystem *fs, struct dirent* entry, uint off, int alloc) {
+    printf("%s %d: reloc_clus get in\n", __FILE__, __LINE__);
     int clus_num = off / fs->superBlock.byts_per_clus;
     while (clus_num > entry->clus_cnt) {
         int clus = read_fat(fs, entry->cur_clus);
@@ -325,6 +328,7 @@ static int reloc_clus(FileSystem *fs, struct dirent* entry, uint off, int alloc)
             } else {
                 entry->cur_clus = entry->first_clus;
                 entry->clus_cnt = 0;
+                printf("%s %d: reloc_clus get out\n", __FILE__, __LINE__);
                 return -1;
             }
         }
@@ -342,6 +346,7 @@ static int reloc_clus(FileSystem *fs, struct dirent* entry, uint off, int alloc)
             entry->clus_cnt++;
         }
     }
+    printf("%s %d: reloc_clus get out\n", __FILE__, __LINE__);
     return off % fs->superBlock.byts_per_clus;
 }
 
@@ -403,6 +408,7 @@ int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n) {
         (u64)off + n > 0xffffffff || (entry->attribute & ATTR_READ_ONLY)) {
         return -1;
     }
+    printf("%s %d: ewrite get in\n", __FILE__, __LINE__);
     FileSystem *fs = entry->fileSystem;
     if (entry->first_clus ==
         0) {  // so file_size if 0 too, which requests off == 0
@@ -428,6 +434,7 @@ int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n) {
             entry->dirty = 1;
         }
     }
+    printf("%s %d: ewrite get out\n", __FILE__, __LINE__);
     return tot;
 }
 

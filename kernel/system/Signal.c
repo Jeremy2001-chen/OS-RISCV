@@ -64,6 +64,9 @@ int signalSend(int tgid, int tid, int sig) {
     }
     acquireLock(&thread->lock);
     sc->signal = sig;
+    if (sig == SIGKILL) {
+        thread->state = RUNNABLE;
+    }
     LIST_INSERT_HEAD(&thread->waitingSignal, sc, link);
     releaseLock(&thread->lock);
     return 0;
@@ -75,7 +78,7 @@ int processSignalSend(int pid, int sig) {
     for (int i = 0; i < PROCESS_TOTAL_NUMBER; i++) {
         acquireLock(&threads[i].lock);
         if (threads[i].state != UNUSED) {
-            if (pid == 0 || pid == 1 || pid == threads[i].process->processId) {
+            if (pid == 0 || pid == -1 || pid == threads[i].process->processId) {
                 releaseLock(&threads[i].lock);
                 ret = signalSend(0, threads[i].id, sig);
                 ret = ret == 0 ? 0 : ret;
@@ -145,6 +148,21 @@ SignalContext* getHandlingSignal(Thread* thread) {
     return sc;
 }
 
+bool hasKillSignal(Thread* thread) {
+    SignalContext* sc = NULL;
+    acquireLock(&thread->lock);
+    bool find = false;
+    LIST_FOREACH(sc, &thread->waitingSignal, link) {
+        if (sc->signal == SIGKILL) {
+            find = true;
+            break;
+        }
+    }
+    releaseLock(&thread->lock);
+    return find;
+}
+
+
 void initFrame(SignalContext* sc, Thread* thread) {
     Trapframe* tf = getHartTrapFrame();
     u64 sp = DOWN_ALIGN(tf->sp - PAGE_SIZE, PAGE_SIZE);
@@ -185,17 +203,16 @@ void signalFinish(Thread* thread, SignalContext* sc) {
 void handleSignal(Thread* thread) {
     SignalContext* sc;
     while (1) {
+        if (hasKillSignal(thread)) {
+            threadDestroy(thread);
+            return;
+        }
         sc = getFirstSignalContext(thread);
         if (sc == NULL) {
             return;
         }
         if (sc->start) {
             return;
-        }
-        switch (sc->signal) {
-            case SIGKILL:
-                threadDestroy(thread);
-                return;
         }
         SignalAction *sa = getSignalHandler(thread->process) + (sc->signal - 1);
         if (sa->handler == NULL) {

@@ -134,6 +134,7 @@ void signalFinish(Thread* thread, SignalContext* sc);
 void handleSignal(Thread* thread);
 int doSignalTimedWait(SignalSet *which, SignalInfo *info, TimeSpec *ts);
 SignalContext* getHandlingSignal(Thread* thread);
+bool hasKillSignal(Thread* thread);
 
 #define MC_PC gregs[0]
 

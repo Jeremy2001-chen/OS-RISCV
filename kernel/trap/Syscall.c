@@ -244,10 +244,20 @@ void syscallSetBrk() {
 
 void syscallMapMemory() {
     Trapframe* trapframe = getHartTrapFrame();
-    u64 start = trapframe->a0, len = trapframe->a1, perm = trapframe->a2,
+    u64 start = trapframe->a0, len = trapframe->a1, prot = trapframe->a2,
         off = trapframe->a5, flags = trapframe->a3;
     struct File* fd;
     // printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
+    u64 perm = 0;
+    if (prot & PROT_EXEC) {
+        perm |= PTE_EXECUTE;
+    }
+    if (prot & PROT_READ) {
+        perm |= PTE_READ;
+    }
+    if (prot & PROT_WRITE) {
+        perm |= PTE_WRITE;
+    }
 
     argfd(4, 0, &fd);
     if (fd == NULL && start != 0) {
