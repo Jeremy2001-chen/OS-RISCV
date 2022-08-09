@@ -22,15 +22,13 @@ static struct ProcessList freeProcesses;
 struct Spinlock freeProcessesLock, processIdLock, waitLock, currentProcessLock;
 
 Process* myProcess() {
-    interruptPush();
-    Thread* thread = myThread();
-    if (thread == NULL) {
-        interruptPop();
+    // interruptPush();
+    if (myThread() == NULL) {
+        // interruptPop();
         return NULL;
     }
-    Process* ret = thread->process;
-    interruptPop();
-    return ret;
+    // interruptPop();
+    return myThread()->process;
 }
 
 SignalAction *getSignalHandler(Process* p) {
