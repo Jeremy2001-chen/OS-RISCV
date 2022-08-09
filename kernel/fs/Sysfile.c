@@ -141,6 +141,7 @@ void syscall_fcntl(void){
     tf->a0 = 0;
     return;
 }
+
 void syscallRead(void) {
     Trapframe* tf = getHartTrapFrame();
     struct File* f;
@@ -148,14 +149,11 @@ void syscallRead(void) {
     u64 uva = tf->a1;
 
     if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
-        printf("%s %d\n", __FILE__, __LINE__);
-        printf("fd: %d %lx\n", fd, f);
         tf->a0 = -1;
         return;
     }
 
     if (len < 0) {
-        printf("%s %d\n", __FILE__, __LINE__);
         tf->a0 = -1;
         return;
     }

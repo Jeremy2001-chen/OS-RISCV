@@ -404,6 +404,9 @@ int eread(struct dirent* entry, int user_dst, u64 dst, uint off, uint n) {
 
 // Caller must hold entry->lock.
 int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n) {
+    if (entry->dev == NONE) {
+        return n;
+    }
     if (off > entry->file_size || off + n < off ||
         (u64)off + n > 0xffffffff || (entry->attribute & ATTR_READ_ONLY)) {
         return -1;

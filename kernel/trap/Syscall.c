@@ -127,8 +127,10 @@ void syscallGetProcessId() {
 }
 
 void syscallGetParentProcessId() {
+    // printf("%s %d\n", __FILE__, __LINE__);
     Trapframe* trapframe = getHartTrapFrame();
     trapframe->a0 = myProcess()->parentId;
+    // printf("%s %d\n", __FILE__, __LINE__);
 }
 
 //todo: support mode

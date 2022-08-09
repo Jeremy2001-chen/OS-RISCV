@@ -116,10 +116,10 @@ int fileread(struct File* f, bool isUser, u64 addr, int n) {
             r = devsw[f->major].read(isUser, addr, 0, n);
             break;
         case FD_ENTRY:
-            elock(f->ep);
+            // elock(f->ep);
             if ((r = eread(f->ep, isUser, addr, f->off, n)) > 0)
                 f->off += r;
-            eunlock(f->ep);
+            // eunlock(f->ep);
             break;
         default:
             panic("fileread");
@@ -147,14 +147,14 @@ int filewrite(struct File* f, bool isUser, u64 addr, int n) {
             return -1;
         ret = devsw[f->major].write(isUser, addr, 0, n);
     } else if (f->type == FD_ENTRY) {
-        elock(f->ep);
+        // elock(f->ep);
         if (ewrite(f->ep, isUser, addr, f->off, n) == n) {
             ret = n;
             f->off += n;
         } else {
             ret = -1;
         }
-        eunlock(f->ep);
+        // eunlock(f->ep);
     } else {
         panic("filewrite");
     }

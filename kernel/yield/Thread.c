@@ -259,8 +259,8 @@ void threadRun(Thread* th) {
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/null", T_CHAR, O_RDONLY); //share memory
+            ep->dev = NONE;
             eunlock(ep);
-            eput(ep);
             ep = create(AT_FDCWD, "/tmp", T_DIR, O_RDONLY); //share memory
             eunlock(ep);
             eput(ep);
