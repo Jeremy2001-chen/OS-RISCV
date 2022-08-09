@@ -154,7 +154,7 @@ void syscallExit() {
     int ret, ec = trapframe->a0;
 
     if ((ret = tid2Thread(0, &th, 1)) < 0) {
-        panic("Process exit error\n");
+        panic("thread exit error\n");
         return;
     }    
 
@@ -313,6 +313,7 @@ void syscallUname() {
 void syscallSetTidAddress() {
     Trapframe *tf = getHartTrapFrame();
     // copyout(myProcess()->pgdir, tf->a0, (char*)(&myProcess()->id), sizeof(u64));
+    printf("settid: %lx\n", tf->a0);
     myThread()->clearChildTid = tf->a0;
     tf->a0 = myThread()->id;
 }

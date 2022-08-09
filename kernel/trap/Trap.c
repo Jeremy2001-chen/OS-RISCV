@@ -138,10 +138,9 @@ void userTrap() {
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
             // printf("syscall %d\n", trapframe->a7);
-            // if (trapframe->a7 != SYSCALL_PUTCHAR && trapframe->a7 != SYSCALL_WRITE && trapframe->a7 != 63 
-            // && trapframe->a7 != SYSCALL_WRITE_VECTOR && trapframe->a7 != SYSCALL_SELECT) {
+            // if (trapframe->a7 == SYSCALL_WRITE || trapframe->a7 == SYSCALL_WRITE_VECTOR || trapframe->a7 == SYSCALL_SELECT || trapframe->a7 == SYSCALL_GET_TIME) {
+            //     printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
             // }
-                // printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
             if (!syscallVector[trapframe->a7]) {
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
@@ -154,6 +153,7 @@ void userTrap() {
         case SCAUSE_LOAD_PAGE_FAULT:
             pa = pageLookup(current->pgdir, r_stval(), &pte);
             if (pa == 0) {
+                // printf("%d, spec: %lx\n", __LINE__, sepc);
                 pageout(current->pgdir, r_stval());
             } else if (!(*pte & PTE_READ)) {
                 processSignalSend(0, SIGSEGV);
@@ -164,7 +164,7 @@ void userTrap() {
         case SCAUSE_STORE_PAGE_FAULT:
             pa = pageLookup(current->pgdir, r_stval(), &pte);
             if (pa == 0) {
-                // printf("spec: %lx\n", sepc);
+                // printf("%d, spec: %lx\n", __LINE__, sepc);
                 pageout(current->pgdir, r_stval());
             } else if (*pte & PTE_COW) {
                 cowHandler(current->pgdir, r_stval());
