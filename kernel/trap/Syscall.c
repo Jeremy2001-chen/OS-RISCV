@@ -436,17 +436,26 @@ void syscallReceiveFrom() {
 
 void syscallListen() {
     Trapframe *tf = getHartTrapFrame();
+    int sockfd = tf->a1;
+    printf("listen to fd %d\n", sockfd);
+    /* 我们认为socket一创建时就开始listen，而不需要用户去手动Listen */
     tf->a0 = 0;
 }
 
 void syscallConnect() {
-    Trapframe *tf = getHartTrapFrame();
-    tf->a0 = 0;
+    Trapframe* tf = getHartTrapFrame();
+    int sockfd = tf->a0;
+    SocketAddr sa;
+    copyin(myProcess()->pgdir, (char*)&sa, tf->a1, tf->a2);
+    tf->a0 = connect(sockfd, &sa);
 }
 
 void syscallAccept() {
-    Trapframe *tf = getHartTrapFrame();
-    tf->a0 = 0;
+    Trapframe* tf = getHartTrapFrame();
+    int sockfd = tf->a0;
+    SocketAddr sa;
+    tf->a0 = accept(sockfd, &sa);
+    copyout(myProcess()->pgdir, tf->a1, (char*)&sa, tf->a2);
 }
 
 void syscallFutex() {

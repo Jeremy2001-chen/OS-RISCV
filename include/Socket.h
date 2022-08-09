@@ -16,9 +16,12 @@ typedef struct {
 typedef struct Socket {
     bool used;
     Process *process;
-    SocketAddr addr;
+    SocketAddr addr; /* local addr */
+    SocketAddr target_addr; /* remote addr */
     u64 head;
     u64 tail; // tail is equal or greater than head
+    SocketAddr pending_queue[10];
+    int pending_h, pending_t;
 } Socket;
 
 int createSocket(int domain, int type, int protocal);
@@ -27,5 +30,6 @@ int getSocketName(int fd, u64 va);
 int sendTo(int fd, char *buf, u32 len, int flags, SocketAddr *dest);
 int receiveFrom(int fd, u64 buf, u32 len, int flags, u64 srcAddr);
 void socketFree(Socket *s);
-
+int accept(int sockfd, SocketAddr* addr);
+int connect(int sockfd, const SocketAddr* addr);
 #endif
