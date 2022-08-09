@@ -16,6 +16,57 @@
 
 /* fields that start with "_" are something we don't use */
 
+extern Inode inodes[];
+static void eFreeInode(struct dirent *ep) {
+    for (int i = INODE_SECOND_ITEM_BASE; i < INODE_THIRD_ITEM_BASE; i++) {
+        if (ep->inodeMaxCluster > INODE_SECOND_LEVEL_BOTTOM + (i - INODE_SECOND_ITEM_BASE) * INODE_ITEM_NUM) {
+            inodeFree(ep->inode.item[i]);
+            continue;
+        }
+        break;
+    }
+    for (int i = INODE_THIRD_ITEM_BASE; i < INODE_ITEM_NUM; i++) {
+        int base = INODE_THIRD_LEVEL_BOTTOM + (i - INODE_SECOND_ITEM_BASE) * INODE_ITEM_NUM * INODE_ITEM_NUM;
+        if (ep->inodeMaxCluster > base) {
+            for (int j = 0; j < INODE_ITEM_NUM; j++) {
+                if (ep->inodeMaxCluster > base + j * INODE_ITEM_NUM) {
+                    inodeFree(inodes[ep->inode.item[i]].item[j]);
+                    continue;
+                }
+                break;
+            }
+            inodeFree(ep->inode.item[i]);
+            continue;
+        }
+        break;
+    }
+    memset(&ep->inode, -1, sizeof(Inode));
+    ep->inodeMaxCluster = 0;
+    return;
+}
+
+static void eFindInode(struct dirent *entry, int pos) {
+    assert(pos < entry->inodeMaxCluster);
+    entry->clus_cnt = pos;
+    if (pos < INODE_SECOND_LEVEL_BOTTOM) {
+        entry->cur_clus = entry->inode.item[pos];
+        // printf("find: ep: %lx pos: %d, clus: %d\n", entry, pos, entry->cur_clus);
+        return;
+    }
+    if (pos < INODE_THIRD_LEVEL_BOTTOM) {
+        int idx = INODE_SECOND_ITEM_BASE + (pos - INODE_SECOND_LEVEL_BOTTOM) / INODE_ITEM_NUM;
+        entry->cur_clus = inodes[entry->inode.item[idx]].item[(pos - INODE_SECOND_LEVEL_BOTTOM) % INODE_ITEM_NUM];
+        return;
+    }
+    if (pos < INODE_THIRD_LEVEL_TOP) {
+        int idx1 = INODE_THIRD_ITEM_BASE + (pos - INODE_THIRD_LEVEL_BOTTOM) / INODE_ITEM_NUM / INODE_ITEM_NUM;
+        int idx2 = (pos - INODE_THIRD_LEVEL_BOTTOM) / INODE_ITEM_NUM % INODE_ITEM_NUM;
+        entry->cur_clus = inodes[inodes[entry->inode.item[idx1]].item[idx2]].item[(pos - INODE_THIRD_LEVEL_BOTTOM) % INODE_ITEM_NUM];
+        return;
+    }
+    panic("");
+}
+
 typedef struct short_name_entry {
     char name[CHAR_SHORT_NAME];
     uint8 attr;
@@ -48,7 +99,6 @@ union dentry {
 };
 
 extern DirentCache direntCache;
-extern FileSystem rootFileSystem;
 //struct superblock fat;
 
 /**
@@ -248,7 +298,6 @@ struct dirent* create(int fd, char* path, short type, int mode) {
     } else {
         mode = 0;
     }
-
     
     elock(dp);
     if ((ep = ealloc(dp, name, mode)) == NULL) {
@@ -320,7 +369,18 @@ static uint rw_clus(FileSystem *fs, uint32 cluster,
  * @return              the offset from the new cur_clus
  */
 static int reloc_clus(FileSystem *fs, struct dirent* entry, uint off, int alloc) {
+    assert(entry->first_clus != 0);
+    assert(entry->inodeMaxCluster > 0);
+    assert(entry->first_clus == entry->inode.item[0]);
     int clus_num = off / fs->superBlock.byts_per_clus;
+    int ret = off % fs->superBlock.byts_per_clus;
+    if (clus_num < entry->inodeMaxCluster) {
+        eFindInode(entry, clus_num);
+        return ret;
+    }
+    if (entry->inodeMaxCluster > 0) {
+        eFindInode(entry, entry->inodeMaxCluster - 1);
+    }
     while (clus_num > entry->clus_cnt) {
         int clus = read_fat(fs, entry->cur_clus);
         if (clus >= FAT32_EOC) {
@@ -335,19 +395,38 @@ static int reloc_clus(FileSystem *fs, struct dirent* entry, uint off, int alloc)
         }
         entry->cur_clus = clus;
         entry->clus_cnt++;
-    }
-    if (clus_num < entry->clus_cnt) {
-        entry->cur_clus = entry->first_clus;
-        entry->clus_cnt = 0;
-        while (entry->clus_cnt < clus_num) {
-            entry->cur_clus = read_fat(fs, entry->cur_clus);
-            if (entry->cur_clus >= FAT32_EOC) {
-                panic("reloc_clus");
-            }
-            entry->clus_cnt++;
+        u32 pos = entry->clus_cnt;
+        entry->inodeMaxCluster++;
+        if (pos < INODE_SECOND_LEVEL_BOTTOM) {
+            assert(entry->inode.item[pos] == -1);
+            entry->inode.item[pos] = clus;
+            continue;
         }
+        if (pos < INODE_THIRD_LEVEL_BOTTOM) {
+            int idx1 = INODE_SECOND_ITEM_BASE + (pos - INODE_SECOND_LEVEL_BOTTOM) / INODE_ITEM_NUM;
+            int idx2 = (pos - INODE_SECOND_LEVEL_BOTTOM) % INODE_ITEM_NUM;
+            if (idx2 == 0) {
+                entry->inode.item[idx1] = inodeAlloc();
+            }
+            inodes[entry->inode.item[idx1]].item[idx2] = clus;
+            continue;
+        }
+        if (pos < INODE_THIRD_LEVEL_TOP) {
+            int idx1 = INODE_THIRD_ITEM_BASE + (pos - INODE_THIRD_LEVEL_BOTTOM) / INODE_ITEM_NUM / INODE_ITEM_NUM;
+            int idx2 = (pos - INODE_THIRD_LEVEL_BOTTOM) / INODE_ITEM_NUM % INODE_ITEM_NUM;
+            int idx3 = (pos - INODE_THIRD_LEVEL_BOTTOM) % INODE_ITEM_NUM;
+            if (idx3 == 0) {
+                if (idx2 == 0) {
+                    entry->inode.item[idx1] = inodeAlloc();
+                }
+                inodes[entry->inode.item[idx1]].item[idx2] = inodeAlloc();
+            }
+            inodes[inodes[entry->inode.item[idx1]].item[idx2]].item[idx3] = clus;
+            continue;
+        }
+        panic("");
     }
-    return off % fs->superBlock.byts_per_clus;
+    return ret;
 }
 
 int getBlockNumber(struct dirent* entry, int dataBlockNum) {
@@ -414,7 +493,8 @@ int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n) {
     FileSystem *fs = entry->fileSystem;
     if (entry->first_clus ==
         0) {  // so file_size if 0 too, which requests off == 0
-        entry->cur_clus = entry->first_clus = alloc_clus(fs, entry->dev);
+        entry->cur_clus = entry->first_clus = entry->inode.item[0] = alloc_clus(fs, entry->dev);
+        entry->inodeMaxCluster = 1;
         entry->clus_cnt = 0;
         entry->dirty = 1;
     }
@@ -470,6 +550,7 @@ static struct dirent* eget(struct dirent* parent, char* name) {
             ep->valid = 0;
             ep->dirty = 0;
             ep->fileSystem = parent->fileSystem;
+            eFreeInode(ep);
             releaseLock(&direntCache.lock);
             return ep;
         }
@@ -667,6 +748,7 @@ struct dirent* ealloc(struct dirent* dp, char* name, int attr) {
     }
     ep->file_size = 0;
     ep->first_clus = 0;
+    eFreeInode(ep);
     ep->parent = edup(dp);
     ep->off = off;
     ep->clus_cnt = 0;
@@ -677,7 +759,8 @@ struct dirent* ealloc(struct dirent* dp, char* name, int attr) {
     FileSystem *fs = ep->fileSystem;
     if (attr == ATTR_DIRECTORY) {  // generate "." and ".." for ep
         ep->attribute |= ATTR_DIRECTORY;
-        ep->cur_clus = ep->first_clus = alloc_clus(fs, dp->dev);
+        ep->cur_clus = ep->first_clus = ep->inode.item[0] = alloc_clus(fs, dp->dev);
+        ep->inodeMaxCluster = 1;
         emake(ep, ep, 0);
         emake(ep, dp, 32);
     } else {
@@ -690,7 +773,6 @@ struct dirent* ealloc(struct dirent* dp, char* name, int attr) {
 }
 
 struct dirent* edup(struct dirent* entry) {
-    
     if (entry != 0) {
         acquireLock(&direntCache.lock);
         entry->ref++;
@@ -790,6 +872,7 @@ void etrunc(struct dirent* entry) {
     }
     entry->file_size = 0;
     entry->first_clus = 0;
+    eFreeInode(entry);
     entry->dirty = 1;
 }
 
@@ -842,7 +925,7 @@ void eput(struct dirent* entry) {
         return;
     }
     MSG_PRINT("end of eput");
-    entry->ref--;
+    // entry->ref--;
     releaseLock(&direntCache.lock);
 }
 
@@ -931,6 +1014,8 @@ static void read_entry_name(char* buffer, union dentry* d) {
 static void read_entry_info(struct dirent* entry, union dentry* d) {
     entry->attribute = d->sne.attr;
     entry->first_clus = ((uint32)d->sne.fst_clus_hi << 16) | d->sne.fst_clus_lo;
+    entry->inode.item[0] = entry->first_clus;
+    entry->inodeMaxCluster = 1;
     entry->file_size = d->sne.file_size;
     entry->cur_clus = entry->first_clus;
     entry->clus_cnt = 0;
@@ -1007,7 +1092,7 @@ int enext(struct dirent* dp, struct dirent* ep, uint off, int* count) {
 struct dirent* dirlookup(struct dirent* dp, char* filename, uint* poff) {
     if (!(dp->attribute & ATTR_DIRECTORY))
         panic("dirlookup not DIR");
-    
+
     if (strncmp(filename, ".", FAT32_MAX_FILENAME) == 0) {
         return edup(dp);
     } else if (strncmp(filename, "..", FAT32_MAX_FILENAME) == 0) {
@@ -1026,7 +1111,6 @@ struct dirent* dirlookup(struct dirent* dp, char* filename, uint* poff) {
         return ep;
     }  // ecache hits
 
-    
     int len = strlen(filename);
     int entcnt = (len + CHAR_LONG_NAME - 1) / CHAR_LONG_NAME +
                  1;  // count of l-n-entries, rounds up. plus s-n-e
@@ -1035,7 +1119,6 @@ struct dirent* dirlookup(struct dirent* dp, char* filename, uint* poff) {
     uint off = 0;
     FileSystem *fs = dp->fileSystem;
     reloc_clus(fs, dp, 0, 0);
-    
     while ((type = enext(dp, ep, off, &count) != -1)) {
         if (type == 0) {
             if (poff && count >= entcnt) {
@@ -1099,7 +1182,8 @@ static struct dirent* lookup_path(int fd, char* path, int parent, char* name, bo
         }
         entry = edup(myProcess()->ofile[fd]->ep);
     } else if (*path == '/') {
-        entry = edup(&rootFileSystem.root);
+        extern FileSystem *rootFileSystem;
+        entry = edup(&rootFileSystem->root);
     } else if (*path != '\0' && fd == AT_FDCWD) {
         entry = edup(myProcess()->cwd);
     } else {
@@ -1119,6 +1203,7 @@ static struct dirent* lookup_path(int fd, char* path, int parent, char* name, bo
             struct dirent* mountDirent = &entry->head->root;
             eunlock(entry);
             elock(mountDirent);
+    printf("%s %d\n", __FILE__, __LINE__);
             entry = edup(mountDirent);
         }
 

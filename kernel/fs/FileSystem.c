@@ -8,27 +8,6 @@
 #include <Page.h>
 FileSystem fileSystem[32];
 
-// struct FatClusterList freeClusters;
-// FatCluster fatClusters[FAT_CLUSTER_NUMBER];
-// void fatClusterInit() {
-//     LIST_INIT(&freeClusters);
-//     for (int i = FAT_CLUSTER_NUMBER - 1; i >= 0; i--) {
-//         LIST_INSERT_HEAD(&freeClusters, &fatClusters[i], link);
-//     }
-// }
-
-// int fatClusterAlloc(FatCluster **fatCluster) {
-//     FatCluster *fc;
-//     if ((fc = LIST_FIRST(&freeClusters)) != NULL) {
-//         *fatCluster = fc;
-//         LIST_REMOVE(fc, link);
-//         fc->cluster = 0;
-//         return 0;
-//     }
-//     panic("");
-//     return -1;
-// }
-
 int fsAlloc(FileSystem **fs) {
     for (int i = 0; i < 32; i++) {
         if (!fileSystem[i].valid) {
@@ -44,7 +23,7 @@ int fsAlloc(FileSystem **fs) {
 DirentCache direntCache;
 // fs's read, name, mount_point should be inited
 int fatInit(FileSystem *fs) {
-    // printf("[FAT32 init]fat init begin\n");
+    printf("[FAT32 init]fat init begin\n");
     struct buf *b = fs->read(fs, 0);
     if (b == 0) {
         panic("");
@@ -83,7 +62,9 @@ int fatInit(FileSystem *fs) {
     memset(&fs->root, 0, sizeof(fs->root));
     initsleeplock(&fs->root.lock, "entry");
     fs->root.attribute = (ATTR_DIRECTORY | ATTR_SYSTEM);
-    fs->root.first_clus = fs->root.cur_clus = fs->superBlock.bpb.root_clus;
+    memset(&fs->root.inode, -1, sizeof(Inode));
+    fs->root.inode.item[0] = fs->root.first_clus = fs->root.cur_clus = fs->superBlock.bpb.root_clus;
+    fs->root.inodeMaxCluster = 1;
     fs->root.valid = 1;
     fs->root.filename[0]='/';
     fs->root.fileSystem = fs;
@@ -92,13 +73,15 @@ int fatInit(FileSystem *fs) {
     int totalClusterNumber = fs->superBlock.bpb.fat_sz * fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
     u64 *clusterBitmap = (u64*)getFileSystemClusterBitmap(fs);
     int cnt = 0;
+        extern u64 kernelPageDirectory[];
     do {
         PhysicalPage *pp;
         if (pageAlloc(&pp) < 0) {
             panic("");
         }
-        extern u64 kernelPageDirectory[];
-        pageInsert(kernelPageDirectory, ((u64)clusterBitmap) + cnt, page2pa(pp), PTE_READ | PTE_WRITE);
+        if (pageInsert(kernelPageDirectory, ((u64)clusterBitmap) + cnt, page2pa(pp), PTE_READ | PTE_WRITE) < 0) {
+            panic("");
+        }
         cnt += PAGE_SIZE;
     } while (cnt * 8 < totalClusterNumber);
     uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt;
@@ -113,36 +96,16 @@ int fatInit(FileSystem *fs) {
         }
         brelse(b);
     }
-    printf("Ok finish!\n");
-    // static uint32 alloc_clus(FileSystem *fs, uint8 dev) {
-    // struct buf* b;
-    // uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt;
-    // uint32 const ent_per_sec = fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
-    // for (uint32 i = 0; i < fs->superBlock.bpb.fat_sz; i++, sec++) {
-    //     b = fs->read(fs, sec);
-    //     for (uint32 j = 0; j < ent_per_sec; j++) {
-    //         if (((uint32*)(b->data))[j] == 0) {
-    //             ((uint32*)(b->data))[j] = FAT32_EOC + 7;
-    //             bwrite(b);
-    //             brelse(b);
-    //             uint32 clus = i * ent_per_sec + j;
-    //             zero_clus(fs, clus);
-    //             return clus;
-    //         }
-    //     }
-    //     brelse(b);
-    // }
-
     
-    // printf("[FAT32 init]fat init end\n");
+    printf("[FAT32 init]fat init end\n");
     return 0;
 }
 
-FileSystem rootFileSystem;
+FileSystem *rootFileSystem;
 void initDirentCache() {
     initLock(&direntCache.lock, "ecache");
     struct File* file = filealloc();
-    rootFileSystem.image = file;
+    rootFileSystem->image = file;
     file->type = FD_DEVICE;
     file->major = 0;
     file->readable = true;
@@ -156,6 +119,7 @@ void initDirentCache() {
         de->ref = 0;
         de->dirty = 0;
         de->parent = 0;
+        de->inodeMaxCluster = 0;
      //   de->next = fs->root.next;
      //   de->prev = &fs->root;
         initsleeplock(&de->lock, "entry");

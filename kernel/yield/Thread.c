@@ -129,7 +129,6 @@ int tid2Thread(u32 threadId, struct Thread **thread, int checkPerm) {
     return 0;
 }
 
-extern FileSystem rootFileSystem;
 extern void userVector();
 
 void threadSetup(Thread* th) {
@@ -237,32 +236,47 @@ void threadRun(Thread* th) {
             // regular process (e.g., because it calls sleep), and thus cannot
             // be run from main().
             first = 1;
-            strncpy(rootFileSystem.name, "fat32", 6);
+            extern FileSystem *rootFileSystem;
+            if (rootFileSystem == NULL) {
+                fsAlloc(&rootFileSystem);
+            }
+            strncpy(rootFileSystem->name, "fat32", 6);
             
-            rootFileSystem.read = blockRead;
+            rootFileSystem->read = blockRead;
             
-            fatInit(&rootFileSystem);
+            fatInit(rootFileSystem);
             initDirentCache();
             void testfat();
             testfat();
 
-            struct dirent* ep = create(AT_FDCWD, "/dev", T_DIR, O_RDONLY);
+            struct dirent* ep = create(AT_FDCWD, "/var/tmp/XXX", T_FILE, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/dev", T_DIR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/vda2", T_DIR, O_RDONLY); //driver
-            ep->head = &rootFileSystem;            
+            assert(ep != NULL);
+            ep->head = rootFileSystem;            
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/shm", T_DIR, O_RDONLY); //share memory
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/null", T_CHAR, O_RDONLY); //share memory
             ep->dev = NONE;
+            assert(ep != NULL);
             eunlock(ep);
             ep = create(AT_FDCWD, "/tmp", T_DIR, O_RDONLY); //share memory
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/zero", T_CHAR, O_RDONLY);
+            // panic("");
+            assert(ep != NULL);
             ep->dev = ZERO;
             eunlock(ep);
             // Don't eput here
@@ -281,55 +295,67 @@ void threadRun(Thread* th) {
             //     printf("pre_link error!\n");
             // }
             ep = create(AT_FDCWD, "/dev/tty", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/rtc", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/rtc0", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/misc", T_DIR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/misc/rtc", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/proc", T_DIR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/proc/meminfo", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/proc/mounts", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/proc/localtime", T_CHAR, O_RDONLY);
-            eunlock(ep);
-            eput(ep);
-            ep = create(AT_FDCWD, "/proc/meminfo", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/proc/sys", T_DIR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/proc/sys/kernel", T_DIR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/proc/sys/kernel/osrelease", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
             ep->dev = OSRELEASE;
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/proc/self", T_DIR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);   
             if (do_linkat(AT_FDCWD, "/", AT_FDCWD, "/proc/self/exe") < 0) {
                 panic("");
             }
             ep = create(AT_FDCWD, "/etc", T_DIR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/etc/adjtime", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/etc/localtime", T_CHAR, O_RDONLY);
@@ -342,6 +368,7 @@ void threadRun(Thread* th) {
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/var/tmp/XXX", T_FILE, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             // setNextTimeout();

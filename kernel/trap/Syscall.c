@@ -253,7 +253,7 @@ void syscallMapMemory() {
     struct File* fd;
     u64 perm = 0;
     if (prot & PROT_EXEC) {
-        perm |= PTE_EXECUTE;
+        perm |= PTE_EXECUTE | PTE_READ;
     }
     if (prot & PROT_READ) {
         perm |= PTE_READ;
@@ -540,14 +540,14 @@ void syscallPoll() {
 
 void syscallMemoryProtect() {
     Trapframe *tf = getHartTrapFrame();
-    printf("mprotect va: %lx, length: %lx prot:%lx\n", tf->a0, tf->a1, tf->a2);
+    // printf("mprotect va: %lx, length: %lx prot:%lx\n", tf->a0, tf->a1, tf->a2);
 
     u64 start = DOWN_ALIGN(tf->a0, PGSIZE);
     u64 end = UP_ALIGN(tf->a0+tf->a1, PGSIZE);
 
     u64 perm = 0;
     if (tf->a2 & PROT_EXEC) {
-        perm |= PTE_EXECUTE;
+        perm |= PTE_EXECUTE | PTE_READ;
     }
     if (tf->a2 & PROT_READ) {
         perm |= PTE_READ;
