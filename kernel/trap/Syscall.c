@@ -259,16 +259,13 @@ void syscallMapMemory() {
         perm |= PTE_READ;
     }
     if (prot & PROT_WRITE) {
-        perm |= PTE_WRITE;
+        perm |= PTE_WRITE | PTE_READ;
     }
 
     argfd(4, 0, &fd);
     // printf("mmap: %lx %lx %lx %lx %d\n", start, len, prot, flags, fd);
-    if (fd == NULL && start != 0) {
-        //todo
-        trapframe->a0 = -1;
-        return;
-    }
+    // printf("heap bottom: %lx\n", myProcess()->heapBottom);
+
     trapframe->a0 =
         do_mmap(fd, start, len, perm, /*'type' currently not used */ flags, off);
     return;
@@ -443,7 +440,7 @@ void syscallReceiveFrom() {
 void syscallListen() {
     Trapframe *tf = getHartTrapFrame();
     int sockfd = tf->a1;
-    printf("listen to fd %d\n", sockfd);
+    printf("[%s] fd %d\n",__func__, sockfd);
     /* 我们认为socket一创建时就开始listen，而不需要用户去手动Listen */
     tf->a0 = 0;
 }
@@ -543,7 +540,31 @@ void syscallPoll() {
 
 void syscallMemoryProtect() {
     Trapframe *tf = getHartTrapFrame();
-    // printf("mprotect va: %lx, length: %lx\n", tf->a0, tf->a1);
+    printf("mprotect va: %lx, length: %lx prot:%lx\n", tf->a0, tf->a1, tf->a2);
+
+    u64 start = DOWN_ALIGN(tf->a0, PGSIZE);
+    u64 end = UP_ALIGN(tf->a0+tf->a1, PGSIZE);
+
+    u64 perm = 0;
+    if (tf->a2 & PROT_EXEC) {
+        perm |= PTE_EXECUTE;
+    }
+    if (tf->a2 & PROT_READ) {
+        perm |= PTE_READ;
+    }
+    if (tf->a2 & PROT_WRITE) {
+        perm |= PTE_WRITE | PTE_READ;
+    }
+    while(start < end){
+        u64 *pte, pa;
+        pa = pageLookup(myProcess()->pgdir, start, &pte);
+        if(!pa){
+            panic("[%s] there is no page on %lx\n", __func__, start);
+        }else{
+            *pte = (*pte & ~(PTE_READ | PTE_WRITE | PTE_EXECUTE)) | perm;
+        }
+        start += PGSIZE;
+    }
     tf->a0 = 0;
 }
 

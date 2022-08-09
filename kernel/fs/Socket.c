@@ -55,7 +55,7 @@ int createSocket(int family, int type, int protocal) {
 }
 
 int bindSocket(int fd, SocketAddr *sa) {
-    printf("[%s]  addr %lx port %lx \n",__func__, sa->addr, sa->port);
+    printf("[%s]  addr 0x%lx port 0x%lx \n",__func__, sa->addr, sa->port);
     File *f = myProcess()->ofile[fd];
     assert(f->type == FD_SOCKET);
     Socket *s = f->socket;
@@ -75,9 +75,9 @@ int getSocketName(int fd, u64 va) {
 
 int sendTo(Socket *sock, char *buf, u32 len, int flags, SocketAddr *dest) {
     buf[len] = 0;
-    printf("[%s] %s\n", __func__, buf);
+    printf("[%s] addr 0x%x port 0x%x data %s\n", __func__, dest->addr, dest->port, buf);
     for (int i = 0; i < SOCKET_COUNT; i++) {
-        if (sockets[i].used && (/*sockets[i].addr.addr == dest->addr ||*/ sockets[i].addr.addr == 0)) {
+        if (sockets[i].used && (sockets[i].addr.port == dest->port/*sockets[i].addr.addr == dest->addr || sockets[i].addr.addr == 0*/)) {
             char *dst = (char*)(getSocketBufferBase(&sockets[i]) + (sockets[i].tail & (PAGE_SIZE - 1)));
             u32 num = MIN(PAGE_SIZE - (sockets[i].tail - sockets[i].head), len);
             int len1 = MIN(num, PAGE_SIZE - (sockets[i].tail & (PAGE_SIZE - 1)));
@@ -94,7 +94,7 @@ int sendTo(Socket *sock, char *buf, u32 len, int flags, SocketAddr *dest) {
 
 int receiveFrom(Socket *s, u64 buf, u32 len, int flags, u64 srcAddr) {
     char *src = (char*)(getSocketBufferBase(s) + (s->head & (PAGE_SIZE - 1)));
-    printf("[%s] %s\n",__func__, src);
+    printf("[%s] data %s\n",__func__, src);
     u32 num = MIN(len, (s->tail - s->head));
     int len1 = MIN(num, PAGE_SIZE - (s->head & (PAGE_SIZE - 1)));
     copyout(myProcess()->pgdir, buf, src, len1);
@@ -117,7 +117,7 @@ int socket_write(Socket* sock, bool isUser, u64 addr, int n) {
 
 static Socket* remote_find_socket(const SocketAddr* addr) {
     for (int i = 0; i < SOCKET_COUNT; ++i) {
-        if (/*sockets[i].addr.family == addr->family &&*/
+        if (sockets[i].used && /*sockets[i].addr.family == addr->family &&*/
             sockets[i].addr.port == addr->port) {
             return &sockets[i];
         }
@@ -166,11 +166,6 @@ static SocketAddr gen_local_socket_addr() {
 /**
  * @brief The connect() system call connects the socket referred to by the
  * file descriptor sockfd to the address specified by addr. 
- * 
- * @param sockfd 
- * @param addr 
- * @return int      If the connection or binding succeeds, zero is returned.  
- * On error, -1 is returned, and errno is set to indicate the error.
  */
 int connect(int sockfd, const SocketAddr* addr) {
     printf("[%s] fd %d addr %lx port %x\n", __func__, sockfd, addr->addr,
@@ -183,18 +178,16 @@ int connect(int sockfd, const SocketAddr* addr) {
     local_sock->target_addr = *addr;
  
 /* ----------- process Remote Host --------- */
-
-    // Socket* target_socket = remote_find_socket(addr);
-    // if (target_socket == NULL) {
-    //     printf("remote socket don't exists!");
-    //     return -1;
-    // }
-    // target_socket->pending_queue[target_socket->pending_t++] = *local_sock->addr;
+    Socket* target_socket = remote_find_socket(addr);
+    if (target_socket == NULL) {
+        printf("remote socket don't exists!");
+        return -1;
+    }
+    target_socket->pending_queue[target_socket->pending_t++] = local_sock->addr;
 
 /* ----------- process Remote Host --------- */
 
 
-    /* 这里应该通过 TCP
-     * 与远程主机建立连接，但是这里默认与本机建立了连接，直接返回 */
+
     return 0;
 }
