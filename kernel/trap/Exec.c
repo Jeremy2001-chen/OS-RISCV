@@ -649,7 +649,6 @@ int exec(char* path, char** argv) {
     if (r < 0) {
         panic("");
     }
-
     myThread()->clearChildTid = 0;
     //free old pagetable
     pgdirFree(oldpagetable);
