@@ -101,10 +101,9 @@ static inline void userProcessCpuTimeEnd() {
 }
 
 void userTrap() {
-    u64 sepc = r_sepc();
-    u64 sstatus = r_sstatus();
-    u64 scause = r_scause();
-    Process* current = myProcess();
+    // u64 sepc = r_sepc();
+    // u64 scause = r_scause();
+    u64* pgdir = myProcess()->pgdir;
     // if ((scause & SCAUSE_EXCEPTION_CODE) != SCAUSE_ENVIRONMENT_CALL) {
     // int hartId = r_hartid();
     // printf("[User Trap] hartId is %lx, threadId: %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx, a7 is %d\n", 
@@ -113,16 +112,16 @@ void userTrap() {
 #ifdef CJY_DEBUG
     printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
 #else
-    use((void *)sepc);
+    // use((void *)sepc);
 #endif
-    if (sstatus & SSTATUS_SPP) {
+    if (r_sstatus() & SSTATUS_SPP) {
         panic("usertrap: not from user mode\n");
     }
     w_stvec((u64) kernelVector);
     userProcessCpuTimeEnd();
     Trapframe* trapframe = getHartTrapFrame();
     // printf("in tp: %lx\n", trapframe->tp);
-    if (scause & SCAUSE_INTERRUPT) {
+    if (r_scause() & SCAUSE_INTERRUPT) {
         trapDevice();
         yield();
     } else {
@@ -130,7 +129,7 @@ void userTrap() {
         u64 *pte = NULL;
         u64 pa = -1;
         // printf("sepc:%lx sstatus:%lx scause:%lx \n", sepc, sstatus, scause);
-        switch (scause & SCAUSE_EXCEPTION_CODE)
+        switch (r_scause() & SCAUSE_EXCEPTION_CODE)
         {
         // case SCAUSE_BREAKPOINT:
         //     trapframe->epc += 4;
@@ -151,10 +150,10 @@ void userTrap() {
             // }
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
-            pa = pageLookup(current->pgdir, r_stval(), &pte);
+            pa = pageLookup(pgdir, r_stval(), &pte);
             if (pa == 0) {
                 // printf("%d, spec: %lx\n", __LINE__, sepc);
-                pageout(current->pgdir, r_stval());
+                pageout(pgdir, r_stval());
             } else if (!(*pte & PTE_READ)) {
                 processSignalSend(0, SIGSEGV);
             } else {
@@ -162,12 +161,12 @@ void userTrap() {
             }
             break;
         case SCAUSE_STORE_PAGE_FAULT:
-            pa = pageLookup(current->pgdir, r_stval(), &pte);
+            pa = pageLookup(pgdir, r_stval(), &pte);
             if (pa == 0) {
                 // printf("%d, spec: %lx\n", __LINE__, sepc);
-                pageout(current->pgdir, r_stval());
+                pageout(pgdir, r_stval());
             } else if (*pte & PTE_COW) {
-                cowHandler(current->pgdir, r_stval());
+                cowHandler(pgdir, r_stval());
             } else if (!(*pte & PTE_WRITE)) {
                 processSignalSend(0, SIGSEGV);
             } else {
@@ -177,8 +176,8 @@ void userTrap() {
             break;
         default:
             trapframeDump(trapframe);
-            pageLookup(current->pgdir, r_stval(), &pte);
-            panic("unhandled error %d,  %lx, %lx\n", scause, r_stval(), *pte);
+            pageLookup(pgdir, r_stval(), &pte);
+            panic("unhandled error %d,  %lx, %lx\n", r_scause(), r_stval(), *pte);
             break;
         }
     }

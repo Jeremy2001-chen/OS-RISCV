@@ -19,16 +19,14 @@ Thread *currentThread[HART_TOTAL_NUMBER] = {0};
 struct Spinlock freeThreadListLock, scheduleListLock, threadIdLock;
 
 Thread* myThread() {
-    interruptPush();
-    int hartId = r_hartid();
-    if (currentThread[hartId] == NULL) {
+    // interruptPush();
+    if (currentThread[r_hartid()] == NULL) {
         // printf("[Kernel]No thread run in the hart %d\n", hartId);
-        interruptPop();
+        // interruptPop();
         return NULL;
     }
-    Thread* ret = currentThread[hartId];
-    interruptPop();
-    return ret;
+    // interruptPop();
+    return currentThread[r_hartid()];
 }
 
 u64 getThreadTopSp(Thread* th) {
