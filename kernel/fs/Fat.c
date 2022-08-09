@@ -200,27 +200,32 @@ static void zero_clus(FileSystem *fs, uint32 cluster) {
 }
 
 static uint32 alloc_clus(FileSystem *fs, uint8 dev) {
-    FatCluster *fc;
-    if ((fc = LIST_FIRST(&fs->freeClusters)) != NULL) {
-        LIST_REMOVE(fc, next);
-    } else {
-        panic("");
+    u64 *clusterBitmap = (u64*)getFileSystemClusterBitmap(fs);
+    int totalClusterNumber = fs->superBlock.bpb.fat_sz * fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
+    for (int i = 0; i < (totalClusterNumber / 64); i++) {
+        if (~clusterBitmap[i]) {
+            int bit = LOW_BIT64(~clusterBitmap[i]);
+            clusterBitmap[i] |= (1UL << bit);
+            int cluster = (i << 6) | bit;
+            struct buf* b;
+            uint32 const ent_per_sec = fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
+            uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt + cluster / ent_per_sec;
+            b = fs->read(fs, sec);
+            int j = cluster % ent_per_sec;
+            ((uint32*)(b->data))[j] = FAT32_EOC + 7;
+            bwrite(b);
+            brelse(b);
+            zero_clus(fs, cluster);
+            return cluster;
+        }
     }
-    struct buf* b;
-    uint32 const ent_per_sec = fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
-    uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt + fc->cluster / ent_per_sec;
-    b = fs->read(fs, sec);
-    int j = fc->cluster % ent_per_sec;
-    ((uint32*)(b->data))[j] = FAT32_EOC + 7;
-    bwrite(b);
-    brelse(b);
-    zero_clus(fs, fc->cluster);
-    return fc->cluster;
+    panic("");
 }
 
 static void free_clus(FileSystem *fs, uint32 cluster) {
-    // write_fat(fs, cluster, 0);
-    // TODO
+    write_fat(fs, cluster, 0);
+    u64 *clusterBitmap = (u64*)getFileSystemClusterBitmap(fs);
+    clusterBitmap[cluster >> 6] &= ~(1 << (cluster & 63));
 }
 
 struct dirent* create(int fd, char* path, short type, int mode) {
