@@ -7,7 +7,7 @@
 #include <Process.h>
 #include <Sysarg.h>
 #include <MemoryConfig.h>
-
+#include <Thread.h>
 
 extern PageList freePages;
 struct Spinlock pageListLock, cowBufferLock;
@@ -32,7 +32,7 @@ int pageRemove(u64 *pgdir, u64 va) {
     page->ref--;
     pageFree(page);
     *pte = 0;
-    sfence_vma();
+    // sfence_vma();
     return 0;
 }
 
@@ -168,7 +168,7 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
     *pte = PA2PTE(pa) | perm | PTE_VALID;
     if (pa >= PHYSICAL_ADDRESS_BASE && pa < PHYSICAL_MEMORY_TOP)
         pa2page(pa)->ref++;
-    sfence_vma();
+    // sfence_vma();
     return 0;
 }
 
@@ -185,8 +185,10 @@ void pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
-    // printf("[Page out]Process Id: %lx, pageout at %lx\n", myProcess()->processId, badAddr);
+    printf("[Page out]Process Id: %lx, pageout at %lx\n", myProcess()->processId, badAddr);
     if (badAddr < USER_STACK_BOTTOM || badAddr >= USER_STACK_TOP) {
+        Trapframe* trapframe = getHartTrapFrame();
+        printf("syscall: %d\n", trapframe->a7);
         panic("");
     }
     PhysicalPage *page;

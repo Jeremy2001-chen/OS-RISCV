@@ -341,7 +341,7 @@ void threadRun(Thread* th) {
             ep = create(AT_FDCWD, "/var/tmp/XXX", T_FILE, O_RDONLY);
             eunlock(ep);
             eput(ep);
-            setNextTimeout();
+            // setNextTimeout();
         }
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
         u64 sp = getHartKernelTopSp(th);
