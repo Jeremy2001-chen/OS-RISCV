@@ -107,7 +107,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_RESOURCE_USAGE]        syscallGetResouceUsage,
     [SYSCALL_SELECT]                    syscallSelect,
     [SYSCALL_SET_TIMER]                 syscallSetTimer,
-    [SYSCALL_UMASK]                     syscallUmask
+    [SYSCALL_UMASK]                     syscallUmask,
+    [SYSCALL_FSSYC]                     syscallFileSychornize
 };
 
 extern struct Spinlock printLock;
@@ -247,7 +248,6 @@ void syscallMapMemory() {
     u64 start = trapframe->a0, len = trapframe->a1, prot = trapframe->a2,
         off = trapframe->a5, flags = trapframe->a3;
     struct File* fd;
-    // printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
     u64 perm = 0;
     if (prot & PROT_EXEC) {
         perm |= PTE_EXECUTE;
@@ -260,6 +260,7 @@ void syscallMapMemory() {
     }
 
     argfd(4, 0, &fd);
+    printf("mmap: %lx %lx %lx %lx %d\n", start, len, prot, flags, fd);
     if (fd == NULL && start != 0) {
         //todo
         trapframe->a0 = -1;
@@ -273,6 +274,7 @@ void syscallMapMemory() {
 void syscallUnMapMemory() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 start = trapframe->a0, len = trapframe->a1, end = start + len;
+    printf("unmap: %lx %lx\n", start, len);
     start = UP_ALIGN(start, PAGE_SIZE);
     end = DOWN_ALIGN(end, PAGE_SIZE);
     while (start < end) {

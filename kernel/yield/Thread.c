@@ -337,6 +337,12 @@ void threadRun(Thread* th) {
             ep = create(AT_FDCWD, "/etc/localtime", T_CHAR, O_RDONLY);
             eunlock(ep);
             eput(ep);
+            ep = create(AT_FDCWD, "/var", T_DIR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/var/tmp", T_DIR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
             ep = create(AT_FDCWD, "/var/tmp/XXX", T_FILE, O_RDONLY);
             eunlock(ep);
             eput(ep);

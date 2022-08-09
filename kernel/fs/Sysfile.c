@@ -1157,3 +1157,10 @@ void syscallUmask() {
     Trapframe *tf = getHartTrapFrame();
     tf->a0 = 0;
 }
+
+
+void syscallFileSychornize() {
+    Trapframe *tf = getHartTrapFrame();
+    //todo
+    tf->a0 = 0;
+}
