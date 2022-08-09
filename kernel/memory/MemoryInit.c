@@ -72,21 +72,6 @@ void startPage() {
     sfence_vma();
 }
 
-static void testMemory() {
-    PhysicalPage *p;
-    pageAlloc(&p);
-    printf("alloced page1:  %lx\n", page2pa(p));
-    pageInsert(kernelPageDirectory, 1ll << 35, page2pa(p), PTE_READ | PTE_WRITE);
-    *((u32*)page2pa(p)) = 147893;
-    printf("value1 of %lx:  %d\n", 1ll << 35, *((u32*)(1ll<<35)));
-    pageAlloc(&p);
-    //sfence_vma();
-    printf("alloced page2:  %lx\n", page2pa(p));
-    pageInsert(kernelPageDirectory, 1ll << 35, page2pa(p), PTE_READ | PTE_WRITE);
-    *((u32*)page2pa(p)) = 65536;
-    printf("value1 of %lx:  %d\n", 1ll << 35, *((u32*)(1ll<<35)));
-}
-
 void memoryInit() {
     printf("Memory init start...\n");
     initFreePages();
@@ -94,9 +79,6 @@ void memoryInit() {
     resetRef();
     startPage();
     printf("Memory init finish!\n");
-    printf("Test memory start...\n");
-    testMemory();
-    printf("Test memory finish!\n");
 }
 
 void bcopy(void *src, void *dst, u32 len) {

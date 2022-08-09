@@ -5,6 +5,7 @@
 #include "Type.h"
 #include "stat.h"
 #include "Timer.h"
+#include "Inode.h"
 
 #define ATTR_READ_ONLY 0x01
 #define ATTR_HIDDEN 0x02
@@ -59,7 +60,9 @@ struct dirent {
     uint32 file_size;
 
     uint32 cur_clus;
+    u32 inodeMaxCluster;
     uint clus_cnt;
+    Inode inode;
 
     u8 _nt_res;
     FileSystem *fileSystem;
@@ -75,6 +78,7 @@ struct dirent {
     // struct dirent* next;
     // struct dirent* prev;
     struct Sleeplock lock;
+    
 };
 
 struct entry_cache {

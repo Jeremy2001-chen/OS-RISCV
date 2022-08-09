@@ -118,7 +118,6 @@ int pid2Process(u32 processId, struct Process **process, int checkPerm) {
     return 0;
 }
 
-extern FileSystem rootFileSystem;
 extern void userVector();
 int processSetup(Process *p) {
     int r;
@@ -134,7 +133,11 @@ int processSetup(Process *p) {
     p->state = UNUSED;
     p->parentId = 0;
     p->heapBottom = USER_HEAP_BOTTOM;
-    p->cwd = &rootFileSystem.root;
+    extern FileSystem *rootFileSystem;
+    if (rootFileSystem == NULL) {
+        fsAlloc(&rootFileSystem);
+    }
+    p->cwd = &rootFileSystem->root;
     p->fileDescription.hard = p->fileDescription.soft = NOFILE;
 
     extern char trampoline[];

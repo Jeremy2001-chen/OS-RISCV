@@ -765,6 +765,7 @@ void syscallRenameAt(void) {
     }
     eremove(src);
     eunlock(src->parent);
+    printf("%s %d\n", __FILE__, __LINE__);
     struct dirent* psrc = src->parent;  // src must not be root, or it won't
                                         // pass the for-loop test
     src->parent = edup(pdst);
@@ -1130,7 +1131,6 @@ bad:
     printf("%d %s %lx %lx\n", dirFd, path, buf, size);
 }
 
-extern FileSystem rootFileSystem;
 int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen) {
     char path[FAT32_MAX_PATH];
     
