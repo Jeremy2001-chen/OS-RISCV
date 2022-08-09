@@ -194,7 +194,6 @@ void userTrapReturn() {
     userProcessCpuTimeBegin();
     extern char trampoline[];
     w_stvec(TRAMPOLINE_BASE + ((u64)userVector - (u64)trampoline));
-    Process* current = myProcess();
 
     Trapframe* trapframe = getHartTrapFrame();
 
@@ -210,19 +209,8 @@ void userTrapReturn() {
     sstatus &= ~SSTATUS_SPP;
     sstatus |= SSTATUS_SPIE;
     w_sstatus(sstatus);
-    u64 satp = MAKE_SATP(current->pgdir);
+    u64 satp = MAKE_SATP(myProcess()->pgdir);
     u64 fn = TRAMPOLINE_BASE + ((u64)userReturn - (u64)trampoline);
-    u64* pte;
-    u64 pa = pageLookup(current->pgdir, USER_STACK_TOP - PAGE_SIZE, &pte);
-    if (pa > 0) {
-        long* tem = (long*)(pa + 4072);
-#ifdef CJY_DEBUG
-        printf("[OUT]hart: %d, RA: %lx\n", hartId, *tem);
-#else
-        //We must use 'tem', otherwise we will get compile error.
-        use(tem);
-#endif
-    }
     // printf("out tp: %lx\n", trapframe->tp);
     // printf("return to user!\n");
     ((void(*)(u64, u64))fn)((u64)trapframe, satp);
