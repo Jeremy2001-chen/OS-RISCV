@@ -58,6 +58,7 @@ void syscallSystemInfo();
 void syscallGetResouceUsage();
 void syscallSelect();
 void syscallSetTimer();
+void syscallMemorySychronize();
 
 extern void (*syscallVector[])(void);
 
