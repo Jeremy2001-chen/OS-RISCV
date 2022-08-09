@@ -243,7 +243,6 @@ void threadRun(Thread* th) {
             
             rootFileSystem.read = blockRead;
             
-            fatClusterInit();
             fatInit(&rootFileSystem);
             initDirentCache();
             void testfat();

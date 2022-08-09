@@ -4,16 +4,8 @@
 #include <Queue.h>
 #include <bio.h>
 #include <fat.h>
+#include <MemoryConfig.h>
 #define MAX_NAME_LENGTH 64
-
-typedef struct FatCluster {
-    int cluster;
-    LIST_ENTRY(FatCluster) next; // in file system
-    LIST_ENTRY(FatCluster) link; // in resourses allocation
-} FatCluster;
-#define FAT_CLUSTER_NUMBER (1 << 20)
-
-LIST_HEAD(FatClusterList, FatCluster);
 
 struct buf;
 typedef struct FileSystem {
@@ -24,9 +16,13 @@ typedef struct FileSystem {
     struct File *image;
     FileSystem *next;
     int deviceNumber;
-    struct FatClusterList freeClusters;
     struct buf* (*read)(struct FileSystem *fs, u64 blockNum);
 } FileSystem;
+
+static inline u64 getFileSystemClusterBitmap(FileSystem *fs) {
+    extern FileSystem fileSystem[];
+    return FILE_SYSTEM_CLUSTER_BITMAP_BASE + ((fs - fileSystem) << 10) * PAGE_SIZE;
+}
 
 typedef struct DirentCache {
     struct Spinlock lock;
