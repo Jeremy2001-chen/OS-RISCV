@@ -102,7 +102,7 @@ int filestat(struct File* f, u64 addr) {
 // addr is a user virtual address.
 int fileread(struct File* f, bool isUser, u64 addr, int n) {
     int r = 0;
-
+    
     if (f->readable == 0)
         return -1;
 
@@ -120,6 +120,9 @@ int fileread(struct File* f, bool isUser, u64 addr, int n) {
             if ((r = eread(f->ep, isUser, addr, f->off, n)) > 0)
                 f->off += r;
             eunlock(f->ep);
+            break;
+        case FD_SOCKET:
+            r = socket_read(f->socket, isUser, addr, n);
             break;
         default:
             panic("fileread");
@@ -155,6 +158,8 @@ int filewrite(struct File* f, bool isUser, u64 addr, int n) {
             ret = -1;
         }
         eunlock(f->ep);
+    } else if (f->type == FD_SOCKET) {
+        ret = socket_write(f->socket, isUser, addr, n);
     } else {
         panic("filewrite");
     }

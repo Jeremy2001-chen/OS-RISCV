@@ -49,6 +49,7 @@ int createSocket(int family, int type, int protocal) {
     s->pending_h = s->pending_t = 0;
     f->socket = s;
     f->type = FD_SOCKET;
+    f->readable = f->writable = true;
     assert(f != NULL);
     return fdalloc(f);
 }
@@ -72,10 +73,11 @@ int getSocketName(int fd, u64 va) {
     return 0;
 }
 
-int sendTo(int fd, char *buf, u32 len, int flags, SocketAddr *dest) {
-    printf("[%s]", __func__);
+int sendTo(Socket *sock, char *buf, u32 len, int flags, SocketAddr *dest) {
+    buf[len] = 0;
+    printf("[%s] %s\n", __func__, buf);
     for (int i = 0; i < SOCKET_COUNT; i++) {
-        if (sockets[i].used && (sockets[i].addr.addr == dest->addr || sockets[i].addr.addr == 0)) {
+        if (sockets[i].used && (/*sockets[i].addr.addr == dest->addr ||*/ sockets[i].addr.addr == 0)) {
             char *dst = (char*)(getSocketBufferBase(&sockets[i]) + (sockets[i].tail & (PAGE_SIZE - 1)));
             u32 num = MIN(PAGE_SIZE - (sockets[i].tail - sockets[i].head), len);
             int len1 = MIN(num, PAGE_SIZE - (sockets[i].tail & (PAGE_SIZE - 1)));
@@ -90,12 +92,9 @@ int sendTo(int fd, char *buf, u32 len, int flags, SocketAddr *dest) {
     return -1;
 }
 
-int receiveFrom(int fd, u64 buf, u32 len, int flags, u64 srcAddr) {
-    printf("[%s]", __func__);
-    File *f = myProcess()->ofile[fd];
-    assert(f->type == FD_SOCKET);
-    Socket *s = f->socket;
+int receiveFrom(Socket *s, u64 buf, u32 len, int flags, u64 srcAddr) {
     char *src = (char*)(getSocketBufferBase(s) + (s->head & (PAGE_SIZE - 1)));
+    printf("[%s] %s\n",__func__, src);
     u32 num = MIN(len, (s->tail - s->head));
     int len1 = MIN(num, PAGE_SIZE - (s->head & (PAGE_SIZE - 1)));
     copyout(myProcess()->pgdir, buf, src, len1);
@@ -104,6 +103,16 @@ int receiveFrom(int fd, u64 buf, u32 len, int flags, u64 srcAddr) {
     }
     s->head += num;
     return num;
+}
+
+int socket_read(Socket* sock, bool isUser, u64 addr, int n) {
+    assert(isUser == 1);
+    return receiveFrom(sock, addr, n, 0, 0);
+}
+int socket_write(Socket* sock, bool isUser, u64 addr, int n) {
+    static char buf[128];
+    either_copyin(buf, isUser, addr, n);
+    return sendTo(0, buf, n, 0, &sock->target_addr);
 }
 
 static Socket* remote_find_socket(const SocketAddr* addr) {
@@ -132,16 +141,18 @@ int accept(int sockfd, SocketAddr* addr) {
     assert(new_f != NULL);
     new_f->socket = local_sock;
     new_f->type = FD_SOCKET;
+    new_f->readable = new_f->writable = true;
 
 /* ----------- process Remote Host --------- */
 
     Socket * peer_sock = remote_find_socket(addr);
     peer_sock -> target_addr  = local_sock->addr;
-
+    
 /* ----------- process Remote Host --------- */
 
     return fdalloc(new_f);
 }
+
 
 static SocketAddr gen_local_socket_addr() {
     static int local_addr = (127 << 24) + 1;
@@ -170,6 +181,7 @@ int connect(int sockfd, const SocketAddr* addr) {
     Socket* local_sock = f->socket;
     local_sock->addr = gen_local_socket_addr();
     local_sock->target_addr = *addr;
+ 
 /* ----------- process Remote Host --------- */
 
     // Socket* target_socket = remote_find_socket(addr);

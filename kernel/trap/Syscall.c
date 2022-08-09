@@ -425,12 +425,12 @@ void syscallSendTo() {
     copyin(myProcess()->pgdir, (char *)&sa, tf->a4, sizeof(SocketAddr));
     u32 len = MIN(tf->a2, PAGE_SIZE);
     copyin(myProcess()->pgdir, buf, tf->a1, len);
-    tf->a0 = sendTo(tf->a0, buf, tf->a2, tf->a3, &sa);
+    tf->a0 = sendTo(myProcess()->ofile[tf->a0]->socket, buf, tf->a2, tf->a3, &sa);
 }
 
 void syscallReceiveFrom() {
     Trapframe *tf = getHartTrapFrame();
-    tf->a0 = receiveFrom(tf->a0, tf->a1, tf->a2, tf->a3, tf->a4);
+    tf->a0 = receiveFrom(myProcess()->ofile[tf->a0]->socket, tf->a1, tf->a2, tf->a3, tf->a4);
 }
 
 
