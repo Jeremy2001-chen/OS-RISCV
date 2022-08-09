@@ -64,7 +64,7 @@ struct dirent {
     u8 _nt_res;
     FileSystem *fileSystem;
     /* for OS */
-    enum { ZERO = 10, OSRELEASE=12 } dev;
+    enum { ZERO = 10, OSRELEASE=12, NONE=15 } dev;
     uint8 dirty;
     short valid;
     FileSystem *head;

@@ -26,6 +26,35 @@ typedef __builtin_va_list va_list;
         __a <= __b ? __a : __b; \
     })
 
+inline int LOW_BIT64(u64 x) {
+    int res = 0;
+    if ((x & ((1UL << 32) - 1)) == 0) {
+        x >>= 32;
+        res += 32;
+    }
+    if ((x & ((1UL << 16) - 1)) == 0) {
+        x >>= 16;
+        res += 16;
+    }
+    if ((x & ((1UL << 8) - 1)) == 0) {
+        x >>= 8;
+        res += 8;
+    }
+    if ((x & ((1UL << 4) - 1)) == 0) {
+        x >>= 4;
+        res += 4;
+    }
+    if ((x & ((1UL << 2) - 1)) == 0) {
+        x >>= 2;
+        res += 2;
+    }
+    if ((x & ((1UL << 1) - 1)) == 0) {
+        x >>= 1;
+        res += 1;
+    }
+    return x ? res : -1;
+}
+
 typedef unsigned char uchar;
 typedef unsigned short wchar;
 

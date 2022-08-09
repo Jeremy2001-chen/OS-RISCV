@@ -200,29 +200,32 @@ static void zero_clus(FileSystem *fs, uint32 cluster) {
 }
 
 static uint32 alloc_clus(FileSystem *fs, uint8 dev) {
-    // should we keep a free cluster list? instead of searching fat every time.
-    struct buf* b;
-    uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt;
-    uint32 const ent_per_sec = fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
-    for (uint32 i = 0; i < fs->superBlock.bpb.fat_sz; i++, sec++) {
-        b = fs->read(fs, sec);
-        for (uint32 j = 0; j < ent_per_sec; j++) {
-            if (((uint32*)(b->data))[j] == 0) {
-                ((uint32*)(b->data))[j] = FAT32_EOC + 7;
-                bwrite(b);
-                brelse(b);
-                uint32 clus = i * ent_per_sec + j;
-                zero_clus(fs, clus);
-                return clus;
-            }
+    u64 *clusterBitmap = (u64*)getFileSystemClusterBitmap(fs);
+    int totalClusterNumber = fs->superBlock.bpb.fat_sz * fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
+    for (int i = 0; i < (totalClusterNumber / 64); i++) {
+        if (~clusterBitmap[i]) {
+            int bit = LOW_BIT64(~clusterBitmap[i]);
+            clusterBitmap[i] |= (1UL << bit);
+            int cluster = (i << 6) | bit;
+            struct buf* b;
+            uint32 const ent_per_sec = fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
+            uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt + cluster / ent_per_sec;
+            b = fs->read(fs, sec);
+            int j = cluster % ent_per_sec;
+            ((uint32*)(b->data))[j] = FAT32_EOC + 7;
+            bwrite(b);
+            brelse(b);
+            zero_clus(fs, cluster);
+            return cluster;
         }
-        brelse(b);
     }
-    panic("no clusters");
+    panic("");
 }
 
 static void free_clus(FileSystem *fs, uint32 cluster) {
     write_fat(fs, cluster, 0);
+    u64 *clusterBitmap = (u64*)getFileSystemClusterBitmap(fs);
+    clusterBitmap[cluster >> 6] &= ~(1 << (cluster & 63));
 }
 
 struct dirent* create(int fd, char* path, short type, int mode) {
@@ -317,7 +320,6 @@ static uint rw_clus(FileSystem *fs, uint32 cluster,
  * @return              the offset from the new cur_clus
  */
 static int reloc_clus(FileSystem *fs, struct dirent* entry, uint off, int alloc) {
-    printf("%s %d: reloc_clus get in\n", __FILE__, __LINE__);
     int clus_num = off / fs->superBlock.byts_per_clus;
     while (clus_num > entry->clus_cnt) {
         int clus = read_fat(fs, entry->cur_clus);
@@ -328,7 +330,6 @@ static int reloc_clus(FileSystem *fs, struct dirent* entry, uint off, int alloc)
             } else {
                 entry->cur_clus = entry->first_clus;
                 entry->clus_cnt = 0;
-                printf("%s %d: reloc_clus get out\n", __FILE__, __LINE__);
                 return -1;
             }
         }
@@ -346,7 +347,6 @@ static int reloc_clus(FileSystem *fs, struct dirent* entry, uint off, int alloc)
             entry->clus_cnt++;
         }
     }
-    printf("%s %d: reloc_clus get out\n", __FILE__, __LINE__);
     return off % fs->superBlock.byts_per_clus;
 }
 
@@ -404,11 +404,13 @@ int eread(struct dirent* entry, int user_dst, u64 dst, uint off, uint n) {
 
 // Caller must hold entry->lock.
 int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n) {
+    if (entry->dev == NONE) {
+        return n;
+    }
     if (off > entry->file_size || off + n < off ||
         (u64)off + n > 0xffffffff || (entry->attribute & ATTR_READ_ONLY)) {
         return -1;
     }
-    printf("%s %d: ewrite get in\n", __FILE__, __LINE__);
     FileSystem *fs = entry->fileSystem;
     if (entry->first_clus ==
         0) {  // so file_size if 0 too, which requests off == 0
@@ -434,7 +436,6 @@ int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n) {
             entry->dirty = 1;
         }
     }
-    printf("%s %d: ewrite get out\n", __FILE__, __LINE__);
     return tot;
 }
 
@@ -781,6 +782,7 @@ void eremove(struct dirent* entry) {
 // caller must hold entry->lock*全部文件名目录项
 void etrunc(struct dirent* entry) {
     FileSystem *fs = entry->fileSystem;
+
     for (uint32 clus = entry->first_clus; clus >= 2 && clus < FAT32_EOC;) {
         uint32 next = read_fat(fs, clus);
         free_clus(fs, clus);

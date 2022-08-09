@@ -203,12 +203,12 @@ void signalFinish(Thread* thread, SignalContext* sc) {
 void handleSignal(Thread* thread) {
     SignalContext* sc;
     while (1) {
-        if (hasKillSignal(thread)) {
-            threadDestroy(thread);
-            return;
-        }
         sc = getFirstSignalContext(thread);
         if (sc == NULL) {
+            return;
+        }
+        if (hasKillSignal(thread)) {
+            threadDestroy(thread);
             return;
         }
         if (sc->start) {

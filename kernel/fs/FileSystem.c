@@ -5,7 +5,29 @@
 #include <Driver.h>
 #include <file.h>
 #include <Sysfile.h>
+#include <Page.h>
 FileSystem fileSystem[32];
+
+// struct FatClusterList freeClusters;
+// FatCluster fatClusters[FAT_CLUSTER_NUMBER];
+// void fatClusterInit() {
+//     LIST_INIT(&freeClusters);
+//     for (int i = FAT_CLUSTER_NUMBER - 1; i >= 0; i--) {
+//         LIST_INSERT_HEAD(&freeClusters, &fatClusters[i], link);
+//     }
+// }
+
+// int fatClusterAlloc(FatCluster **fatCluster) {
+//     FatCluster *fc;
+//     if ((fc = LIST_FIRST(&freeClusters)) != NULL) {
+//         *fatCluster = fc;
+//         LIST_REMOVE(fc, link);
+//         fc->cluster = 0;
+//         return 0;
+//     }
+//     panic("");
+//     return -1;
+// }
 
 int fsAlloc(FileSystem **fs) {
     for (int i = 0; i < 32; i++) {
@@ -66,6 +88,51 @@ int fatInit(FileSystem *fs) {
     fs->root.filename[0]='/';
     fs->root.fileSystem = fs;
     fs->root.ref = 1;
+    
+    int totalClusterNumber = fs->superBlock.bpb.fat_sz * fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
+    u64 *clusterBitmap = (u64*)getFileSystemClusterBitmap(fs);
+    int cnt = 0;
+    do {
+        PhysicalPage *pp;
+        if (pageAlloc(&pp) < 0) {
+            panic("");
+        }
+        extern u64 kernelPageDirectory[];
+        pageInsert(kernelPageDirectory, ((u64)clusterBitmap) + cnt, page2pa(pp), PTE_READ | PTE_WRITE);
+        cnt += PAGE_SIZE;
+    } while (cnt * 8 < totalClusterNumber);
+    uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt;
+    uint32 const ent_per_sec = fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
+    for (uint32 i = 0; i < fs->superBlock.bpb.fat_sz; i++, sec++) {
+        b = fs->read(fs, sec);
+        for (uint32 j = 0; j < ent_per_sec; j++) {
+            if (((uint32*)(b->data))[j]) {
+                int no = i * ent_per_sec + j;
+                clusterBitmap[no >> 6] |= (1UL << (no & 63));
+            }
+        }
+        brelse(b);
+    }
+    printf("Ok finish!\n");
+    // static uint32 alloc_clus(FileSystem *fs, uint8 dev) {
+    // struct buf* b;
+    // uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt;
+    // uint32 const ent_per_sec = fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
+    // for (uint32 i = 0; i < fs->superBlock.bpb.fat_sz; i++, sec++) {
+    //     b = fs->read(fs, sec);
+    //     for (uint32 j = 0; j < ent_per_sec; j++) {
+    //         if (((uint32*)(b->data))[j] == 0) {
+    //             ((uint32*)(b->data))[j] = FAT32_EOC + 7;
+    //             bwrite(b);
+    //             brelse(b);
+    //             uint32 clus = i * ent_per_sec + j;
+    //             zero_clus(fs, clus);
+    //             return clus;
+    //         }
+    //     }
+    //     brelse(b);
+    // }
+
     
     // printf("[FAT32 init]fat init end\n");
     return 0;

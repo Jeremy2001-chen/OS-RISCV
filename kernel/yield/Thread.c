@@ -242,6 +242,7 @@ void threadRun(Thread* th) {
             strncpy(rootFileSystem.name, "fat32", 6);
             
             rootFileSystem.read = blockRead;
+            
             fatInit(&rootFileSystem);
             initDirentCache();
             void testfat();
@@ -258,8 +259,8 @@ void threadRun(Thread* th) {
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/null", T_CHAR, O_RDONLY); //share memory
+            ep->dev = NONE;
             eunlock(ep);
-            eput(ep);
             ep = create(AT_FDCWD, "/tmp", T_DIR, O_RDONLY); //share memory
             eunlock(ep);
             eput(ep);
@@ -336,10 +337,16 @@ void threadRun(Thread* th) {
             ep = create(AT_FDCWD, "/etc/localtime", T_CHAR, O_RDONLY);
             eunlock(ep);
             eput(ep);
+            ep = create(AT_FDCWD, "/var", T_DIR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/var/tmp", T_DIR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
             ep = create(AT_FDCWD, "/var/tmp/XXX", T_FILE, O_RDONLY);
             eunlock(ep);
             eput(ep);
-            setNextTimeout();
+            // setNextTimeout();
         }
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
         u64 sp = getHartKernelTopSp(th);

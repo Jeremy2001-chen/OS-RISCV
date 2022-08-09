@@ -107,7 +107,9 @@ void (*syscallVector[])(void) = {
     [SYSCALL_GET_RESOURCE_USAGE]        syscallGetResouceUsage,
     [SYSCALL_SELECT]                    syscallSelect,
     [SYSCALL_SET_TIMER]                 syscallSetTimer,
-    [SYSCALL_UMASK]                     syscallUmask
+    [SYSCALL_UMASK]                     syscallUmask,
+    [SYSCALL_FSSYC]                     syscallFileSychornize,
+    [SYSCALL_MSYNC]                     syscallMemorySychronize
 };
 
 extern struct Spinlock printLock;
@@ -125,8 +127,10 @@ void syscallGetProcessId() {
 }
 
 void syscallGetParentProcessId() {
+    // printf("%s %d\n", __FILE__, __LINE__);
     Trapframe* trapframe = getHartTrapFrame();
     trapframe->a0 = myProcess()->parentId;
+    // printf("%s %d\n", __FILE__, __LINE__);
 }
 
 //todo: support mode
@@ -154,7 +158,7 @@ void syscallExit() {
     int ret, ec = trapframe->a0;
 
     if ((ret = tid2Thread(0, &th, 1)) < 0) {
-        panic("Process exit error\n");
+        panic("thread exit error\n");
         return;
     }    
 
@@ -247,7 +251,6 @@ void syscallMapMemory() {
     u64 start = trapframe->a0, len = trapframe->a1, prot = trapframe->a2,
         off = trapframe->a5, flags = trapframe->a3;
     struct File* fd;
-    // printf("mmap: %lx %lx %lx %lx\n", start, len, perm, flags);
     u64 perm = 0;
     if (prot & PROT_EXEC) {
         perm |= PTE_EXECUTE;
@@ -260,6 +263,7 @@ void syscallMapMemory() {
     }
 
     argfd(4, 0, &fd);
+    // printf("mmap: %lx %lx %lx %lx %d\n", start, len, prot, flags, fd);
     if (fd == NULL && start != 0) {
         //todo
         trapframe->a0 = -1;
@@ -273,6 +277,7 @@ void syscallMapMemory() {
 void syscallUnMapMemory() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 start = trapframe->a0, len = trapframe->a1, end = start + len;
+    // printf("unmap: %lx %lx\n", start, len);
     start = UP_ALIGN(start, PAGE_SIZE);
     end = DOWN_ALIGN(end, PAGE_SIZE);
     while (start < end) {
@@ -313,6 +318,7 @@ void syscallUname() {
 void syscallSetTidAddress() {
     Trapframe *tf = getHartTrapFrame();
     // copyout(myProcess()->pgdir, tf->a0, (char*)(&myProcess()->id), sizeof(u64));
+    // printf("settid: %lx\n", tf->a0);
     myThread()->clearChildTid = tf->a0;
     tf->a0 = myThread()->id;
 }
@@ -699,6 +705,7 @@ void syscallSelect() {
 
             if (ready_to_read) {
                 ++cnt;
+            } else {
                 if (i < 64)
                     readSet.bits[0] = ~cur;
                 else
@@ -724,6 +731,10 @@ void syscallSelect() {
         memset(&set, 0, sizeof(FdSet));
         copyout(myProcess()->pgdir, except, (char*)&set, sizeof(FdSet));
     }
+    if (cnt == 0) {
+        tf->epc -= 4;
+        yield();
+    }
     tf->a0 = cnt;
 }
 
@@ -739,4 +750,9 @@ void syscallSetTimer() {
         setTimer(time);
     }
     tf->a0 = 0;    
+}
+
+void syscallMemorySychronize() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
 }

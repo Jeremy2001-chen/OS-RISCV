@@ -120,7 +120,7 @@ typedef struct SignalContext SignalContext;
 typedef struct Thread Thread;
 LIST_HEAD(SignalContextList, SignalContext);
 
-#define SIGNAL_CONTEXT_COUNT (1024)
+#define SIGNAL_CONTEXT_COUNT (4096)
 void signalInit();
 void signalContextFree(SignalContext* sc);
 int signalContextAlloc(SignalContext **signalContext);
