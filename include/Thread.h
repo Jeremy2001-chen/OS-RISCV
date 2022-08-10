@@ -42,6 +42,38 @@ typedef struct Trapframe {
     u64 t4;
     u64 t5;
     u64 t6;
+    u64 ft0;
+    u64 ft1;
+    u64 ft2;
+    u64 ft3;
+    u64 ft4;
+    u64 ft5;
+    u64 ft6;
+    u64 ft7;
+    u64 fs0;
+    u64 fs1;
+    u64 fa0;
+    u64 fa1;
+    u64 fa2;
+    u64 fa3;
+    u64 fa4;
+    u64 fa5;
+    u64 fa6;
+    u64 fa7;
+    u64 fs2;
+    u64 fs3;
+    u64 fs4;
+    u64 fs5;
+    u64 fs6;
+    u64 fs7;
+    u64 fs8;
+    u64 fs9;
+    u64 fs10;
+    u64 fs11;
+    u64 ft8;
+    u64 ft9;
+    u64 ft10;
+    u64 ft11;
 } Trapframe;
 
 typedef struct SignalContext {

@@ -37,5 +37,36 @@
 #define REG_T4 264
 #define REG_T5 272
 #define REG_T6 280
-
+#define REG_FT0 288
+#define REG_FT1 296
+#define REG_FT2 304
+#define REG_FT3 312
+#define REG_FT4 320
+#define REG_FT5 328
+#define REG_FT6 336
+#define REG_FT7 344
+#define REG_FS0 352
+#define REG_FS1 360
+#define REG_FA0 368
+#define REG_FA1 376
+#define REG_FA2 384
+#define REG_FA3 392
+#define REG_FA4 400
+#define REG_FA5 408
+#define REG_FA6 416
+#define REG_FA7 424
+#define REG_FS2 432
+#define REG_FS3 440
+#define REG_FS4 448
+#define REG_FS5 456
+#define REG_FS6 464
+#define REG_FS7 472
+#define REG_FS8 480
+#define REG_FS9 488
+#define REG_FS10 496
+#define REG_FS11 504
+#define REG_FT8 512
+#define REG_FT9 520
+#define REG_FT10 528
+#define REG_FT11 536
 #endif
