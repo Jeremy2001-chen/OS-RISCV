@@ -1,4 +1,5 @@
 #!/bin/bash
+lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96
 echo latency measurements
 lmbench_all lat_syscall -P 1 null
 lmbench_all lat_syscall -P 1 read
@@ -29,4 +30,3 @@ lmbench_all bw_file_rd -P 1 512k open2close /var/tmp/XXX
 lmbench_all bw_mmap_rd -P 1 512k mmap_only /var/tmp/XXX
 lmbench_all bw_mmap_rd -P 1 512k open2close /var/tmp/XXX
 busybox echo context switch overhead
-lmbench_all lat_ctx -P 1 -s 32 2 4 8 16 24 32 64 96
