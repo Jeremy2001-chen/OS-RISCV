@@ -40,7 +40,6 @@ static void eFreeInode(struct dirent *ep) {
         }
         break;
     }
-    memset(&ep->inode, -1, sizeof(Inode));
     ep->inodeMaxCluster = 0;
     return;
 }
@@ -50,7 +49,6 @@ static void eFindInode(struct dirent *entry, int pos) {
     entry->clus_cnt = pos;
     if (pos < INODE_SECOND_LEVEL_BOTTOM) {
         entry->cur_clus = entry->inode.item[pos];
-        // printf("find: ep: %lx pos: %d, clus: %d\n", entry, pos, entry->cur_clus);
         return;
     }
     if (pos < INODE_THIRD_LEVEL_BOTTOM) {
@@ -396,9 +394,9 @@ static int reloc_clus(FileSystem *fs, struct dirent* entry, uint off, int alloc)
         entry->cur_clus = clus;
         entry->clus_cnt++;
         u32 pos = entry->clus_cnt;
+        assert(pos == entry->inodeMaxCluster);
         entry->inodeMaxCluster++;
         if (pos < INODE_SECOND_LEVEL_BOTTOM) {
-            assert(entry->inode.item[pos] == -1);
             entry->inode.item[pos] = clus;
             continue;
         }
@@ -889,6 +887,7 @@ void eunlock(struct dirent* entry) {
 }
 
 void eput(struct dirent* entry) {
+    return;
     acquireLock(&direntCache.lock);
     MSG_PRINT("acquireLock finish");
     if ((entry >= direntCache.entries && entry < direntCache.entries + ENTRY_CACHE_NUM) && entry->valid != 0 && entry->ref == 1) {

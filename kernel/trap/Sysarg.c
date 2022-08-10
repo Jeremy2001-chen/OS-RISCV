@@ -84,8 +84,7 @@ int copyinstr(u64* pagetable, char* dst, u64 srcva, u64 max) {
         va0 = DOWN_ALIGN(srcva, PGSIZE);
         pa0 = vir2phy(pagetable, va0, &cow);
         if (pa0 == 0){
-            printf("pa0=0!");
-            return -1;
+            pa0 = pageout(pagetable, srcva);
         }
         n = PGSIZE - (srcva - va0);
         if (n > max)

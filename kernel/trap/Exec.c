@@ -20,59 +20,36 @@
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
 
-static int loadSegment(u64* pagetable, u64 va, u64 segmentSize, struct dirent* de, u32 fileOffset, u32 binSize) {
-    u64 offset = va - DOWN_ALIGN(va, PAGE_SIZE);
-    PhysicalPage* page = NULL;
-    u64* entry;
-    u64 i;
-    int r = 0;    
-    if (offset > 0) {
-        page = pa2page(pageLookup(pagetable, va, &entry));
-        if (page == NULL) {
-            if (pageAlloc(&page) < 0) {
-                printf("load segment error when we need to alloc a page!\n");
-            }
-            pageInsert(pagetable, va, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
-        }
-        r = MIN(binSize, PAGE_SIZE - offset);
-        if (eread(de, 0, page2pa(page) + offset, fileOffset, r) != r) {
-            panic("load segment error when eread on offset\n");
+ProcessSegmentMap segmentMaps[SEGMENT_MAP_NUMBER];
+u64 segmentMapBitmap[SEGMENT_MAP_NUMBER / 64];
+int segmentMapAlloc(ProcessSegmentMap **psm) {
+    for (int i = 0; i < SEGMENT_MAP_NUMBER / 64; i++) {
+        if (~segmentMapBitmap[i]) {
+            int bit = LOW_BIT64(~segmentMapBitmap[i]);
+            segmentMapBitmap[i] |= (1UL << bit);
+            *psm = &segmentMaps[(i << 6) | bit];
+            return 0;
         }
     }
+    panic("");
+}
 
-    for (i = r; i < binSize; i += r) {
-        if (pageAlloc(&page) != 0) {
-            panic("load segment error when we need to alloc a page 1!\n");
-        }
-        pageInsert(pagetable, va + i, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
-        r = MIN(PAGE_SIZE, binSize - i);
-        if (eread(de, 0, page2pa(page), fileOffset + i, r) != r) {
-            panic("load segment error when eread on offset 1\n");
-        }
-    }
+void appendSegmentMap(Process *p, ProcessSegmentMap *psm) {
+    psm->next = p->segmentMapHead;
+    p->segmentMapHead = psm;
+}
 
-    offset = va + i - DOWN_ALIGN(va + i, PAGE_SIZE);
-    if (offset > 0) {
-        page = pa2page(pageLookup(pagetable, va + i, &entry));
-        if (page == NULL) {
-            if (pageAlloc(&page) != 0) {
-                panic("load segment error when we need to alloc a page 2!\n");
-            }
-            pageInsert(pagetable, va + i, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
-        }
-        r = MIN(segmentSize - i, PAGE_SIZE - offset);
-        bzero((void*)page2pa(page) + offset, r);
-    }
+void segmentMapFree(ProcessSegmentMap *psm) {
+    int off = psm - segmentMaps;
+    segmentMapBitmap[off >> 6] &= ~(1UL << (off & 63));
+    return;
+}
 
-    for (i += r; i < segmentSize; i += r) {
-        if (pageAlloc(&page) != 0) {
-            panic("load segment error when we need to alloc a page 3!\n");
-        }
-        pageInsert(pagetable, va + i, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
-        r = MIN(PAGE_SIZE, segmentSize - i);
-        bzero((void*)page2pa(page), r);
+void processMapFree(Process *p) {
+    for (ProcessSegmentMap *psm = p->segmentMapHead; psm; psm = psm->next) {
+        segmentMapFree(psm);
     }
-    return 0;
+    p->segmentMapHead = NULL;
 }
 
 /* for compat with linux interface */
@@ -327,6 +304,7 @@ int exec(char* path, char** argv) {
     Phdr ph;
     u64 *pagetable = 0, *old_pagetable = 0;
     Process* p = myProcess();
+    processMapFree(p);
     u64* oldpagetable = p->pgdir;
     u64 phdr_addr = 0; // virtual address in user space, point to the program header. We will pass 'phdr_addr' to ld.so
 
@@ -388,6 +366,7 @@ int exec(char* path, char** argv) {
         MSG_PRINT("not elf format\n");
         goto bad;
     }
+    p->execFile = de;
 
     MSG_PRINT("begin map");
 
@@ -401,8 +380,25 @@ int exec(char* path, char** argv) {
             continue;
         if (ph.memsz < ph.filesz)
             goto bad;
-        if (loadSegment(pagetable, ph.vaddr, ph.memsz, de, ph.offset, ph.filesz) < 0)
-            goto bad;
+        ProcessSegmentMap *psm;
+        if (ph.filesz > 0) {
+            segmentMapAlloc(&psm);
+            psm->sourceFile = de;
+            psm->va = ph.vaddr;
+            psm->fileOffset = ph.offset;
+            psm->len = ph.filesz;
+            psm->flag = PTE_EXECUTE | PTE_READ | PTE_WRITE;
+            appendSegmentMap(p, psm);
+        }
+        if (ph.memsz > ph.filesz) {
+            segmentMapAlloc(&psm);
+            psm->sourceFile = NULL;
+            psm->va = ph.vaddr + ph.filesz;
+            psm->fileOffset = 0;
+            psm->len = ph.memsz - ph.filesz;
+            psm->flag = PTE_READ | PTE_WRITE | MAP_ZERO;
+            appendSegmentMap(p, psm);
+        }
 		/*
 		 * Figure out which segment in the file contains the Program
 		 * Header table, and map to the associated memory address.

@@ -106,7 +106,7 @@ void userTrap() {
     u64* pgdir = myProcess()->pgdir;
     // if ((scause & SCAUSE_EXCEPTION_CODE) != SCAUSE_ENVIRONMENT_CALL) {
     // int hartId = r_hartid();
-    // printf("[User Trap] hartId is %lx, threadId: %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx, a7 is %d\n", 
+    // printf("[User Trap] hartId is %lx, threadId: %lx, status is %lx, spec is %lx, cause is %d, stval is %lx, a7 is %d\n", 
     //    hartId, myThread()->id, r_sstatus(), r_sepc(), r_scause(), r_stval(), getHartTrapFrame()->a7);
     // // }
 #ifdef CJY_DEBUG
@@ -138,7 +138,7 @@ void userTrap() {
             trapframe->epc += 4;
             // printf("syscall %d\n", trapframe->a7);
             // if (trapframe->a7 == SYSCALL_WRITE || trapframe->a7 == SYSCALL_WRITE_VECTOR || trapframe->a7 == SYSCALL_SELECT || trapframe->a7 == SYSCALL_GET_TIME) {
-            //     printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
+                // printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
             // }
             if (!syscallVector[trapframe->a7]) {
                 panic("unknown-syscall: %d\n", trapframe->a7);
@@ -178,9 +178,10 @@ void userTrap() {
             }
             break;
         default:
-            trapframeDump(trapframe);
-            pageLookup(pgdir, r_stval(), &pte);
-            panic("unhandled error %d,  %lx, %lx\n", r_scause(), r_stval(), *pte);
+            pageout(myProcess()->pgdir, r_stval());
+            // trapframeDump(trapframe);
+            // pageLookup(pgdir, r_stval(), &pte);
+            // panic("unhandled error %d,  %lx, %lx\n", r_scause(), r_stval(), *pte);
             break;
         }
     }

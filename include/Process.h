@@ -9,6 +9,7 @@
 #include <file.h>
 #include <Signal.h>
 #include <Resource.h>
+#include <exec.h>
 
 #define NOFILE 1024  //Number of fds that a process can open
 #define LOG_PROCESS_NUM 10
@@ -56,6 +57,7 @@ typedef struct Process {
     // int reason;
     u32 retValue;
     u64 heapBottom;
+    struct dirent *execFile;
     struct dirent *cwd;
     // SignalSet blocked;
     // SignalSet pending;
@@ -63,6 +65,7 @@ typedef struct Process {
     // u64 clearChildTid;
     int threadCount;
     struct ResourceLimit fileDescription;
+    ProcessSegmentMap *segmentMapHead;
 } Process;
 
 LIST_HEAD(ProcessList, Process);

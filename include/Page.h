@@ -89,7 +89,7 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm);
 void pgdirFree(u64* pgdir);
 u64 pageLookup(u64 *pgdir, u64 va, u64 **pte);
 int allocPgdir(PhysicalPage **page);
-void pageout(u64 *pgdir, u64 badAddr);
+u64 pageout(u64 *pgdir, u64 badAddr);
 void cowHandler(u64 *pgdir, u64 badAddr);
 void pageFree(PhysicalPage *page);
 

@@ -559,7 +559,7 @@ void syscallMemoryProtect() {
         u64 *pte, pa;
         pa = pageLookup(myProcess()->pgdir, start, &pte);
         if(!pa){
-            panic("[%s] there is no page on %lx\n", __func__, start);
+            pageout(myProcess()->pgdir, start);
         }else{
             *pte = (*pte & ~(PTE_READ | PTE_WRITE | PTE_EXECUTE)) | perm;
         }

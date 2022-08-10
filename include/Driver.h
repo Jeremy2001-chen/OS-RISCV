@@ -48,9 +48,9 @@ void printNum(char * buf, unsigned long u, int base, int negFlag,
 	 int length, int ladjust, char padc, int upcase);
 void printf(const char *fmt, ...);
 void _panic_(const char*, int, const char*, const char *, ...)__attribute__((noreturn));
-void _assert_(const char*, int, const char *, int);
+void _assert_(const char*, int, const char *, u64);
 #define panic(...) _panic_(__FILE__, __LINE__, __func__, __VA_ARGS__)
-#define assert(x) _assert_(__FILE__, __LINE__, __func__, x)
+#define assert(x) _assert_(__FILE__, __LINE__, __func__, (x))
 
 void consoleInterrupt(int);
 
