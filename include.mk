@@ -1,6 +1,7 @@
 CROSS_COMPILE	:= riscv64-unknown-elf-
 GCC		:= $(CROSS_COMPILE)gcc
-CFLAGS 	= -Wall -Werror -O -fno-omit-frame-pointer -ggdb -g -mabi=lp64
+CFLAGS 	= -Wall -Werror -O -fno-omit-frame-pointer -ggdb -g 
+# CFLAGS  += -mabi=lp64
 CFLAGS 	+= -MD
 CFLAGS 	+= -mcmodel=medany
 CFLAGS 	+= -ffreestanding -fno-common -nostdlib -mno-relax
