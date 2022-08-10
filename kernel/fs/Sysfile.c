@@ -551,7 +551,7 @@ void syscallPipe(void) {
     int fd0, fd1;
     struct Process* p = myProcess();
 
-    if (pipealloc(&rf, &wf) < 0) {
+    if (pipeNew(&rf, &wf) < 0) {
         goto bad;
     }
 

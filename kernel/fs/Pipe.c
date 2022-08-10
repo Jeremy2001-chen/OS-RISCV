@@ -9,21 +9,37 @@
 #include "string.h"
 #include "Riscv.h"
 
-int pipealloc(struct File** f0, struct File** f1) {
+struct pipe pipeBuffer[MAX_PIPE];
+u64 pipeBitMap[MAX_PIPE / 64];
+
+int pipeAlloc(struct pipe** p) {
+    for (int i = 0; i < MAX_PIPE / 64; i++) {
+        if (~pipeBitMap[i]) {
+            int bit = LOW_BIT64(~pipeBitMap[i]);
+            pipeBitMap[i] |= (1UL << bit);
+            *p = &pipeBuffer[(i << 6) | bit];
+            (*p)->nread = (*p)->nwrite = 0;
+            return 0;
+        }
+    }
+    panic("no pipe!");
+}
+
+void pipeFree(struct pipe* p) {
+    int off = p - pipeBuffer;
+    pipeBitMap[off >> 6] &= ~(1UL << (off & 63));
+}
+
+int pipeNew(struct File** f0, struct File** f1) {
     struct pipe* pi;
 
     pi = 0;
     *f0 = *f1 = 0;
     if ((*f0 = filealloc()) == 0 || (*f1 = filealloc()) == 0)
         goto bad;
-    PhysicalPage* pp = NULL;
-    if (pageAlloc(&pp) != 0)
-        goto bad;
-    pi = (struct pipe*)page2pa(pp);
+    pipeAlloc(&pi);
     pi->readopen = 1;
     pi->writeopen = 1;
-    pi->nwrite = 0;
-    pi->nread = 0;
     initLock(&pi->lock, "pipe");
     (*f0)->type = FD_PIPE;
     (*f0)->readable = 1;
@@ -36,8 +52,6 @@ int pipealloc(struct File** f0, struct File** f1) {
     return 0;
 
 bad:
-    if (pi)
-        pageFree(pa2page((u64)pi));
     if (*f0)
         fileclose(*f0);
     if (*f1)
@@ -45,7 +59,7 @@ bad:
     return -1;
 }
 
-void pipeclose(struct pipe* pi, int writable) {
+void pipeClose(struct pipe* pi, int writable) {
     acquireLock(&pi->lock);
     // printf("%x %x %x\n", pi->writeopen, pi->readopen, writable);
     if (writable) {
@@ -57,20 +71,24 @@ void pipeclose(struct pipe* pi, int writable) {
     }
     if (pi->readopen == 0 && pi->writeopen == 0) {
         releaseLock(&pi->lock);
-        pageFree(pa2page((u64)pi));
+        pipeFree(pi);
     } else
         releaseLock(&pi->lock);
 }
 
-int pipewrite(struct pipe* pi, bool isUser, u64 addr, int n) {
+int pipeWrite(struct pipe* pi, bool isUser, u64 addr, int n) {
     int i = 0;
+    
+    // printf("%s %d\n", __FILE__, __LINE__);
 
     // printf("%d WWWW pipe addr %x\n", r_hartid(), pi);
     acquireLock(&pi->lock);
     while (i < n) {
+        // printf("i=%d n=%d\n", i, n);
         // printf("hart id %x, now write %d, to %d, %d\n", r_hartid(), i, n, pi->readopen);
         if (pi->readopen == 0 /*|| pr->killed*/) {
             releaseLock(&pi->lock);
+            panic("");
             return -1;
         }
         if (pi->nwrite == pi->nread + PIPESIZE) {  // DOC: pipewrite-full
@@ -82,21 +100,26 @@ int pipewrite(struct pipe* pi, bool isUser, u64 addr, int n) {
         } else {
             // printf("%d %d\n", i, n);
             char ch;
-            if (either_copyin(&ch, isUser, addr + i, 1) == -1)
+            if (either_copyin(&ch, isUser, addr + i, 1) == -1) {
+                // printf("%s %d\n", __FILE__, __LINE__);
                 break;
-            pi->data[pi->nwrite++ % PIPESIZE] = ch;
+            }
+            pi->data[(pi->nwrite++) & (PIPESIZE - 1)] = ch;
             i++;
         }
     }
     wakeup(&pi->nread);
     // printf("%d %d\n", pi->nread, pi->nwrite);
     releaseLock(&pi->lock);
+    // printf("%s %d %d\n", __FILE__, __LINE__, i);
+    assert(i != 0);
     return i;
 }
 
-int piperead(struct pipe* pi, bool isUser, u64 addr, int n) {
+int pipeRead(struct pipe* pi, bool isUser, u64 addr, int n) {
     int i;
     char ch;
+    // printf("[read] pipe:%lx nread: %d nwrite: %d\n", pi, pi->nread, pi->nwrite);
 
     // printf("%d RRRR pipe addr %x\n", r_hartid(), pi);
     acquireLock(&pi->lock);
@@ -105,15 +128,17 @@ int piperead(struct pipe* pi, bool isUser, u64 addr, int n) {
             releaseLock(&pi->lock);
             return -1;
         }
-        // printf("Read %lx Sleep\n", myProcess()->processId);
+        // printf("Read %lx Start Sleep\n", myProcess()->processId);
         sleep(&pi->nread, &pi->lock);  // DOC: piperead-sleep
-        // printf("Read %x Stop sleep\n", r_hartid());
+        // printf("Read %lx Stop sleep\n", myProcess()->processId);
     }
+    // printf("%s %d %lx %lx\n", __FILE__, __LINE__, pi->nread, pi->nwrite); 
     for (i = 0; i < n; i++) {  // DOC: piperead-copy
-        if (pi->nread == pi->nwrite)
+        if (pi->nread == pi->nwrite) {
             break;
+        }
         // printf("hart id %x, now read %d\n", r_hartid(), i);
-        ch = pi->data[pi->nread++ % PIPESIZE];
+        ch = pi->data[(pi->nread++) & (PIPESIZE - 1)];
         // printf("%x %x\n", r_hartid(), ch);
         if (either_copyout(isUser, addr + i, &ch, 1) == -1) {
             break;

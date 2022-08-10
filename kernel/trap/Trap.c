@@ -148,6 +148,9 @@ void userTrap() {
             // if ((i64)trapframe->a0 <= -1) {
             //     printf("return %d: %d\n", trapframe->a0, trapframe->a7);
             // }
+            // if (trapframe->a7 == 72) {
+            //     printf("epc = %lx\n", trapframe->epc);
+            // }
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
             pa = pageLookup(pgdir, r_stval(), &pte);
@@ -155,7 +158,7 @@ void userTrap() {
                 // printf("%d, spec: %lx\n", __LINE__, sepc);
                 pageout(pgdir, r_stval());
             } else if (!(*pte & PTE_READ)) {
-                processSignalSend(0, SIGSEGV);
+                processSignalSend(myProcess()->processId, SIGSEGV);
             } else {
                 panic("unknown");
             }
@@ -168,7 +171,7 @@ void userTrap() {
             } else if (*pte & PTE_COW) {
                 cowHandler(pgdir, r_stval());
             } else if (!(*pte & PTE_WRITE)) {
-                processSignalSend(0, SIGSEGV);
+                processSignalSend(myProcess()->processId, SIGSEGV);
             } else {
                 // printf("spec: %lx %lx %lx %lx\n", sepc, pa, *pte, TRAMPOLINE_BASE);
                 panic("unknown");

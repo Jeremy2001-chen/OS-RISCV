@@ -72,7 +72,7 @@ void fileclose(struct File* f) {
 
     // printf("FILECLOSE %x\n", ff.type);
     if (ff.type == FD_PIPE) {
-        pipeclose(ff.pipe, ff.writable);
+        pipeClose(ff.pipe, ff.writable);
     } else if (ff.type == FD_ENTRY) {
         eput(ff.ep);
     } else if (ff.type == FD_DEVICE) {
@@ -108,7 +108,7 @@ int fileread(struct File* f, bool isUser, u64 addr, int n) {
 
     switch (f->type) {
         case FD_PIPE:
-            r = piperead(f->pipe, isUser, addr, n);
+            r = pipeRead(f->pipe, isUser, addr, n);
             break;
         case FD_DEVICE:
             if (f->major < 0 || f->major >= NDEV || !devsw[f->major].read)
@@ -140,7 +140,7 @@ int filewrite(struct File* f, bool isUser, u64 addr, int n) {
         return -1;
 
     if (f->type == FD_PIPE) {
-        ret = pipewrite(f->pipe, isUser, addr, n);
+        ret = pipeWrite(f->pipe, isUser, addr, n);
         if (ret == 0) {
             printf("%d %lx %d\n", isUser, addr, n);
         }

@@ -89,6 +89,7 @@ void threadDestroy(Thread* thread);
 
 #define NORMAL         0
 #define KERNEL_GIVE_UP 1
+#define SELECT_BLOCK   2
 
 #define LOCALE_NAME_MAX 23
 

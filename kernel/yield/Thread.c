@@ -149,6 +149,10 @@ void threadSetup(Thread* th) {
         panic("");
     }
     pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 2, page2pa(page), PTE_READ | PTE_WRITE);
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 3, page2pa(page), PTE_READ | PTE_WRITE);
 }
 
 u64 getSignalHandlerSp(Thread *th) {
@@ -223,8 +227,8 @@ void threadRun(Thread* th) {
     }
     
     th->state = RUNNING;
-    if (th->reason == KERNEL_GIVE_UP) {
-        th->reason = NORMAL;
+    if (th->reason & KERNEL_GIVE_UP) {
+        th->reason &= ~KERNEL_GIVE_UP;
         currentThread[r_hartid()] = th;
         bcopy(&currentThread[r_hartid()]->trapframe, trapframe, sizeof(Trapframe));
         asm volatile("ld sp, 0(%0)" : : "r"(&th->currentKernelSp));
@@ -399,7 +403,7 @@ void sleep(void* chan, struct Spinlock* lk) {
     // Go to sleep.
     th->chan = (u64)chan;
     th->state = SLEEPING;
-    th->reason = KERNEL_GIVE_UP;
+    th->reason |= KERNEL_GIVE_UP;
     releaseLock(&th->lock);
 
     if (hasKillSignal(th)) {
@@ -430,6 +434,7 @@ void wakeup(void* channel) {
             acquireLock(&threads[i].lock);
             if (threads[i].state == SLEEPING && threads[i].chan == (u64)channel) {
                 threads[i].state = RUNNABLE;
+                // printf("wake up thread %lx\n", threads[i].id);
             }
             releaseLock(&threads[i].lock);
         }

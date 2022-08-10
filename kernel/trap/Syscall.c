@@ -684,9 +684,11 @@ void syscallGetResouceUsage() {
 
 void syscallSelect() {
     Trapframe *tf = getHartTrapFrame();
+    // printf("thread %lx get in select, epc: %lx\n", myThread()->id, tf->epc);
     int nfd = tf->a0;
     assert(nfd <= 128);
-    u64 read = tf->a1, write = tf->a2, except = tf->a3/*, timeout = tf->a4*/;
+    u64 read = tf->a1, write = tf->a2, except = tf->a3, timeout = tf->a4;
+    assert(timeout != 0);
     int cnt = 0;
     struct File* file = NULL;
     if (read) {
@@ -705,6 +707,7 @@ void syscallSelect() {
             int ready_to_read = 1;
             switch (file->type) {
                 case FD_PIPE:
+                    // printf("[select] pipe:%lx nread: %d nwrite: %d\n", file->pipe, file->pipe->nread, file->pipe->nwrite);
                     if (file->pipe->nread == file->pipe->nwrite) {
                         ready_to_read = 0;
                     } else {
@@ -728,7 +731,7 @@ void syscallSelect() {
                 ++cnt;
             } else {
                 if (i < 64)
-                    readSet.bits[0] = ~cur;
+                    readSet.bits[0] &= ~cur;
                 else
                     readSet.bits[1] &= ~cur;
             }
@@ -753,8 +756,12 @@ void syscallSelect() {
         copyout(myProcess()->pgdir, except, (char*)&set, sizeof(FdSet));
     }
     if (cnt == 0) {
-        tf->epc -= 4;
-        yield();
+        if (!(myThread()->reason & SELECT_BLOCK)) {
+            myThread()->reason |= SELECT_BLOCK;
+            tf->epc -= 4;
+            yield();
+        } 
+        myThread()->reason &= ~SELECT_BLOCK;
     }
     tf->a0 = cnt;
 }
