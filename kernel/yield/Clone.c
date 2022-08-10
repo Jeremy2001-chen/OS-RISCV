@@ -14,6 +14,14 @@ int processFork() {
     }
     process = thread->process;
     process->cwd = current->cwd;
+    for (ProcessSegmentMap *psm = current->segmentMapHead; psm; psm = psm->next) {
+        ProcessSegmentMap *new;
+        if (segmentMapAlloc(&new) < 0) {
+            panic("");
+        }
+        *new = *psm;
+        appendSegmentMap(process, new);
+    }
     for (int i = 0; i < NOFILE; i++)
         if (current->ofile[i])
             process->ofile[i] = filedup(current->ofile[i]);

@@ -286,7 +286,6 @@ void syscallGetFileStateAt(void) {
         tf->a0 = -1;
         return;
     }
-    // printf("Path: %s\n", path);
     struct dirent* entryPoint = ename(dirfd, path, true);
     if (entryPoint == NULL) {
         tf->a0 = -ENOENT;
@@ -765,7 +764,6 @@ void syscallRenameAt(void) {
     }
     eremove(src);
     eunlock(src->parent);
-    printf("%s %d\n", __FILE__, __LINE__);
     struct dirent* psrc = src->parent;  // src must not be root, or it won't
                                         // pass the for-loop test
     src->parent = edup(pdst);

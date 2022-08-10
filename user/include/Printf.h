@@ -64,7 +64,7 @@ void printNum(char * buf, unsigned long u, int base, int negFlag,
 void printf(const char *fmt, ...);
 void _panic_(const char *file, int line, const char *fmt, ...);
 #define uPanic(...) _panic_(__FILE__, __LINE__, __VA_ARGS__)
-void _assert_(const char*, int, const char *, int);
+void _assert_(const char*, int, const char *, u64);
 #define assert(x) _assert_(__FILE__, __LINE__, __func__, x)
 
 #endif 

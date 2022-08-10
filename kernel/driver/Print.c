@@ -357,7 +357,7 @@ void _panic_(const char *file, int line, const char *func,const char *fmt, ...) 
     while (true);
 }
 
-void _assert_(const char* file, int line, const char *func, int statement) {
+void _assert_(const char* file, int line, const char *func, u64 statement) {
     if (!statement) {
         _panic_(file, line, func, "assert failed\n");
     }

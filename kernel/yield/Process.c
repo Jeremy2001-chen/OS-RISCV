@@ -76,6 +76,7 @@ void processFree(Process *p) {
             p->ofile[fd] = 0;
         }
     }
+    processMapFree(p);
     kernelProcessCpuTimeEnd();
     if (p->parentId > 0) {
         Process* parentProcess;

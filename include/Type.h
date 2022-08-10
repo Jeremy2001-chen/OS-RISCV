@@ -26,6 +26,13 @@ typedef __builtin_va_list va_list;
         __a <= __b ? __a : __b; \
     })
 
+#define MAX(_a, _b)             \
+    ({                          \
+        typeof(_a) __a = (_a);  \
+        typeof(_b) __b = (_b);  \
+        __a >= __b ? __a : __b; \
+    })
+
 inline int LOW_BIT64(u64 x) {
     int res = 0;
     if ((x & ((1UL << 32) - 1)) == 0) {
