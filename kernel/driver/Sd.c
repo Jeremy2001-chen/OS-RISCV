@@ -14,7 +14,7 @@
 #define MAX_CORES 8
 #define MAX_TIMES 50000
 
-#define TL_CLK 1500000000UL
+#define TL_CLK 1000000000UL
 #ifndef TL_CLK
 #error Must define TL_CLK
 #endif

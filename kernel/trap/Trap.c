@@ -107,8 +107,8 @@ void userTrap() {
     // if ((scause & SCAUSE_EXCEPTION_CODE) != SCAUSE_ENVIRONMENT_CALL) {
     // int hartId = r_hartid();
     // printf("[User Trap] hartId is %lx, threadId: %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx, a7 is %d\n", 
-    //    hartId, myThread()->id, sstatus, sepc, scause, r_stval(), getHartTrapFrame()->a7);
-    // }
+    //    hartId, myThread()->id, r_sstatus(), r_sepc(), r_scause(), r_stval(), getHartTrapFrame()->a7);
+    // // }
 #ifdef CJY_DEBUG
     printf("[User Trap] hartId is %lx, status is %lx, spec is %lx, cause is %lx, stval is %lx\n", hartId, sstatus, sepc, scause, r_stval());
 #else
