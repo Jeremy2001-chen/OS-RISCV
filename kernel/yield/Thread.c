@@ -59,7 +59,7 @@ u32 generateThreadId(Thread* th) {
     return threadId;
 }
 
-void sleepRec();
+void __attribute__ ((noreturn)) sleepRec();
 void threadDestroy(Thread *th) {
     threadFree(th);
     int hartId = r_hartid();

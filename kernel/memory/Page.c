@@ -204,7 +204,7 @@ void pageout(u64 *pgdir, u64 badAddr) {
 u8 cowBuffer[PAGE_SIZE];
 void cowHandler(u64 *pgdir, u64 badAddr) {
     u64 pa;
-    u64 *pte;
+    u64 *pte = NULL;
     pa = pageLookup(pgdir, badAddr, &pte);
     // printf("[COW] %x to cow %lx %lx\n", myProcess()->processId, badAddr, pa);
     if (!(*pte & PTE_COW)) {
