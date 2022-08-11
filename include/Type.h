@@ -70,5 +70,6 @@ typedef unsigned char uint8;
 typedef unsigned short uint16;
 typedef unsigned int uint32;
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
+#define LOWBIT(x) ((x) & (-x))
 
 #endif
