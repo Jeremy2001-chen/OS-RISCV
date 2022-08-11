@@ -80,8 +80,22 @@ void pipeOut(bool isUser, u64 dstva, char* src);
 void pipeIn(bool isUser, char* dst, u64 srcva);
 
 int pipeWrite(struct pipe* pi, bool isUser, u64 addr, int n) {
-    int i = 0;
+    int i = 0, cow;
     
+    u64* pageTable = myProcess()->pgdir;
+    u64 pa = addr;
+    if (isUser) {
+        pa = vir2phy(pageTable, addr, &cow);
+        if (pa == NULL) {
+            cow = 0;
+            pa = pageout(pageTable, addr);
+        }
+        if (cow) {
+            cowHandler(pageTable, addr);
+            pa = vir2phy(pageTable, addr, NULL);
+        }
+    }
+
     acquireLock(&pi->lock);
     while (i < n) {
         if (pi->readopen == 0 /*|| pr->killed*/) {
@@ -97,9 +111,23 @@ int pipeWrite(struct pipe* pi, bool isUser, u64 addr, int n) {
             // if (either_copyin(&ch, isUser, addr + i, 1) == -1) {
             //     break;
             // }
-            pipeIn(isUser, &ch, addr + i);
+            // pipeIn(isUser, &ch, addr + i);
+            ch = *((char*)pa);
             pi->data[(pi->nwrite++) & (PIPESIZE - 1)] = ch;
             i++;
+            if (isUser && (!((addr + i) & (PAGE_SIZE - 1)))) {
+                pa = vir2phy(pageTable, addr + i, &cow);
+                if (pa == NULL) {
+                    cow = 0;
+                    pa = pageout(pageTable, addr + i);
+                }
+                if (cow) {
+                    cowHandler(pageTable, addr);
+                    pa = vir2phy(pageTable, addr, NULL);
+                }
+            } else {
+                pa++;
+            }
         }
     }
     wakeup(&pi->nread);
@@ -111,20 +139,38 @@ int pipeWrite(struct pipe* pi, bool isUser, u64 addr, int n) {
 int pipeRead(struct pipe* pi, bool isUser, u64 addr, int n) {
     int i;
     char ch;
+    u64* pageTable = myProcess()->pgdir;
+    u64 pa = addr;
+    if (isUser) {
+        pa = vir2phy(pageTable, addr, NULL);
+        if (pa == NULL) {
+            pa = pageout(pageTable, addr);
+        }
+    }
 
     acquireLock(&pi->lock);
     while (pi->nread == pi->nwrite && pi->writeopen) {  // DOC: pipe-empty
         sleep(&pi->nread, &pi->lock);  // DOC: piperead-sleep
     }
-    for (i = 0; i < n; i++) {  // DOC: piperead-copy
+    for (i = 0; i < n;) {  // DOC: piperead-copy
         if (pi->nread == pi->nwrite) {
             break;
         }
         ch = pi->data[(pi->nread++) & (PIPESIZE - 1)];
+        *((char*)pa) = ch;
+        i++;
+        if (isUser && (!((addr + i) & (PAGE_SIZE - 1)))) {
+            pa = vir2phy(pageTable, addr + i, NULL);
+            if (pa == NULL) {
+                pa = pageout(pageTable, addr + i);
+            }
+        } else {
+            pa++;
+        }
         // if (either_copyout(isUser, addr + i, &ch, 1) == -1) {
         //     break;
         // }
-        pipeOut(isUser, addr + i, &ch);
+        // pipeOut(isUser, addr + i, &ch);
     }
     wakeup(&pi->nwrite);  // DOC: piperead-wakeup
     releaseLock(&pi->lock);
