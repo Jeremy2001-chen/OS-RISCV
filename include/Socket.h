@@ -2,6 +2,7 @@
 #define _SOCKET_H_
 #include "Type.h"
 #include <Process.h>
+#include "Spinlock.h"
 
 #define SOCKET_COUNT 128
 
@@ -22,6 +23,8 @@ typedef struct Socket {
     u64 tail; // tail is equal or greater than head
     SocketAddr pending_queue[10];
     int pending_h, pending_t;
+    struct Spinlock lock;
+    int listening;
 } Socket;
 
 int createSocket(int domain, int type, int protocal);
@@ -34,4 +37,5 @@ int accept(int sockfd, SocketAddr* addr);
 int connect(int sockfd, const SocketAddr* addr);
 int socket_read(Socket* sock, bool isUser, u64 addr, int n);
 int socket_write(Socket* sock, bool isUser, u64 addr, int n);
+int listen(int sockfd);
 #endif
