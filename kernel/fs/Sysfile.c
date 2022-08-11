@@ -1041,9 +1041,11 @@ void syscallUtimensat() {
         }
         de = f->ep;
     }
-    TimeSpec ts[2];
-    copyin(myProcess()->pgdir, (char*)ts, tf->a2, sizeof(ts));
-    eSetTime(de, ts);
+    if (tf->a2) {
+        TimeSpec ts[2];
+        copyin(myProcess()->pgdir, (char*)ts, tf->a2, sizeof(ts));
+        eSetTime(de, ts);
+    }
     tf->a0 = 0;
 }
 
