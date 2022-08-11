@@ -207,7 +207,7 @@ int accept(int sockfd, SocketAddr* addr) {
         // sleep(local_sock, &local_sock->lock);
         // printf("[%s] waked up \n",__func__);
         // releaseLock(&local_sock->lock);
-        return -1;
+        return -11; //EAGAIN /* Try again */
     }
 
     *addr = local_sock->pending_queue[local_sock->pending_h++];
@@ -258,7 +258,7 @@ static SocketAddr gen_local_socket_addr() {
  */
 int connect(int sockfd, const SocketAddr* addr) {
     // printf("[%s] fd %d addr %lx port %x\n", __func__, sockfd, addr->addr,
-           addr->port);
+        //    addr->port);
     File* f = myProcess()->ofile[sockfd];
     assert(f->type == FD_SOCKET);
 
