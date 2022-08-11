@@ -196,7 +196,7 @@ u64 pageout(u64 *pgdir, u64 badAddr) {
             PTE_USER | PTE_READ | PTE_WRITE) < 0) {
             panic("");
         }
-        return page2pa(page);
+        return page2pa(page) + (badAddr & 0xFFF);
     }
     u64 perm = 0;
     Process *p = myProcess();
@@ -219,7 +219,7 @@ u64 pageout(u64 *pgdir, u64 badAddr) {
         panic("");
     }
     pageInsert(pgdir, badAddr, page2pa(page), PTE_USER | perm);
-    return page2pa(page);
+    return page2pa(page) + (badAddr & 0xFFF);
 }
 
 u8 cowBuffer[PAGE_SIZE];
@@ -282,14 +282,14 @@ int copyin(u64* pagetable, char* dst, u64 srcva, u64 len) {
 
     while (len > 0) {
         va0 = DOWN_ALIGN(srcva, PGSIZE);
-        pa0 = vir2phy(pagetable, va0, &cow);
+        pa0 = vir2phy(pagetable, srcva, &cow);
         if (pa0 == NULL) {
             pa0 = pageout(pagetable, srcva);
         }
         n = PGSIZE - (srcva - va0);
         if (n > len)
             n = len;
-        memmove(dst, (void*)(pa0 + (srcva - va0)), n);
+        memmove(dst, (void*)pa0, n);
 
         len -= n;
         dst += n;
@@ -307,20 +307,19 @@ int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
 
     while (len > 0) {
         va0 = DOWN_ALIGN(dstva, PGSIZE);
-        pa0 = vir2phy(pagetable, va0, &cow);
+        pa0 = vir2phy(pagetable, dstva, &cow);
         if (pa0 == NULL) {
             cow = 0;
             pa0 = pageout(pagetable, dstva);
         }
         if (cow) {
-            // printf("COW?\n");
-            cowHandler(pagetable, va0);
+            cowHandler(pagetable, dstva);
+            pa0 = vir2phy(pagetable, dstva, NULL);
         }
-        pa0 = vir2phy(pagetable, va0, &cow);
         n = PGSIZE - (dstva - va0);
         if (n > len)
             n = len;
-        memmove((void*)(pa0 + (dstva - va0)), src, n);
+        memmove((void*)pa0, src, n);
         len -= n;
         src += n;
         dstva = va0 + PGSIZE;
@@ -334,20 +333,19 @@ int memsetOut(u64 *pgdir, u64 dst, u8 value, u64 len) {
 
     while (len > 0) {
         va0 = DOWN_ALIGN(dst, PGSIZE);
-        pa0 = vir2phy(pgdir, va0, &cow);
+        pa0 = vir2phy(pgdir, dst, &cow);
         if (pa0 == NULL) {
             cow = 0;
             pa0 = pageout(pgdir, dst);
         }
         if (cow) {
-            // printf("COW?\n");
-            cowHandler(pgdir, va0);
+            cowHandler(pgdir, dst);
+            pa0 = vir2phy(pgdir, dst, NULL);
         }
-        pa0 = vir2phy(pgdir, va0, &cow);
         n = PGSIZE - (dst - va0);
         if (n > len)
             n = len;
-        memset((void*)(pa0 + (dst - va0)), value, n);
+        memset((void*)pa0, value, n);
         len -= n;
         dst = va0 + PGSIZE;
     }

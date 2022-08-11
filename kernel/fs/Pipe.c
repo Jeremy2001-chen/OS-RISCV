@@ -76,16 +76,14 @@ void pipeClose(struct pipe* pi, int writable) {
         releaseLock(&pi->lock);
 }
 
+void pipeOut(bool isUser, u64 dstva, char* src);
+void pipeIn(bool isUser, char* dst, u64 srcva);
+
 int pipeWrite(struct pipe* pi, bool isUser, u64 addr, int n) {
     int i = 0;
     
-    // printf("%s %d\n", __FILE__, __LINE__);
-
-    // printf("%d WWWW pipe addr %x\n", r_hartid(), pi);
     acquireLock(&pi->lock);
     while (i < n) {
-        // printf("i=%d n=%d\n", i, n);
-        // printf("hart id %x, now write %d, to %d, %d\n", r_hartid(), i, n, pi->readopen);
         if (pi->readopen == 0 /*|| pr->killed*/) {
             releaseLock(&pi->lock);
             panic("");
@@ -93,25 +91,19 @@ int pipeWrite(struct pipe* pi, bool isUser, u64 addr, int n) {
         }
         if (pi->nwrite == pi->nread + PIPESIZE) {  // DOC: pipewrite-full
             wakeup(&pi->nread);
-            // printf("Write %x Sleep? Now %x for %x, start %x, end %x, ask for %x\n", r_hartid(), i, n, pi->nread, pi->nwrite, &pi->nwrite);
-            // printf("Write %lx Start sleep\n", myProcess()->processId);
             sleep(&pi->nwrite, &pi->lock);
-            // printf("Write %x Stop sleep\n", r_hartid());
         } else {
-            // printf("%d %d\n", i, n);
             char ch;
-            if (either_copyin(&ch, isUser, addr + i, 1) == -1) {
-                // printf("%s %d\n", __FILE__, __LINE__);
-                break;
-            }
+            // if (either_copyin(&ch, isUser, addr + i, 1) == -1) {
+            //     break;
+            // }
+            pipeIn(isUser, &ch, addr + i);
             pi->data[(pi->nwrite++) & (PIPESIZE - 1)] = ch;
             i++;
         }
     }
     wakeup(&pi->nread);
-    // printf("%d %d\n", pi->nread, pi->nwrite);
     releaseLock(&pi->lock);
-    // printf("%s %d %d\n", __FILE__, __LINE__, i);
     assert(i != 0);
     return i;
 }
@@ -119,33 +111,54 @@ int pipeWrite(struct pipe* pi, bool isUser, u64 addr, int n) {
 int pipeRead(struct pipe* pi, bool isUser, u64 addr, int n) {
     int i;
     char ch;
-    // printf("[read] pipe:%lx nread: %d nwrite: %d\n", pi, pi->nread, pi->nwrite);
 
-    // printf("%d RRRR pipe addr %x\n", r_hartid(), pi);
     acquireLock(&pi->lock);
     while (pi->nread == pi->nwrite && pi->writeopen) {  // DOC: pipe-empty
-        if (0 /*pr->killed*/) {
-            releaseLock(&pi->lock);
-            return -1;
-        }
-        // printf("Read %lx Start Sleep\n", myProcess()->processId);
         sleep(&pi->nread, &pi->lock);  // DOC: piperead-sleep
-        // printf("Read %lx Stop sleep\n", myProcess()->processId);
     }
-    // printf("%s %d %lx %lx\n", __FILE__, __LINE__, pi->nread, pi->nwrite); 
     for (i = 0; i < n; i++) {  // DOC: piperead-copy
         if (pi->nread == pi->nwrite) {
             break;
         }
-        // printf("hart id %x, now read %d\n", r_hartid(), i);
         ch = pi->data[(pi->nread++) & (PIPESIZE - 1)];
-        // printf("%x %x\n", r_hartid(), ch);
-        if (either_copyout(isUser, addr + i, &ch, 1) == -1) {
-            break;
-        }
+        // if (either_copyout(isUser, addr + i, &ch, 1) == -1) {
+        //     break;
+        // }
+        pipeOut(isUser, addr + i, &ch);
     }
-    // printf("%x wake up %x, start %x, end %x\n", r_hartid(), &pi->nwrite, pi->nread, pi->nwrite);
     wakeup(&pi->nwrite);  // DOC: piperead-wakeup
     releaseLock(&pi->lock);
     return i;
+}
+
+void pipeOut(bool isUser, u64 dstva, char* src) {
+    if (!isUser) {
+        *((char*)dstva) = *src;
+        return;
+    }
+    u64* pageTable = myProcess()->pgdir;
+    int cow;
+    u64 pa = vir2phy(pageTable, dstva, &cow);
+    if (pa == NULL) {
+        cow = 0;
+        pa = pageout(pageTable, dstva);
+    }
+    if (cow) {
+        cowHandler(pageTable, dstva);
+        pa = vir2phy(pageTable, dstva, &cow);
+    }
+    *((char*)pa) = *src;
+}
+
+void pipeIn(bool isUser, char* dst, u64 srcva) {
+    if (!isUser) {
+        *dst = *((char*)srcva);
+        return;
+    }
+    u64* pageTable = myProcess()->pgdir;
+    u64 pa = vir2phy(pageTable, srcva, NULL);
+    if (pa == NULL) {
+        pa = pageout(pageTable, srcva);
+    }
+    *dst = *((char*)pa);
 }
