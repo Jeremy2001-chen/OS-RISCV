@@ -231,14 +231,15 @@ void syscallSleepTime() {
 void syscallBrk() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 addr = trapframe->a0;
-    // printf("addr: %lx, heapbottom: %lx\n", addr, myProcess()->heapBottom);
+    // printf("addr: %lx, heapbottom: %lx\n", addr, myProcess()->brkHeapBottom);
     if (addr == 0) {
-        trapframe->a0 = myProcess()->heapBottom;
-    } else if (addr >= myProcess()->heapBottom) {
-        sys_sbrk(addr - myProcess()->heapBottom);
-        //trapframe->a0 = myProcess()->heapBottom;
-    } else {}
+        trapframe->a0 = myProcess()->brkHeapBottom;
+    } else if (addr >= myProcess()->brkHeapBottom) {
+        sys_sbrk(addr - myProcess()->brkHeapBottom);
         // trapframe->a0 = myProcess()->heapBottom;
+    } else 
+        {}
+        // trapframe->a0 = -1;
     // printf("brk addr: %lx, a0: %lx\n", addr, trapframe->a0);
 } 
 
@@ -264,6 +265,10 @@ void syscallMapMemory() {
         perm |= PTE_WRITE | PTE_READ;
     }
 
+    if (!len) {
+        trapframe->a0 = -EINVAL;
+        return;
+    }
     argfd(4, 0, &fd);
     // printf("mmap: %lx %lx %lx %lx %d\n", start, len, prot, flags, fd);
     // printf("heap bottom: %lx\n", myProcess()->heapBottom);

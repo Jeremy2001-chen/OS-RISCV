@@ -332,7 +332,8 @@ int exec(char* path, char** argv) {
         return r;
     }
     
-    p->heapBottom = USER_HEAP_BOTTOM;// TODO,these code have writen twice
+    p->brkHeapBottom = USER_BRK_HEAP_BOTTOM;// TODO,these code have writen twice
+    p->mmapHeapBottom = USER_MMAP_HEAP_BOTTOM;
     pagetable = (u64*)page2pa(page);
     extern char trampoline[];
     pageInsert(pagetable, TRAMPOLINE_BASE, (u64)trampoline, 

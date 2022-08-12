@@ -133,7 +133,8 @@ int processSetup(Process *p) {
     p->retValue = 0;
     p->state = UNUSED;
     p->parentId = 0;
-    p->heapBottom = USER_HEAP_BOTTOM;
+    p->brkHeapBottom = USER_BRK_HEAP_BOTTOM;
+    p->mmapHeapBottom = USER_MMAP_HEAP_BOTTOM;
     extern FileSystem *rootFileSystem;
     if (rootFileSystem == NULL) {
         fsAlloc(&rootFileSystem);

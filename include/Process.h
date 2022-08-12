@@ -56,7 +56,8 @@ typedef struct Process {
     // u64 currentKernelSp;
     // int reason;
     u32 retValue;
-    u64 heapBottom;
+    u64 brkHeapBottom;
+    u64 mmapHeapBottom;
     struct dirent *execFile;
     struct dirent *cwd;
     // SignalSet blocked;
