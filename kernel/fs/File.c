@@ -119,6 +119,11 @@ int fileread(struct File* f, bool isUser, u64 addr, int n) {
             // elock(f->ep);
             if ((r = eread(f->ep, isUser, addr, f->off, n)) > 0)
                 f->off += r;
+            // if (r < n && f->off >= f->ep->file_size) {
+            //     u8 eof = 0;
+            //     either_copyout(isUser, addr + r, &eof, 1);
+            //     r++;
+            // }
             // eunlock(f->ep);
             break;
         case FD_SOCKET:
@@ -203,6 +208,7 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
         myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom, PAGE_SIZE);
         start = myProcess()->heapBottom;
         myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom + len, PAGE_SIZE);
+        assert(myProcess()->heapBottom  < USER_STACK_BOTTOM);
     }
     u64 addr = start, end = start + len;
     start = DOWN_ALIGN(start, PAGE_SIZE);

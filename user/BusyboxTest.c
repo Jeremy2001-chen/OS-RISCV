@@ -14,22 +14,22 @@ void userMain() {
     dup(0); //stderr
 
     int pid = fork();
-    if (pid == 0) {
-        exec("./busybox", argvBusybox);
-    } else {
-        wait(0);
-    }
+    // if (pid == 0) {
+    //     exec("./busybox", argvBusybox);
+    // } else {
+    //     wait(0);
+    // }
 
-    pid = fork();
-    if (pid == 0) {
-        exec("./busybox", argvLua);
-    } else {
-        wait(0);
-    }
+    // pid = fork();
+    // if (pid == 0) {
+    //     exec("./busybox", argvLua);
+    // } else {
+    //     wait(0);
+    // }
     
-    pid = fork();
+    // pid = fork();
     if (pid == 0) {
-        exec("./busybox", argvLmbanch);
+        exec("./busybox", shell);
     } else {
         wait(0);
     }

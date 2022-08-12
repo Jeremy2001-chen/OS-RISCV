@@ -13,8 +13,8 @@ extern char kernelEnd[];
 extern u64 kernelPageDirectory[];
 
 static void initFreePages() {
-    u32 i;
-    u32 n = PA2PPN(kernelEnd);
+    u64 i;
+    u64 n = PA2PPN(kernelEnd);
     for (i = 0; i < n; i++) {
         pages[i].ref = 1;
     }
@@ -28,7 +28,7 @@ static void initFreePages() {
 }
 
 static void resetRef() {
-    u32 i = PA2PPN(kernelEnd), n = PA2PPN(PHYSICAL_MEMORY_TOP);
+    u64 i = PA2PPN(kernelEnd), n = PA2PPN(PHYSICAL_MEMORY_TOP);
     for (; i < n; i++) {
         pages[i].ref = 0;
     }
