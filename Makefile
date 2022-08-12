@@ -15,6 +15,11 @@ modules := 	$(kernel_dir) $(user_dir)
 objects := $(kernel_dir)/*/*.o $(user_dir)/*.x
 
 .PHONY: build clean $(modules) run
+GDB := n
+
+ifeq ($(MAKECMDGOALS), gdb)
+	GDB = y
+endif
 
 all : build
 
@@ -55,7 +60,7 @@ mount:
 	sudo mount -t vfat $(fs_img) $(dst)
 	
 $(modules):
-	$(MAKE) build --directory=$@
+	$(MAKE) build GDB=$(GDB) --directory=$@
 
 clean:
 	for d in $(modules); \
@@ -70,7 +75,7 @@ comp: clean build
 run: clean build
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS)
 
-asm: clean build
+asm: clean buil.d
 	$(QEMU) -kernel $(vmlinux_img) $(QEMUOPTS) -d in_asm
 
 int: clean build
