@@ -205,10 +205,10 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
     // printf("domap: fd: %d, start: %lx, len: %lx, perm: %lx, flags: %lx, off: %lx\n", fd, start, len, perm, flags, off);
     bool alloc = (start == 0);
     if (alloc) {
-        myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom, PAGE_SIZE);
-        start = myProcess()->heapBottom;
-        myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom + len, PAGE_SIZE);
-        assert(myProcess()->heapBottom  < USER_STACK_BOTTOM);
+        myProcess()->mmapHeapBottom = UP_ALIGN(myProcess()->mmapHeapBottom, PAGE_SIZE);
+        start = myProcess()->mmapHeapBottom;
+        myProcess()->mmapHeapBottom = UP_ALIGN(myProcess()->mmapHeapBottom + len, PAGE_SIZE);
+        assert(myProcess()->mmapHeapBottom  < USER_STACK_BOTTOM);
     }
     u64 addr = start, end = start + len;
     start = DOWN_ALIGN(start, PAGE_SIZE);

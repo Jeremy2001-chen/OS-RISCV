@@ -353,10 +353,10 @@ int memsetOut(u64 *pgdir, u64 dst, u8 value, u64 len) {
 }
 
 int growproc(int n) {
-    if (myProcess()->heapBottom + n >= USER_HEAP_TOP)
+    if (myProcess()->brkHeapBottom + n >= USER_BRK_HEAP_TOP)
         return -1;
-    u64 start = UP_ALIGN(myProcess()->heapBottom, PAGE_SIZE);
-    u64 end = UP_ALIGN(myProcess()->heapBottom + n, PAGE_SIZE);
+    u64 start = UP_ALIGN(myProcess()->brkHeapBottom, PAGE_SIZE);
+    u64 end = UP_ALIGN(myProcess()->brkHeapBottom + n, PAGE_SIZE);
     assert(end < USER_STACK_BOTTOM);
     while (start < end) {
         u64* pte;
@@ -372,12 +372,12 @@ int growproc(int n) {
         start += PGSIZE;
     }
 
-    myProcess()->heapBottom = end;
+    myProcess()->brkHeapBottom = end;
     return 0;
 }
 
 u64 sys_sbrk(u32 len) {
-    u64 addr = myProcess()->heapBottom;
+    u64 addr = myProcess()->brkHeapBottom;
     if (growproc(len) < 0)
         return -1;
     return addr;

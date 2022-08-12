@@ -138,8 +138,8 @@ void userTrap() {
             trapframe->epc += 4;
             // printf("syscall %d\n", trapframe->a7);
             // if (trapframe->a7 == SYSCALL_WRITE || trapframe->a7 == SYSCALL_WRITE_VECTOR || trapframe->a7 == SYSCALL_SELECT || trapframe->a7 == SYSCALL_GET_TIME) {
-            if (trapframe->a7 != 63)
-                printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
+            // if (trapframe->a7 != 63)
+            //     printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
             // }
             if (!syscallVector[trapframe->a7]) {
                 // printf("%lx\n", r_scause());
@@ -147,9 +147,9 @@ void userTrap() {
             }
             syscallVector[trapframe->a7]();
             // printf("syscall %d end\n", trapframe->a7);
-            // if ((i64)trapframe->a0 <= -1) {
-            //     printf("return %d: %d\n", trapframe->a0, trapframe->a7);
-            // }
+            if ((i64)trapframe->a0 <= -1) {
+                printf("return %d: %d\n", trapframe->a0, trapframe->a7);
+            }
             // if (trapframe->a7 == 72) {
             //     printf("epc = %lx\n", trapframe->epc);
             // }
@@ -157,7 +157,7 @@ void userTrap() {
         case SCAUSE_LOAD_PAGE_FAULT:
             pa = pageLookup(pgdir, r_stval(), &pte);
             if (pa == 0) {
-                printf("%d, spec: %lx\n", __LINE__, r_sepc());
+                // printf("%d, spec: %lx\n", __LINE__, r_sepc());
                 pageout(pgdir, r_stval());
             } else if (!(*pte & PTE_READ)) {
                 processSignalSend(myProcess()->processId, SIGSEGV);
@@ -168,7 +168,7 @@ void userTrap() {
         case SCAUSE_STORE_PAGE_FAULT:
             pa = pageLookup(pgdir, r_stval(), &pte);
             if (pa == 0) {
-                printf("%d, spec: %lx\n", __LINE__, r_sepc());
+                // printf("%d, spec: %lx\n", __LINE__, r_sepc());
                 pageout(pgdir, r_stval());
             } else if (*pte & PTE_COW) {
                 cowHandler(pgdir, r_stval());
