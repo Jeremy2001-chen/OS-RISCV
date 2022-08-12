@@ -147,9 +147,9 @@ void userTrap() {
             }
             syscallVector[trapframe->a7]();
             // printf("syscall %d end\n", trapframe->a7);
-            if ((i64)trapframe->a0 <= -1) {
-                printf("return %d: %d\n", trapframe->a0, trapframe->a7);
-            }
+            // if ((i64)trapframe->a0 <= -1) {
+            //     printf("return %d: %d\n", trapframe->a0, trapframe->a7);
+            // }
             // if (trapframe->a7 == 72) {
             //     printf("epc = %lx\n", trapframe->epc);
             // }
