@@ -357,6 +357,7 @@ int growproc(int n) {
         return -1;
     u64 start = UP_ALIGN(myProcess()->heapBottom, PAGE_SIZE);
     u64 end = UP_ALIGN(myProcess()->heapBottom + n, PAGE_SIZE);
+    assert(end < USER_STACK_BOTTOM);
     while (start < end) {
         u64* pte;
         u64 pa = pageLookup(myProcess()->pgdir, start, &pte);

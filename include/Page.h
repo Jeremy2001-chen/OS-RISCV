@@ -56,9 +56,9 @@ void bzero(void *start, u32 len);
 void memoryInit();
 void startPage();
 
-#define PA2PPN(va) ((((u64)(va)) & 0x0fffffff) >> PAGE_SHIFT)
+#define PA2PPN(va) ((((u64)(va)) - PHYSICAL_ADDRESS_BASE) >> PAGE_SHIFT)
 #define PPN2PA(ppn) (((u64)(ppn)) << PAGE_SHIFT)
-#define GET_PAGE_TABLE_INDEX(va, level) ((((u64)(va)) >> (PAGE_SHIFT + 9 * level)) & 0x1ff)
+#define GET_PAGE_TABLE_INDEX(va, level) ((((u64)(va)) >> (PAGE_SHIFT + 9 * (level))) & 0x1ff)
 #define PTE2PT 512
 
 #define PTE_VALID (1ll << 0)
