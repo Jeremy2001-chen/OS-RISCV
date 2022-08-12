@@ -52,6 +52,7 @@ void syscallRenameAt(void);
 void syscallReadLinkAt(void);
 void syscallUmask(void);
 void syscallFileSychornize();
+void syscallOpen(void);
 
 int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen);
 

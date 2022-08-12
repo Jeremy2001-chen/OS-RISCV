@@ -109,7 +109,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_SET_TIMER]                 syscallSetTimer,
     [SYSCALL_UMASK]                     syscallUmask,
     [SYSCALL_FSSYC]                     syscallFileSychornize,
-    [SYSCALL_MSYNC]                     syscallMemorySychronize
+    [SYSCALL_MSYNC]                     syscallMemorySychronize,
+    [SYSCALL_OPEN]                      syscallOpen
 };
 
 extern struct Spinlock printLock;
@@ -229,16 +230,16 @@ void syscallSleepTime() {
 void syscallBrk() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 addr = trapframe->a0;
-
+    // printf("addr: %lx, heapbottom: %lx\n", addr, myProcess()->heapBottom);
     if (addr == 0) {
         trapframe->a0 = myProcess()->heapBottom;
     } else if (addr >= myProcess()->heapBottom) {
         sys_sbrk(addr - myProcess()->heapBottom);
-        trapframe->a0 = myProcess()->heapBottom;
-    } else 
-        trapframe->a0 = -1;
+        //trapframe->a0 = myProcess()->heapBottom;
+    } else {}
+        // trapframe->a0 = myProcess()->heapBottom;
     // printf("brk addr: %lx, a0: %lx\n", addr, trapframe->a0);
-}
+} 
 
 void syscallSetBrk() {
     Trapframe *trapframe = getHartTrapFrame();
