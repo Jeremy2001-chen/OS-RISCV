@@ -110,7 +110,8 @@ void (*syscallVector[])(void) = {
     [SYSCALL_UMASK]                     syscallUmask,
     [SYSCALL_FSSYC]                     syscallFileSychornize,
     [SYSCALL_MSYNC]                     syscallMemorySychronize,
-    [SYSCALL_OPEN]                      syscallOpen
+    [SYSCALL_OPEN]                      syscallOpen,
+    [SYSCALL_MADVISE]                   syscallMemeryAdvise
 };
 
 extern struct Spinlock printLock;
@@ -230,14 +231,15 @@ void syscallSleepTime() {
 void syscallBrk() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 addr = trapframe->a0;
-    // printf("addr: %lx, heapbottom: %lx\n", addr, myProcess()->heapBottom);
+    // printf("addr: %lx, heapbottom: %lx\n", addr, myProcess()->brkHeapBottom);
     if (addr == 0) {
-        trapframe->a0 = myProcess()->heapBottom;
-    } else if (addr >= myProcess()->heapBottom) {
-        sys_sbrk(addr - myProcess()->heapBottom);
-        //trapframe->a0 = myProcess()->heapBottom;
-    } else {}
+        trapframe->a0 = myProcess()->brkHeapBottom;
+    } else if (addr >= myProcess()->brkHeapBottom) {
+        sys_sbrk(addr - myProcess()->brkHeapBottom);
         // trapframe->a0 = myProcess()->heapBottom;
+    } else 
+        {}
+        // trapframe->a0 = -1;
     // printf("brk addr: %lx, a0: %lx\n", addr, trapframe->a0);
 } 
 
@@ -263,6 +265,10 @@ void syscallMapMemory() {
         perm |= PTE_WRITE | PTE_READ;
     }
 
+    if (!len) {
+        trapframe->a0 = -EINVAL;
+        return;
+    }
     argfd(4, 0, &fd);
     // printf("mmap: %lx %lx %lx %lx %d\n", start, len, prot, flags, fd);
     // printf("heap bottom: %lx\n", myProcess()->heapBottom);
@@ -401,6 +407,7 @@ void syscallSocket() {
     Trapframe *tf = getHartTrapFrame();
     int domain = tf->a0, type = tf->a1, protocal = tf->a2;
     tf->a0 = createSocket(domain, type, protocal);
+    // printf("[%s] socket at fd = %d\n",__func__, tf->a0);
 }
 
 void syscallBind() {
@@ -440,10 +447,9 @@ void syscallReceiveFrom() {
 
 void syscallListen() {
     Trapframe *tf = getHartTrapFrame();
-    int sockfd = tf->a1;
-    printf("[%s] fd %d\n",__func__, sockfd);
-    /* 我们认为socket一创建时就开始listen，而不需要用户去手动Listen */
-    tf->a0 = 0;
+    int sockfd = tf->a0;
+    // printf("[%s] fd %d\n",__func__, sockfd);
+    tf->a0 = listen(sockfd);
 }
 
 void syscallConnect() {
@@ -459,7 +465,7 @@ void syscallAccept() {
     int sockfd = tf->a0;
     SocketAddr sa;
     tf->a0 = accept(sockfd, &sa);
-    copyout(myProcess()->pgdir, tf->a1, (char*)&sa, tf->a2);
+    copyout(myProcess()->pgdir, tf->a1, (char*)&sa, sizeof(sa));
 }
 
 void syscallFutex() {
@@ -692,6 +698,8 @@ void syscallSelect() {
     assert(timeout != 0);
     int cnt = 0;
     struct File* file = NULL;
+    // printf("[%s] \n", __func__);
+
     if (read) {
         FdSet readSet;
         copyin(myProcess()->pgdir, (char*)&readSet, read, sizeof(FdSet));
@@ -701,6 +709,7 @@ void syscallSelect() {
                              : readSet.bits[1] & (1UL << (i - 64));
             if (!cur)
                 continue;
+            // printf("selecting read fd %d type %d\n", i, myProcess()->ofile[i]->type);
             file = myProcess()->ofile[i];
             if (!file)
                 continue;
@@ -716,8 +725,13 @@ void syscallSelect() {
                     }
                     break;
                 case FD_SOCKET:
+                    // printf("socketid %d head %d tail %d\n", file->socket-sockets, file->socket->head, file->socket->tail);
                     if (file->socket->used != 0 &&
-                        file->socket->head == file->socket->tail) {
+                        file->socket->head == file->socket->tail &&
+                        (!file->socket->listening ||
+                         (file->socket->listening &&
+                          file->socket->pending_h ==
+                              file->socket->pending_t))) {
                         ready_to_read = 0;
                     } else {
                         ready_to_read = 1;
@@ -749,6 +763,9 @@ void syscallSelect() {
                 cnt += !!((1UL << (i)) & writeSet.bits[0]);
             }
         }
+        copyout(myProcess()->pgdir, write, (char*)&write,
+                sizeof(FdSet));
+        
     }
     if (except) {
         FdSet set;
@@ -761,9 +778,12 @@ void syscallSelect() {
             myThread()->reason |= SELECT_BLOCK;
             tf->epc -= 4;
             yield();
-        } 
+        }
         myThread()->reason &= ~SELECT_BLOCK;
+        
     }
+
+    // printf("select end cnt %d\n",cnt);
     tf->a0 = cnt;
 }
 
@@ -782,6 +802,11 @@ void syscallSetTimer() {
 }
 
 void syscallMemorySychronize() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallMemeryAdvise(){
     Trapframe *tf = getHartTrapFrame();
     tf->a0 = 0;
 }

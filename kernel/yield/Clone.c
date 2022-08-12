@@ -26,7 +26,8 @@ int processFork() {
         if (current->ofile[i])
             process->ofile[i] = filedup(current->ofile[i]);
     process->priority = current->priority;
-    process->heapBottom = current->heapBottom;
+    process->brkHeapBottom = current->brkHeapBottom;
+    process->mmapHeapBottom = current->mmapHeapBottom;
     assert(current->threadCount == 1);
     Trapframe* trapframe = getHartTrapFrame();
     bcopy(trapframe, &thread->trapframe, sizeof(Trapframe));
