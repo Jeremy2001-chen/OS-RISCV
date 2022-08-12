@@ -129,7 +129,7 @@ struct buf* bread(uint dev, uint blockno) {
 void bwrite(struct buf* b) {
     if (!holdingsleep(&b->lock))
         panic("bwrite");
-    sdWrite(b->data, b->blockno, 1);
+    // sdWrite(b->data, b->blockno, 1);
 }
 
 // Release a locked buffer.
