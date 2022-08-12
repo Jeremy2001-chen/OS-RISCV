@@ -10,7 +10,7 @@ int userMain(int argc, char **argv) {
     int n = read(fd, buf, sizeof(buf));
     printf("[reading file %d bytes]: %s\n", n, buf);
 
-    int fd2 = open("/createfile", O_WRONLY|O_CREATE);
+    int fd2 = open("/createfile", O_WRONLY|O_CREATE_GLIBC);
     printf("fd2=%d\n", fd2);
     char to_write[]="testcreatefile";
     n = write(fd2, "testcreatefile", sizeof(to_write));

@@ -20,7 +20,7 @@ int userMain(int argc, char **argv) {
         exit(1);
     }
 
-    if ((fd = open("testfile", O_CREATE)) < 0) {
+    if ((fd = open("testfile", O_CREATE_GLIBC)) < 0) {
         printf("4 create testfile\n");
         exit(1);
     }

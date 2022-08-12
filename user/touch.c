@@ -13,7 +13,7 @@ int userMain(int argc, char** argv) {
 
     for (i = 1; i < argc; i++) {
         int fd;
-        if ((fd = open(argv[i], O_RDWR | O_CREATE)) < 0) {
+        if ((fd = open(argv[i], O_RDWR | O_CREATE_GLIBC)) < 0) {
             printf("touch: %s failed to create\n", argv[i]);
             break;
         }

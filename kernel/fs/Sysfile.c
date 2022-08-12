@@ -405,7 +405,7 @@ void syscallOpenAt(void) {
     struct dirent* entryPoint;
     // printf("openat path: %s\n", path);
     // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
-    if (flags & O_CREATE) {
+    if (flags & O_CREATE_GLIBC) {
         entryPoint = create(startFd, path, T_FILE, mode);
         if (entryPoint == NULL) {
             tf->a0 = -1;
@@ -462,6 +462,7 @@ bad:
     // printf("open at: %d\n", tf->a0);
 }
 
+/* riscv-linux-gnu use this function */
 void syscallOpen(void) {
     Trapframe* tf = getHartTrapFrame();
     char path[FAT32_MAX_PATH];
@@ -473,8 +474,8 @@ void syscallOpen(void) {
    
     struct dirent* entryPoint;
     printf("open path: %s\n", path);
-    // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
-    if (flags & O_CREATE) {
+    printf("path: %s, flags: %x, mode: %x\n", path, flags, mode);
+    if (flags & O_CREATE_GPP) {
         entryPoint = create(AT_FDCWD, path, T_FILE, mode);
         if (entryPoint == NULL) {
             tf->a0 = -1;
@@ -656,7 +657,7 @@ void syscallDevice(void) {
     int major = tf->a0;
     struct File* f;
 
-    if (omode & O_CREATE) {
+    if (omode & O_CREATE_GLIBC) {
         panic("dev file on FAT");
     }
 

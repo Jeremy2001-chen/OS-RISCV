@@ -3,12 +3,13 @@
 
 #include "Type.h"
 
-#define O_RDONLY  0x000
-#define O_WRONLY  0x001
-#define O_RDWR    0x002
-#define O_CREATE  0100
-#define O_APPEND  02000
-#define O_TRUNC   01000
+#define O_RDONLY        0x000
+#define O_WRONLY        0x001
+#define O_RDWR          0x002
+#define O_CREATE_GLIBC  0100
+#define O_CREATE_GPP    0x200
+#define O_APPEND        02000
+#define O_TRUNC         01000
 
 #define O_DIRECTORY 0x0200000
 
