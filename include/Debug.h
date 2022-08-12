@@ -2,6 +2,7 @@
 #define __DEBUG_H
 
 #include "Defs.h"
+#include "Type.h"
 //if we undefine "DEBUG", some variable become unused, so we will get
 //a compile error.
 //so we can use use() to cheat the compiler
@@ -26,5 +27,7 @@ inline void use(void* x) {}
 #define HEX_PRINT(val)
 
 #endif
+
+void getSyscallMessage(int id, u64 pc);
 
 #endif

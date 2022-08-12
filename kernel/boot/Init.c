@@ -77,8 +77,8 @@ void main(u64 hartId) {
         // PROCESS_CREATE_PRIORITY(SyscallTest, 1);
         // PROCESS_CREATE_PRIORITY(MountTest, 1);
         // PROCESS_CREATE_PRIORITY(WaitTest, 1);
-        PROCESS_CREATE_PRIORITY(MuslLibcTest, 1);
-
+        // PROCESS_CREATE_PRIORITY(MuslLibcTest, 1);
+        PROCESS_CREATE_PRIORITY(BusyboxTest, 1);
 
     } else {
         while (initFinish == 0);

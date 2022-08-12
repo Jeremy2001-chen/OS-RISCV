@@ -7,7 +7,7 @@
 #include <Process.h>
 #include <Sysarg.h>
 #include <MemoryConfig.h>
-
+#include <Thread.h>
 
 extern PageList freePages;
 struct Spinlock pageListLock, cowBufferLock;
@@ -32,7 +32,7 @@ int pageRemove(u64 *pgdir, u64 va) {
     page->ref--;
     pageFree(page);
     *pte = 0;
-    sfence_vma();
+    // sfence_vma();
     return 0;
 }
 
@@ -57,6 +57,7 @@ int pageAlloc(PhysicalPage **pp) {
         bzero((void*)page2pa(page), PAGE_SIZE);
         return 0;
     }
+    panic("");
     releaseLock(&pageListLock);
     printf("there's no physical page left!\n");
     *pp = NULL;
@@ -168,7 +169,7 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm) {
     *pte = PA2PTE(pa) | perm | PTE_VALID;
     if (pa >= PHYSICAL_ADDRESS_BASE && pa < PHYSICAL_MEMORY_TOP)
         pa2page(pa)->ref++;
-    sfence_vma();
+    // sfence_vma();
     return 0;
 }
 
@@ -181,29 +182,54 @@ int allocPgdir(PhysicalPage **page) {
     return 0;
 }
 
-void pageout(u64 *pgdir, u64 badAddr) {
+u64 pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
-    // printf("[Page out]pageout at %lx\n", badAddr);
-    PhysicalPage *page;
-    if (pageAlloc(&page) < 0) {
+    PhysicalPage *page = NULL;
+    // printf("[Page out]Process Id: %lx, pageout at %lx, bottom: %lx\n", myProcess()->processId, badAddr, USER_STACK_BOTTOM);
+    if (badAddr >= USER_STACK_BOTTOM && badAddr < USER_STACK_TOP) {
+        if (pageAlloc(&page) < 0) {
+            panic("");
+        }
+        if (pageInsert(pgdir, badAddr, page2pa(page), 
+            PTE_USER | PTE_READ | PTE_WRITE) < 0) {
+            panic("");
+        }
+        return page2pa(page) + (badAddr & 0xFFF);
+    }
+    u64 perm = 0;
+    Process *p = myProcess();
+    u64 pageStart = DOWN_ALIGN(badAddr, PAGE_SIZE);
+    u64 pageFinish = pageStart + PAGE_SIZE;
+    for (ProcessSegmentMap *psm = p->segmentMapHead; psm; psm = psm->next) {
+        u64 start = MAX(psm->va, pageStart);
+        u64 finish = MIN(psm->va + psm->len, pageFinish);
+        if (start < finish) {
+            if (page == NULL) {
+                pageAlloc(&page);
+            }
+            if (!(psm->flag & MAP_ZERO)) {
+                eread(psm->sourceFile, false, page2pa(page) + PAGE_OFFSET(start, PAGE_SIZE), psm->fileOffset + start - psm->va, finish - start);
+            }
+            perm |= (psm->flag & ~MAP_ZERO);
+        }
+    }
+    if (page == NULL) {
         panic("");
     }
-    if (pageInsert(pgdir, badAddr, page2pa(page), 
-        PTE_USER | PTE_READ | PTE_WRITE) < 0) {
-        panic("");
-    }
+    pageInsert(pgdir, badAddr, page2pa(page), PTE_USER | perm);
+    return page2pa(page) + (badAddr & 0xFFF);
 }
 
 u8 cowBuffer[PAGE_SIZE];
 void cowHandler(u64 *pgdir, u64 badAddr) {
     u64 pa;
-    u64 *pte;
+    u64 *pte = NULL;
     pa = pageLookup(pgdir, badAddr, &pte);
     // printf("[COW] %x to cow %lx %lx\n", myProcess()->processId, badAddr, pa);
     if (!(*pte & PTE_COW)) {
-        printf("access denied");
+        printf("access denied\n");
         return;
     }
     PhysicalPage *page;
@@ -234,8 +260,9 @@ u64 vir2phy(u64* pagetable, u64 va, int* cow) {
     if (ret < 0) {
         panic("pageWalk error in vir2phy function!");
     }
-    if (pte == 0)
+    if (pte == 0) {
         return NULL;
+    }
     if ((*pte & PTE_VALID) == 0)
         return NULL;
     if ((*pte & PTE_USER) == 0)
@@ -255,13 +282,14 @@ int copyin(u64* pagetable, char* dst, u64 srcva, u64 len) {
 
     while (len > 0) {
         va0 = DOWN_ALIGN(srcva, PGSIZE);
-        pa0 = vir2phy(pagetable, va0, &cow);
-        if (pa0 == NULL)
-            return -1;
+        pa0 = vir2phy(pagetable, srcva, &cow);
+        if (pa0 == NULL) {
+            pa0 = pageout(pagetable, srcva);
+        }
         n = PGSIZE - (srcva - va0);
         if (n > len)
             n = len;
-        memmove(dst, (void*)(pa0 + (srcva - va0)), n);
+        memmove(dst, (void*)pa0, n);
 
         len -= n;
         dst += n;
@@ -279,18 +307,19 @@ int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
 
     while (len > 0) {
         va0 = DOWN_ALIGN(dstva, PGSIZE);
-        pa0 = vir2phy(pagetable, va0, &cow);
-        if (pa0 == NULL)
-            return -1;
-        if (cow) {
-            // printf("COW?\n");
-            cowHandler(pagetable, va0);
+        pa0 = vir2phy(pagetable, dstva, &cow);
+        if (pa0 == NULL) {
+            cow = 0;
+            pa0 = pageout(pagetable, dstva);
         }
-        pa0 = vir2phy(pagetable, va0, &cow);
+        if (cow) {
+            cowHandler(pagetable, dstva);
+            pa0 = vir2phy(pagetable, dstva, NULL);
+        }
         n = PGSIZE - (dstva - va0);
         if (n > len)
             n = len;
-        memmove((void*)(pa0 + (dstva - va0)), src, n);
+        memmove((void*)pa0, src, n);
         len -= n;
         src += n;
         dstva = va0 + PGSIZE;
@@ -304,18 +333,19 @@ int memsetOut(u64 *pgdir, u64 dst, u8 value, u64 len) {
 
     while (len > 0) {
         va0 = DOWN_ALIGN(dst, PGSIZE);
-        pa0 = vir2phy(pgdir, va0, &cow);
-        if (pa0 == NULL)
-            return -1;
-        if (cow) {
-            // printf("COW?\n");
-            cowHandler(pgdir, va0);
+        pa0 = vir2phy(pgdir, dst, &cow);
+        if (pa0 == NULL) {
+            cow = 0;
+            pa0 = pageout(pgdir, dst);
         }
-        pa0 = vir2phy(pgdir, va0, &cow);
+        if (cow) {
+            cowHandler(pgdir, dst);
+            pa0 = vir2phy(pgdir, dst, NULL);
+        }
         n = PGSIZE - (dst - va0);
         if (n > len)
             n = len;
-        memset((void*)(pa0 + (dst - va0)), value, n);
+        memset((void*)pa0, value, n);
         len -= n;
         dst = va0 + PGSIZE;
     }
@@ -325,7 +355,23 @@ int memsetOut(u64 *pgdir, u64 dst, u8 value, u64 len) {
 int growproc(int n) {
     if (myProcess()->heapBottom + n >= USER_HEAP_TOP)
         return -1;
-    myProcess()->heapBottom += n;
+    u64 start = UP_ALIGN(myProcess()->heapBottom, PAGE_SIZE);
+    u64 end = UP_ALIGN(myProcess()->heapBottom + n, PAGE_SIZE);
+    while (start < end) {
+        u64* pte;
+        u64 pa = pageLookup(myProcess()->pgdir, start, &pte);
+        if (pa > 0 && (*pte & PTE_COW)) {
+            cowHandler(myProcess()->pgdir, start);
+        }
+        PhysicalPage* page;
+        if (pageAlloc(&page) < 0) {
+            return -1;
+        }
+        pageInsert(myProcess()->pgdir, start, page2pa(page), PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE);
+        start += PGSIZE;
+    }
+
+    myProcess()->heapBottom = end;
     return 0;
 }
 

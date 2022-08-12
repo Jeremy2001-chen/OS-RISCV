@@ -19,16 +19,14 @@ Thread *currentThread[HART_TOTAL_NUMBER] = {0};
 struct Spinlock freeThreadListLock, scheduleListLock, threadIdLock;
 
 Thread* myThread() {
-    interruptPush();
-    int hartId = r_hartid();
-    if (currentThread[hartId] == NULL) {
+    // interruptPush();
+    if (currentThread[r_hartid()] == NULL) {
         // printf("[Kernel]No thread run in the hart %d\n", hartId);
-        interruptPop();
+        // interruptPop();
         return NULL;
     }
-    Thread* ret = currentThread[hartId];
-    interruptPop();
-    return ret;
+    // interruptPop();
+    return currentThread[r_hartid()];
 }
 
 u64 getThreadTopSp(Thread* th) {
@@ -61,7 +59,7 @@ u32 generateThreadId(Thread* th) {
     return threadId;
 }
 
-void sleepRec();
+void __attribute__ ((noreturn)) sleepRec();
 void threadDestroy(Thread *th) {
     threadFree(th);
     int hartId = r_hartid();
@@ -131,7 +129,6 @@ int tid2Thread(u32 threadId, struct Thread **thread, int checkPerm) {
     return 0;
 }
 
-extern FileSystem rootFileSystem;
 extern void userVector();
 
 void threadSetup(Thread* th) {
@@ -148,6 +145,14 @@ void threadSetup(Thread* th) {
         panic("");
     }
     pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE, page2pa(page), PTE_READ | PTE_WRITE);
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 2, page2pa(page), PTE_READ | PTE_WRITE);
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 3, page2pa(page), PTE_READ | PTE_WRITE);
 }
 
 u64 getSignalHandlerSp(Thread *th) {
@@ -222,8 +227,8 @@ void threadRun(Thread* th) {
     }
     
     th->state = RUNNING;
-    if (th->reason == KERNEL_GIVE_UP) {
-        th->reason = NORMAL;
+    if (th->reason & KERNEL_GIVE_UP) {
+        th->reason &= ~KERNEL_GIVE_UP;
         currentThread[r_hartid()] = th;
         bcopy(&currentThread[r_hartid()]->trapframe, trapframe, sizeof(Trapframe));
         asm volatile("ld sp, 0(%0)" : : "r"(&th->currentKernelSp));
@@ -235,48 +240,142 @@ void threadRun(Thread* th) {
             // regular process (e.g., because it calls sleep), and thus cannot
             // be run from main().
             first = 1;
-            strncpy(rootFileSystem.name, "fat32", 6);
+            extern FileSystem *rootFileSystem;
+            if (rootFileSystem == NULL) {
+                fsAlloc(&rootFileSystem);
+            }
+            strncpy(rootFileSystem->name, "fat32", 6);
             
-            rootFileSystem.read = blockRead;
-            fatInit(&rootFileSystem);
+            rootFileSystem->read = blockRead;
+            
+            fatInit(rootFileSystem);
             initDirentCache();
             void testfat();
             testfat();
 
-            struct dirent* ep = create(AT_FDCWD, "/dev", T_DIR, O_RDONLY);
+            struct dirent* ep = create(AT_FDCWD, "/var/tmp/XXX", T_FILE, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/dev", T_DIR, O_RDONLY);
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/vda2", T_DIR, O_RDONLY); //driver
-            ep->head = &rootFileSystem;            
+            assert(ep != NULL);
+            ep->head = rootFileSystem;            
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/shm", T_DIR, O_RDONLY); //share memory
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/null", T_CHAR, O_RDONLY); //share memory
+            ep->dev = NONE;
+            assert(ep != NULL);
             eunlock(ep);
-            eput(ep);
             ep = create(AT_FDCWD, "/tmp", T_DIR, O_RDONLY); //share memory
+            assert(ep != NULL);
             eunlock(ep);
             eput(ep);
             ep = create(AT_FDCWD, "/dev/zero", T_CHAR, O_RDONLY);
+            // panic("");
+            assert(ep != NULL);
             ep->dev = ZERO;
             eunlock(ep);
-            ep = ename(AT_FDCWD, "/lib");
-            if (ep == NULL) {
-                if ((ep = create(AT_FDCWD, "/lib", T_DIR, O_RDONLY)) == 0) {
-                    printf("create /lib error");
-                } else {
-                    eunlock(ep);
-                    eput(ep);
-                }
-            }
-            if (ep == NULL || do_linkat(AT_FDCWD, "/libc.so", AT_FDCWD,
-                                        "/lib/ld-musl-riscv64-sf.so.1") < 0) {
-                printf("pre_link error!\n");
-            }
+            // Don't eput here
 
-            setNextTimeout();
+            // ep = ename(AT_FDCWD, "/lib");
+            // if (ep == NULL) {
+            //     if ((ep = create(AT_FDCWD, "/lib", T_DIR, O_RDONLY)) == 0) {
+            //         printf("create /lib error");
+            //     } else {
+            //         eunlock(ep);
+            //         eput(ep);
+            //     }
+            // }
+            // if (ep == NULL || do_linkat(AT_FDCWD, "/libc.so", AT_FDCWD,
+            //                             "/lib/ld-musl-riscv64-sf.so.1") < 0) {
+            //     printf("pre_link error!\n");
+            // }
+            ep = create(AT_FDCWD, "/dev/tty", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/dev/rtc", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/dev/rtc0", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/dev/misc", T_DIR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/dev/misc/rtc", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/proc", T_DIR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/proc/meminfo", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/proc/mounts", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/proc/localtime", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/proc/sys", T_DIR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/proc/sys/kernel", T_DIR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/proc/sys/kernel/osrelease", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
+            ep->dev = OSRELEASE;
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/proc/self", T_DIR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);   
+            if (do_linkat(AT_FDCWD, "/", AT_FDCWD, "/proc/self/exe") < 0) {
+                panic("");
+            }
+            ep = create(AT_FDCWD, "/etc", T_DIR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/etc/adjtime", T_CHAR, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/etc/localtime", T_CHAR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/var", T_DIR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/var/tmp", T_DIR, O_RDONLY);
+            eunlock(ep);
+            eput(ep);
+            ep = create(AT_FDCWD, "/var/tmp/XXX", T_FILE, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
+            // setNextTimeout();
         }
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
         u64 sp = getHartKernelTopSp(th);
@@ -304,8 +403,12 @@ void sleep(void* chan, struct Spinlock* lk) {
     // Go to sleep.
     th->chan = (u64)chan;
     th->state = SLEEPING;
-    th->reason = KERNEL_GIVE_UP;
+    th->reason |= KERNEL_GIVE_UP;
     releaseLock(&th->lock);
+
+    if (hasKillSignal(th)) {
+        threadDestroy(th);
+    }    
 
 	asm volatile("sd sp, 0(%0)" : :"r"(&th->currentKernelSp));
 
@@ -317,7 +420,10 @@ void sleep(void* chan, struct Spinlock* lk) {
     releaseLock(&th->lock);
 
     kernelProcessCpuTimeBegin();
-
+    
+    if (hasKillSignal(th)) {
+        threadDestroy(th);    
+    }    
     // Reacquire original lock.
     acquireLock(lk);
 }
@@ -328,6 +434,7 @@ void wakeup(void* channel) {
             acquireLock(&threads[i].lock);
             if (threads[i].state == SLEEPING && threads[i].chan == (u64)channel) {
                 threads[i].state = RUNNABLE;
+                // printf("wake up thread %lx\n", threads[i].id);
             }
             releaseLock(&threads[i].lock);
         }

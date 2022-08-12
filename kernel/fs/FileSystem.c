@@ -5,6 +5,7 @@
 #include <Driver.h>
 #include <file.h>
 #include <Sysfile.h>
+#include <Page.h>
 FileSystem fileSystem[32];
 
 int fsAlloc(FileSystem **fs) {
@@ -22,7 +23,7 @@ int fsAlloc(FileSystem **fs) {
 DirentCache direntCache;
 // fs's read, name, mount_point should be inited
 int fatInit(FileSystem *fs) {
-    // printf("[FAT32 init]fat init begin\n");
+    printf("[FAT32 init]fat init begin\n");
     struct buf *b = fs->read(fs, 0);
     if (b == 0) {
         panic("");
@@ -61,21 +62,50 @@ int fatInit(FileSystem *fs) {
     memset(&fs->root, 0, sizeof(fs->root));
     initsleeplock(&fs->root.lock, "entry");
     fs->root.attribute = (ATTR_DIRECTORY | ATTR_SYSTEM);
-    fs->root.first_clus = fs->root.cur_clus = fs->superBlock.bpb.root_clus;
+    memset(&fs->root.inode, -1, sizeof(Inode));
+    fs->root.inode.item[0] = fs->root.first_clus = fs->root.cur_clus = fs->superBlock.bpb.root_clus;
+    fs->root.inodeMaxCluster = 1;
     fs->root.valid = 1;
     fs->root.filename[0]='/';
     fs->root.fileSystem = fs;
     fs->root.ref = 1;
     
-    // printf("[FAT32 init]fat init end\n");
+    int totalClusterNumber = fs->superBlock.bpb.fat_sz * fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
+    u64 *clusterBitmap = (u64*)getFileSystemClusterBitmap(fs);
+    int cnt = 0;
+        extern u64 kernelPageDirectory[];
+    do {
+        PhysicalPage *pp;
+        if (pageAlloc(&pp) < 0) {
+            panic("");
+        }
+        if (pageInsert(kernelPageDirectory, ((u64)clusterBitmap) + cnt, page2pa(pp), PTE_READ | PTE_WRITE) < 0) {
+            panic("");
+        }
+        cnt += PAGE_SIZE;
+    } while (cnt * 8 < totalClusterNumber);
+    uint32 sec = fs->superBlock.bpb.rsvd_sec_cnt;
+    uint32 const ent_per_sec = fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
+    for (uint32 i = 0; i < fs->superBlock.bpb.fat_sz; i++, sec++) {
+        b = fs->read(fs, sec);
+        for (uint32 j = 0; j < ent_per_sec; j++) {
+            if (((uint32*)(b->data))[j]) {
+                int no = i * ent_per_sec + j;
+                clusterBitmap[no >> 6] |= (1UL << (no & 63));
+            }
+        }
+        brelse(b);
+    }
+    
+    printf("[FAT32 init]fat init end\n");
     return 0;
 }
 
-FileSystem rootFileSystem;
+FileSystem *rootFileSystem;
 void initDirentCache() {
     initLock(&direntCache.lock, "ecache");
     struct File* file = filealloc();
-    rootFileSystem.image = file;
+    rootFileSystem->image = file;
     file->type = FD_DEVICE;
     file->major = 0;
     file->readable = true;
@@ -89,6 +119,7 @@ void initDirentCache() {
         de->ref = 0;
         de->dirty = 0;
         de->parent = 0;
+        de->inodeMaxCluster = 0;
      //   de->next = fs->root.next;
      //   de->prev = &fs->root;
         initsleeplock(&de->lock, "entry");
@@ -99,7 +130,7 @@ void initDirentCache() {
 
 int getFsStatus(char *path, FileSystemStatus *fss) {
     struct dirent *de;
-    if ((de = ename(AT_FDCWD, path)) == NULL) {
+    if ((de = ename(AT_FDCWD, path, true)) == NULL) {
         return -1;
     }
     FileSystem *fs = de->fileSystem;

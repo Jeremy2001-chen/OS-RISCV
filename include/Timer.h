@@ -11,10 +11,21 @@ void timerTick();
 #define SOFTWARE_TRAP 1
 #define UNKNOWN_DEVICE 0
 
-typedef struct TimeSpec {
+typedef struct TimeVal {
     u64 second;
     long microSecond;    
+} TimeVal;
+
+typedef struct TimeSpec {
+    u64 second;
+    long nanoSecond;    
 } TimeSpec;
+
+
+typedef struct IntervalTimer {
+    TimeSpec interval;
+    TimeSpec expiration;    
+} IntervalTimer;
 
 typedef struct CpuTimes {
     long user;
@@ -23,5 +34,8 @@ typedef struct CpuTimes {
     long deadChildrenKernel;
 } CpuTimes;
 
+
+void setTimer(IntervalTimer new);
+IntervalTimer getTimer();
 
 #endif

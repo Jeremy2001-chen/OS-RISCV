@@ -12,25 +12,24 @@ void testfat() {
     if (testfile == NULL) {
         panic("[testfat] create file error\n");
     }
-    MSG_PRINT("create file finish");
+    printf("create file finish\n");
     int ret = ewrite(testfile, 0, (u64)test_content_to_write, 0, 9);
     if (ret != 9) {
         panic("[testfat] write file error\n");
     }
 
-    MSG_PRINT("write file finish");
+    printf("write file finish\n");
     eunlock(testfile);
     eput(testfile);
-    MSG_PRINT("eput file finish");
-    testfile = ename(AT_FDCWD, "/testfile");
+    printf("eput file finish\n");
+    testfile = ename(AT_FDCWD, "/testfile", true);
     if (testfile == NULL) {
-        printf("[testfat] open file error\n");
+        panic("[testfat] open file error\n");
     }
-    DEC_PRINT(testfile->ref);
     eread(testfile, 0, (u64)test_content_to_read, 0, 9);
     if (strncmp(test_content_to_write, test_content_to_read, 114514)==0) {
         printf("[testfat]  testfat passed\n");
     } else {
-        printf("[testfat]  testfat failed\n");
+        panic("[testfat]  testfat failed\n");
     }
 }

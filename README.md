@@ -62,3 +62,18 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 * 查看磁盘镜像：`make mount` 将磁盘镜像 `fs.img` 挂载到 `/mnt` 上
 * 解除查看：`make umount` 取消挂载
 * 在 QEMU 上测试内核：`make run`，此命令在使用前需要先生成**磁盘镜像**
+
+## GDB 调试
+
+* 启动两个 `shell`
+* 一个 `shell` 执行 `make gdb`，等待通信
+* 另一个 `shell` 执行 `gdb-multiarch target/vmlinux.img` 加载符号表
+
+```shell
+(gdb) target extended-remote localhost:1234
+(gdb) add-inferior
+(gdb) inferior 2
+(gdb) attach 2
+(gdb) set schedule-multiple on
+(gdb) c
+```

@@ -11,6 +11,7 @@ void initLock(struct Spinlock* lock, char* name) {
 }
 
 void acquireLock(struct Spinlock* lock) {
+    return;
     interruptPush();
     if (holding(lock)) {
         panic("You have acquire the lock! The lock is %s\n", lock->name);
@@ -33,6 +34,7 @@ void acquireLock(struct Spinlock* lock) {
 }
 
 void releaseLock(struct Spinlock* lock) {
+    return;
     if (!holding(lock)) {
         panic("You have release the lock! The lock is %s\n", lock->name);
     }

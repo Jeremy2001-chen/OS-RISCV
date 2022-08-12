@@ -105,3 +105,85 @@ void snstr(char* dst, wchar const* src, int len) {
     while (len-- > 0)
         *dst++ = 0;
 }
+
+/*
+void* memmove(void* dst, const void* src, uint n) {
+    if (n == 0 || (u64)src == (u64)dst)
+        return dst;
+
+    const char* s, *f;
+    char* d;
+
+    s = src;
+    d = dst;
+    f = src + n;
+    if (s < d && s + n > d) {
+        s += n;
+        d += n;
+        while (n-- > 0)
+            *--d = *--s;
+    } else {
+        switch (LOWBIT(((u64)s) ^ ((u64)d))) {
+            case 1:
+                while (s < f)
+                    *d++ = *s++;
+                break;
+            case 2:
+                if (n < 2) {
+                    while (s < f)
+                        *d++ = *s++;
+                    break;
+                }
+                while (((u64)s & 1)) {
+                    *d++ = *s++;
+                }
+                while (s + 2 < f) {
+                    *(u16*)d = *(u16*)s;
+                    (u16*)d++;
+                    (u16*)s++;
+                }
+                while (s < f) {
+                    *d++ = *s++;
+                }
+                break;
+            case 4:
+                if (n < 4) {
+                    while (s < f)
+                        *d++ = *s++;
+                    break;
+                }
+                while (((u64)s & 3)) {
+                    *d++ = *s++;
+                }
+                while (s + 4 < f) {
+                    *(u32*)d = *(u32*)s;
+                    (u32*)d++;
+                    (u32*)s++;
+                }
+                while (s < f) {
+                    *d++ = *s++;
+                }
+                break;
+            default:
+                if (n < 8) {                
+                    while (s < f)
+                        *d++ = *s++;
+                    break;
+                }
+                while (((u64)s & 7)) {
+                    *d++ = *s++;
+                }
+                while (s + 8 < f) {
+                    *(u64*)d = *(u64*)s;
+                    (u64*)d++;
+                    (u64*)s++;
+                }
+                while (s < f) {
+                    *d++ = *s++;
+                }
+                break;
+        }
+    }
+    return dst;
+}
+*/

@@ -5,6 +5,8 @@
 
 static u32 ticks;
 
+IntervalTimer timer;
+
 void setNextTimeout() {
     SBI_CALL_1(SBI_SET_TIMER, r_realTime() + INTERVAL);
 }
@@ -12,4 +14,12 @@ void setNextTimeout() {
 void timerTick() {
     ticks++;
     setNextTimeout();
+}
+
+void setTimer(IntervalTimer new) {
+    timer = new;
+}
+
+IntervalTimer getTimer() {
+    return timer;
 }

@@ -6,15 +6,14 @@
 #define O_RDONLY  0x000
 #define O_WRONLY  0x001
 #define O_RDWR    0x002
-#define O_APPEND  0x004
-// #define O_CREATE  0x200
-#define O_CREATE  0x40
-#define O_TRUNC   0x400
+#define O_CREATE  0100
+#define O_APPEND  02000
+#define O_TRUNC   01000
 
 #define O_DIRECTORY 0x0200000
 
 #define NDEV 4
-#define NFILE 64 //Number of fd that all process can open
+#define NFILE 512 //Number of fd that all process can open
 
 typedef struct Socket Socket;
 typedef struct File {
@@ -48,9 +47,9 @@ struct File* filealloc(void);
 void fileclose(struct File*);
 struct File* filedup(struct File*);
 void fileinit(void);
-int fileread(struct File*, u64, int n);
+int fileread(struct File*, bool, u64, int n);
 int filestat(struct File*, u64 addr);
-int filewrite(struct File*, u64, int n);
+int filewrite(struct File*, bool, u64, int n);
 int dirnext(struct File* f, u64 addr);
 
 /* File types.  */

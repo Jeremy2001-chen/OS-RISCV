@@ -5,6 +5,7 @@
 #include "Type.h"
 #include "stat.h"
 #include "Timer.h"
+#include "Inode.h"
 
 #define ATTR_READ_ONLY 0x01
 #define ATTR_HIDDEN 0x02
@@ -25,7 +26,7 @@
 
 #define FAT32_MAX_FILENAME 255
 #define FAT32_MAX_PATH 260
-#define ENTRY_CACHE_NUM 50
+#define ENTRY_CACHE_NUM 4096
 
 typedef struct FileSystem FileSystem;
 struct superblock {
@@ -59,12 +60,14 @@ struct dirent {
     uint32 file_size;
 
     uint32 cur_clus;
+    u32 inodeMaxCluster;
     uint clus_cnt;
+    Inode inode;
 
     u8 _nt_res;
     FileSystem *fileSystem;
     /* for OS */
-    enum { ZERO = 10} dev;
+    enum { ZERO = 10, OSRELEASE=12, NONE=15 } dev;
     uint8 dirty;
     short valid;
     FileSystem *head;
@@ -75,6 +78,7 @@ struct dirent {
     // struct dirent* next;
     // struct dirent* prev;
     struct Sleeplock lock;
+    
 };
 
 struct entry_cache {
@@ -105,7 +109,7 @@ void estat(struct dirent* ep, struct stat* st);
 void elock(struct dirent* entry);
 void eunlock(struct dirent* entry);
 int enext(struct dirent* dp, struct dirent* ep, uint off, int* count);
-struct dirent* ename(int fd, char* path);
+struct dirent* ename(int fd, char* path, bool jump);
 struct dirent* enameparent(int fd, char* path, char* name);
 int eread(struct dirent* entry, int user_dst, u64 dst, uint off, uint n);
 int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n);

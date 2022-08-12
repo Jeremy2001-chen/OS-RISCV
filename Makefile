@@ -44,7 +44,7 @@ fat: $(user_dir)
 	@sudo umount $(dst)
 
 new-lib:
-	cd ../testsuits-for-oskernel/libc-test && make compile
+	cd ../SysY-compiler && riscv64-unknown-elf-g++ -static main.cpp -o my-gcc && cp my-gcc ../OS-RISCV/libc-test
 
 new: clean new-lib fat run
 

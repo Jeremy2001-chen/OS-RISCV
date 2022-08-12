@@ -38,20 +38,24 @@ void socketFree(Socket *s) {
 }
 
 int createSocket(int family, int type, int protocal) {
-    assert(family == 2);
+    printf("[%s] family %x type  %x protocal %x\n", __func__, family, type, protocal);
+    // assert(family == 2);
     File *f = filealloc();
     Socket *s;
     if (socketAlloc(&s) < 0) {
         panic("");
     }
     s->addr.family = family;
+    s->pending_h = s->pending_t = 0;
     f->socket = s;
     f->type = FD_SOCKET;
+    f->readable = f->writable = true;
     assert(f != NULL);
     return fdalloc(f);
 }
 
 int bindSocket(int fd, SocketAddr *sa) {
+    printf("[%s]  addr 0x%lx port 0x%lx \n",__func__, sa->addr, sa->port);
     File *f = myProcess()->ofile[fd];
     assert(f->type == FD_SOCKET);
     Socket *s = f->socket;
@@ -69,9 +73,11 @@ int getSocketName(int fd, u64 va) {
     return 0;
 }
 
-int sendTo(int fd, char *buf, u32 len, int flags, SocketAddr *dest) {
+int sendTo(Socket *sock, char *buf, u32 len, int flags, SocketAddr *dest) {
+    buf[len] = 0;
+    printf("[%s] addr 0x%x port 0x%x data %s\n", __func__, dest->addr, dest->port, buf);
     for (int i = 0; i < SOCKET_COUNT; i++) {
-        if (sockets[i].used && (sockets[i].addr.addr == dest->addr || sockets[i].addr.addr == 0)) {
+        if (sockets[i].used && (sockets[i].addr.port == dest->port/*sockets[i].addr.addr == dest->addr || sockets[i].addr.addr == 0*/)) {
             char *dst = (char*)(getSocketBufferBase(&sockets[i]) + (sockets[i].tail & (PAGE_SIZE - 1)));
             u32 num = MIN(PAGE_SIZE - (sockets[i].tail - sockets[i].head), len);
             int len1 = MIN(num, PAGE_SIZE - (sockets[i].tail & (PAGE_SIZE - 1)));
@@ -86,11 +92,9 @@ int sendTo(int fd, char *buf, u32 len, int flags, SocketAddr *dest) {
     return -1;
 }
 
-int receiveFrom(int fd, u64 buf, u32 len, int flags, u64 srcAddr) {
-    File *f = myProcess()->ofile[fd];
-    assert(f->type == FD_SOCKET);
-    Socket *s = f->socket;
+int receiveFrom(Socket *s, u64 buf, u32 len, int flags, u64 srcAddr) {
     char *src = (char*)(getSocketBufferBase(s) + (s->head & (PAGE_SIZE - 1)));
+    printf("[%s] data %s\n",__func__, src);
     u32 num = MIN(len, (s->tail - s->head));
     int len1 = MIN(num, PAGE_SIZE - (s->head & (PAGE_SIZE - 1)));
     copyout(myProcess()->pgdir, buf, src, len1);
@@ -99,4 +103,91 @@ int receiveFrom(int fd, u64 buf, u32 len, int flags, u64 srcAddr) {
     }
     s->head += num;
     return num;
+}
+
+int socket_read(Socket* sock, bool isUser, u64 addr, int n) {
+    assert(isUser == 1);
+    return receiveFrom(sock, addr, n, 0, 0);
+}
+int socket_write(Socket* sock, bool isUser, u64 addr, int n) {
+    static char buf[128];
+    either_copyin(buf, isUser, addr, n);
+    return sendTo(0, buf, n, 0, &sock->target_addr);
+}
+
+static Socket* remote_find_socket(const SocketAddr* addr) {
+    for (int i = 0; i < SOCKET_COUNT; ++i) {
+        if (sockets[i].used && /*sockets[i].addr.family == addr->family &&*/
+            sockets[i].addr.port == addr->port) {
+            return &sockets[i];
+        }
+    }
+    return NULL;
+}
+
+int accept(int sockfd, SocketAddr* addr) {
+    printf("[%s]] addr %lx port %x\n", __func__, addr->addr, addr->port);
+    File* f = myProcess()->ofile[sockfd];
+    assert(f->type == FD_SOCKET);
+    Socket* local_sock = f->socket;
+    *addr = local_sock->pending_queue[local_sock->pending_h++];
+
+    Socket* new_sock;
+    socketAlloc(&new_sock);
+    new_sock->addr = local_sock->addr;
+    new_sock->target_addr = *addr;
+
+    File* new_f = filealloc();
+    assert(new_f != NULL);
+    new_f->socket = local_sock;
+    new_f->type = FD_SOCKET;
+    new_f->readable = new_f->writable = true;
+
+/* ----------- process Remote Host --------- */
+
+    Socket * peer_sock = remote_find_socket(addr);
+    peer_sock -> target_addr  = local_sock->addr;
+    
+/* ----------- process Remote Host --------- */
+
+    return fdalloc(new_f);
+}
+
+
+static SocketAddr gen_local_socket_addr() {
+    static int local_addr = (127 << 24) + 1;
+    static int local_port = 10000;
+    SocketAddr addr;
+    addr.addr = local_addr;
+    addr.port = local_port++;
+    return addr;
+}
+
+/**
+ * @brief The connect() system call connects the socket referred to by the
+ * file descriptor sockfd to the address specified by addr. 
+ */
+int connect(int sockfd, const SocketAddr* addr) {
+    printf("[%s] fd %d addr %lx port %x\n", __func__, sockfd, addr->addr,
+           addr->port);
+    File* f = myProcess()->ofile[sockfd];
+    assert(f->type == FD_SOCKET);
+
+    Socket* local_sock = f->socket;
+    local_sock->addr = gen_local_socket_addr();
+    local_sock->target_addr = *addr;
+ 
+/* ----------- process Remote Host --------- */
+    Socket* target_socket = remote_find_socket(addr);
+    if (target_socket == NULL) {
+        printf("remote socket don't exists!");
+        return -1;
+    }
+    target_socket->pending_queue[target_socket->pending_t++] = local_sock->addr;
+
+/* ----------- process Remote Host --------- */
+
+
+
+    return 0;
 }

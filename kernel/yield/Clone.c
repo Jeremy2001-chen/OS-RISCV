@@ -14,10 +14,20 @@ int processFork() {
     }
     process = thread->process;
     process->cwd = current->cwd;
+    for (ProcessSegmentMap *psm = current->segmentMapHead; psm; psm = psm->next) {
+        ProcessSegmentMap *new;
+        if (segmentMapAlloc(&new) < 0) {
+            panic("");
+        }
+        *new = *psm;
+        appendSegmentMap(process, new);
+    }
     for (int i = 0; i < NOFILE; i++)
         if (current->ofile[i])
             process->ofile[i] = filedup(current->ofile[i]);
     process->priority = current->priority;
+    process->heapBottom = current->heapBottom;
+    assert(current->threadCount == 1);
     Trapframe* trapframe = getHartTrapFrame();
     bcopy(trapframe, &thread->trapframe, sizeof(Trapframe));
     thread->trapframe.a0 = 0;
@@ -38,7 +48,6 @@ int processFork() {
                     continue;
                 }
                 u64 va = (i << 30) + (j << 21) + (k << 12);
-                // printf("Fork va addr is %lx\n", va);
                 if (va == TRAMPOLINE_BASE || va == TRAMPOLINE_BASE + PAGE_SIZE) {
                     continue;
                 }
@@ -80,10 +89,10 @@ int threadFork(u64 stackVa, u64 ptid, u64 tls, u64 ctid) {
 }
 
 int clone(u32 flags, u64 stackVa, u64 ptid, u64 tls, u64 ctid) {
-    // printf("clone flags: %d\n", flags);
-    if (flags == PROCESS_FORK) {
-        return processFork();
-    } else {
+    // printf("clone flags: %lx\n", flags);
+    if (flags & CLONE_VM) {
         return threadFork(stackVa, ptid, tls, ctid);
+    } else {
+        return processFork();
     }
 }

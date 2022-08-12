@@ -152,14 +152,14 @@ static int sd_cmd16(void)
 	return rc;
 }
 
-static u16 crc16_round(u16 crc, u8 data) {
-	crc = (u8)(crc >> 8) | (crc << 8);
-	crc ^= data;
-	crc ^= (u8)(crc >> 4) & 0xf;
-	crc ^= crc << 12;
-	crc ^= (crc & 0xff) << 5;
-	return crc;
-}
+// static u16 crc16_round(u16 crc, u8 data) {
+// 	crc = (u8)(crc >> 8) | (crc << 8);
+// 	crc ^= data;
+// 	crc ^= (u8)(crc >> 4) & 0xf;
+// 	crc ^= crc << 12;
+// 	crc ^= (crc & 0xff) << 5;
+// 	return crc;
+// }
 
 #define SPIN_SHIFT	6
 #define SPIN_UPDATE(i)	(!((i) & ((1 << SPIN_SHIFT)-1)))
@@ -189,10 +189,8 @@ start:
 		return 1;
 	}
 	do {
-		u16 crc, crc_exp;
 		long n;
 
-		crc = 0;
 		n = 512;
 		timeout = MAX_TIMES;
 		while (--timeout) {
@@ -208,17 +206,10 @@ start:
 		do {
 			u8 x = sd_dummy();
 			*p++ = x;
-			crc = crc16_round(crc, x);
 		} while (--n > 0);
 
-		crc_exp = ((u16)sd_dummy() << 8);
-		crc_exp |= sd_dummy();
-
-		if (crc != crc_exp) {
-			printf("\b- CRC mismatch ");
-			rc = 1;
-			break;
-		}
+		sd_dummy();
+		sd_dummy();
 	} while (--tot > 0);
 	//sd_cmd_end();
 

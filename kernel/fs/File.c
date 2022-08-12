@@ -72,7 +72,7 @@ void fileclose(struct File* f) {
 
     // printf("FILECLOSE %x\n", ff.type);
     if (ff.type == FD_PIPE) {
-        pipeclose(ff.pipe, ff.writable);
+        pipeClose(ff.pipe, ff.writable);
     } else if (ff.type == FD_ENTRY) {
         eput(ff.ep);
     } else if (ff.type == FD_DEVICE) {
@@ -100,7 +100,7 @@ int filestat(struct File* f, u64 addr) {
 
 // Read from file f.
 // addr is a user virtual address.
-int fileread(struct File* f, u64 addr, int n) {
+int fileread(struct File* f, bool isUser, u64 addr, int n) {
     int r = 0;
 
     if (f->readable == 0)
@@ -108,18 +108,21 @@ int fileread(struct File* f, u64 addr, int n) {
 
     switch (f->type) {
         case FD_PIPE:
-            r = piperead(f->pipe, addr, n);
+            r = pipeRead(f->pipe, isUser, addr, n);
             break;
         case FD_DEVICE:
             if (f->major < 0 || f->major >= NDEV || !devsw[f->major].read)
                 return -1;
-            r = devsw[f->major].read(1, addr, 0, n);
+            r = devsw[f->major].read(isUser, addr, 0, n);
             break;
         case FD_ENTRY:
-            elock(f->ep);
-            if ((r = eread(f->ep, 1, addr, f->off, n)) > 0)
+            // elock(f->ep);
+            if ((r = eread(f->ep, isUser, addr, f->off, n)) > 0)
                 f->off += r;
-            eunlock(f->ep);
+            // eunlock(f->ep);
+            break;
+        case FD_SOCKET:
+            r = socket_read(f->socket, isUser, addr, n);
             break;
         default:
             panic("fileread");
@@ -130,28 +133,33 @@ int fileread(struct File* f, u64 addr, int n) {
 
 // Write to file f.
 // addr is a user virtual address.
-int filewrite(struct File* f, u64 addr, int n) {
+int filewrite(struct File* f, bool isUser, u64 addr, int n) {
     int ret = 0;
 
     if (f->writable == 0)
         return -1;
 
     if (f->type == FD_PIPE) {
-        ret = pipewrite(f->pipe, addr, n);
+        ret = pipeWrite(f->pipe, isUser, addr, n);
+        if (ret == 0) {
+            printf("%d %lx %d\n", isUser, addr, n);
+        }
         assert(ret != 0);
     } else if (f->type == FD_DEVICE) {
         if (f->major < 0 || f->major >= NDEV || !devsw[f->major].write)
             return -1;
-        ret = devsw[f->major].write(1, addr, 0, n);
+        ret = devsw[f->major].write(isUser, addr, 0, n);
     } else if (f->type == FD_ENTRY) {
-        elock(f->ep);
-        if (ewrite(f->ep, 1, addr, f->off, n) == n) {
+        // elock(f->ep);
+        if (ewrite(f->ep, isUser, addr, f->off, n) == n) {
             ret = n;
             f->off += n;
         } else {
             ret = -1;
         }
-        eunlock(f->ep);
+        // eunlock(f->ep);
+    } else if (f->type == FD_SOCKET) {
+        ret = socket_write(f->socket, isUser, addr, n);
     } else {
         panic("filewrite");
     }
@@ -189,6 +197,7 @@ int dirnext(struct File* f, u64 addr) {
 }
 
 u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
+    // printf("domap: fd: %d, start: %lx, len: %lx, perm: %lx, flags: %lx, off: %lx\n", fd, start, len, perm, flags, off);
     bool alloc = (start == 0);
     if (alloc) {
         myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom, PAGE_SIZE);
@@ -196,18 +205,20 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
         myProcess()->heapBottom = UP_ALIGN(myProcess()->heapBottom + len, PAGE_SIZE);
     }
     u64 addr = start, end = start + len;
-    start = DOWN_ALIGN(start, 12);
+    start = DOWN_ALIGN(start, PAGE_SIZE);
     while (start < end) {
         u64* pte;
         u64 pa = pageLookup(myProcess()->pgdir, start, &pte);
         if (pa > 0 && (*pte & PTE_COW)) {
             cowHandler(myProcess()->pgdir, start);
         }
-        PhysicalPage* page;
-        if (pageAlloc(&page) < 0) {
-            return -1;
+        if (pa == 0) {
+            PhysicalPage* page;
+            if (pageAlloc(&page) < 0) {
+                return -1;
+            }
+            pageInsert(myProcess()->pgdir, start, page2pa(page), perm | PTE_USER);
         }
-        pageInsert(myProcess()->pgdir, start, page2pa(page), perm | PTE_USER | PTE_READ | PTE_WRITE | PTE_EXECUTE);
         start += PGSIZE;
     }
 
@@ -217,7 +228,7 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
     /* if fd == NULL, we think this is a anonymous map */
     if (fd != NULL) {
         fd->off = off;
-        if (fileread(fd, addr, len)) {
+        if (fileread(fd, true, addr, len) >= 0) {
             return addr;
         } else {
             return -1;

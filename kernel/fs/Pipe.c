@@ -9,21 +9,37 @@
 #include "string.h"
 #include "Riscv.h"
 
-int pipealloc(struct File** f0, struct File** f1) {
+struct pipe pipeBuffer[MAX_PIPE];
+u64 pipeBitMap[MAX_PIPE / 64];
+
+int pipeAlloc(struct pipe** p) {
+    for (int i = 0; i < MAX_PIPE / 64; i++) {
+        if (~pipeBitMap[i]) {
+            int bit = LOW_BIT64(~pipeBitMap[i]);
+            pipeBitMap[i] |= (1UL << bit);
+            *p = &pipeBuffer[(i << 6) | bit];
+            (*p)->nread = (*p)->nwrite = 0;
+            return 0;
+        }
+    }
+    panic("no pipe!");
+}
+
+void pipeFree(struct pipe* p) {
+    int off = p - pipeBuffer;
+    pipeBitMap[off >> 6] &= ~(1UL << (off & 63));
+}
+
+int pipeNew(struct File** f0, struct File** f1) {
     struct pipe* pi;
 
     pi = 0;
     *f0 = *f1 = 0;
     if ((*f0 = filealloc()) == 0 || (*f1 = filealloc()) == 0)
         goto bad;
-    PhysicalPage* pp = NULL;
-    if (pageAlloc(&pp) != 0)
-        goto bad;
-    pi = (struct pipe*)page2pa(pp);
+    pipeAlloc(&pi);
     pi->readopen = 1;
     pi->writeopen = 1;
-    pi->nwrite = 0;
-    pi->nread = 0;
     initLock(&pi->lock, "pipe");
     (*f0)->type = FD_PIPE;
     (*f0)->readable = 1;
@@ -36,8 +52,6 @@ int pipealloc(struct File** f0, struct File** f1) {
     return 0;
 
 bad:
-    if (pi)
-        pageFree(pa2page((u64)pi));
     if (*f0)
         fileclose(*f0);
     if (*f1)
@@ -45,7 +59,7 @@ bad:
     return -1;
 }
 
-void pipeclose(struct pipe* pi, int writable) {
+void pipeClose(struct pipe* pi, int writable) {
     acquireLock(&pi->lock);
     // printf("%x %x %x\n", pi->writeopen, pi->readopen, writable);
     if (writable) {
@@ -57,71 +71,140 @@ void pipeclose(struct pipe* pi, int writable) {
     }
     if (pi->readopen == 0 && pi->writeopen == 0) {
         releaseLock(&pi->lock);
-        pageFree(pa2page((u64)pi));
+        pipeFree(pi);
     } else
         releaseLock(&pi->lock);
 }
 
-int pipewrite(struct pipe* pi, u64 addr, int n) {
-    int i = 0;
-    struct Process* pr = myProcess();
+void pipeOut(bool isUser, u64 dstva, char* src);
+void pipeIn(bool isUser, char* dst, u64 srcva);
 
-    // printf("%d WWWW pipe addr %x\n", r_hartid(), pi);
+int pipeWrite(struct pipe* pi, bool isUser, u64 addr, int n) {
+    int i = 0, cow;
+    
+    u64* pageTable = myProcess()->pgdir;
+    u64 pa = addr;
+    if (isUser) {
+        pa = vir2phy(pageTable, addr, &cow);
+        if (pa == NULL) {
+            cow = 0;
+            pa = pageout(pageTable, addr);
+        }
+        if (cow) {
+            cowHandler(pageTable, addr);
+            pa = vir2phy(pageTable, addr, NULL);
+        }
+    }
+
     acquireLock(&pi->lock);
     while (i < n) {
-        // printf("hart id %x, now write %d, to %d, %d\n", r_hartid(), i, n, pi->readopen);
         if (pi->readopen == 0 /*|| pr->killed*/) {
             releaseLock(&pi->lock);
+            panic("");
             return -1;
         }
         if (pi->nwrite == pi->nread + PIPESIZE) {  // DOC: pipewrite-full
             wakeup(&pi->nread);
-            // printf("Write %x Sleep? Now %x for %x, start %x, end %x, ask for %x\n", r_hartid(), i, n, pi->nread, pi->nwrite, &pi->nwrite);
             sleep(&pi->nwrite, &pi->lock);
-            // printf("Write %x Stop sleep\n", r_hartid());
         } else {
-            // printf("%d %d\n", i, n);
             char ch;
-            if (copyin(pr->pgdir, &ch, addr + i, 1) == -1)
-                break;
-            pi->data[pi->nwrite++ % PIPESIZE] = ch;
+            // if (either_copyin(&ch, isUser, addr + i, 1) == -1) {
+            //     break;
+            // }
+            // pipeIn(isUser, &ch, addr + i);
+            ch = *((char*)pa);
+            pi->data[(pi->nwrite++) & (PIPESIZE - 1)] = ch;
             i++;
+            if (isUser && (!((addr + i) & (PAGE_SIZE - 1)))) {
+                pa = vir2phy(pageTable, addr + i, &cow);
+                if (pa == NULL) {
+                    cow = 0;
+                    pa = pageout(pageTable, addr + i);
+                }
+                if (cow) {
+                    cowHandler(pageTable, addr);
+                    pa = vir2phy(pageTable, addr, NULL);
+                }
+            } else {
+                pa++;
+            }
         }
     }
     wakeup(&pi->nread);
-    // printf("%d %d\n", pi->nread, pi->nwrite);
+    releaseLock(&pi->lock);
+    assert(i != 0);
+    return i;
+}
+
+int pipeRead(struct pipe* pi, bool isUser, u64 addr, int n) {
+    int i;
+    char ch;
+    u64* pageTable = myProcess()->pgdir;
+    u64 pa = addr;
+    if (isUser) {
+        pa = vir2phy(pageTable, addr, NULL);
+        if (pa == NULL) {
+            pa = pageout(pageTable, addr);
+        }
+    }
+
+    acquireLock(&pi->lock);
+    while (pi->nread == pi->nwrite && pi->writeopen) {  // DOC: pipe-empty
+        sleep(&pi->nread, &pi->lock);  // DOC: piperead-sleep
+    }
+    for (i = 0; i < n;) {  // DOC: piperead-copy
+        if (pi->nread == pi->nwrite) {
+            break;
+        }
+        ch = pi->data[(pi->nread++) & (PIPESIZE - 1)];
+        *((char*)pa) = ch;
+        i++;
+        if (isUser && (!((addr + i) & (PAGE_SIZE - 1)))) {
+            pa = vir2phy(pageTable, addr + i, NULL);
+            if (pa == NULL) {
+                pa = pageout(pageTable, addr + i);
+            }
+        } else {
+            pa++;
+        }
+        // if (either_copyout(isUser, addr + i, &ch, 1) == -1) {
+        //     break;
+        // }
+        // pipeOut(isUser, addr + i, &ch);
+    }
+    wakeup(&pi->nwrite);  // DOC: piperead-wakeup
     releaseLock(&pi->lock);
     return i;
 }
 
-int piperead(struct pipe* pi, u64 addr, int n) {
-    int i;
-    struct Process* pr = myProcess();
-    char ch;
+void pipeOut(bool isUser, u64 dstva, char* src) {
+    if (!isUser) {
+        *((char*)dstva) = *src;
+        return;
+    }
+    u64* pageTable = myProcess()->pgdir;
+    int cow;
+    u64 pa = vir2phy(pageTable, dstva, &cow);
+    if (pa == NULL) {
+        cow = 0;
+        pa = pageout(pageTable, dstva);
+    }
+    if (cow) {
+        cowHandler(pageTable, dstva);
+        pa = vir2phy(pageTable, dstva, &cow);
+    }
+    *((char*)pa) = *src;
+}
 
-    // printf("%d RRRR pipe addr %x\n", r_hartid(), pi);
-    acquireLock(&pi->lock);
-    while (pi->nread == pi->nwrite && pi->writeopen) {  // DOC: pipe-empty
-        if (0 /*pr->killed*/) {
-            releaseLock(&pi->lock);
-            return -1;
-        }
-        // printf("Read %x Sleep?\n", r_hartid());
-        sleep(&pi->nread, &pi->lock);  // DOC: piperead-sleep
-        // printf("Read %x Stop sleep\n", r_hartid());
+void pipeIn(bool isUser, char* dst, u64 srcva) {
+    if (!isUser) {
+        *dst = *((char*)srcva);
+        return;
     }
-    for (i = 0; i < n; i++) {  // DOC: piperead-copy
-        if (pi->nread == pi->nwrite)
-            break;
-        // printf("hart id %x, now read %d\n", r_hartid(), i);
-        ch = pi->data[pi->nread++ % PIPESIZE];
-        // printf("%x %x\n", r_hartid(), ch);
-        if (copyout(pr->pgdir, addr + i, &ch, 1) == -1) {
-            break;
-        }
+    u64* pageTable = myProcess()->pgdir;
+    u64 pa = vir2phy(pageTable, srcva, NULL);
+    if (pa == NULL) {
+        pa = pageout(pageTable, srcva);
     }
-    // printf("%x wake up %x, start %x, end %x\n", r_hartid(), &pi->nwrite, pi->nread, pi->nwrite);
-    wakeup(&pi->nwrite);  // DOC: piperead-wakeup
-    releaseLock(&pi->lock);
-    return i;
+    *dst = *((char*)pa);
 }

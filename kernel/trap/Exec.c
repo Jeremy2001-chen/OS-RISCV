@@ -20,59 +20,36 @@
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
 
-static int loadSegment(u64* pagetable, u64 va, u64 segmentSize, struct dirent* de, u32 fileOffset, u32 binSize) {
-    u64 offset = va - DOWN_ALIGN(va, PAGE_SIZE);
-    PhysicalPage* page = NULL;
-    u64* entry;
-    u64 i;
-    int r = 0;    
-    if (offset > 0) {
-        page = pa2page(pageLookup(pagetable, va, &entry));
-        if (page == NULL) {
-            if (pageAlloc(&page) < 0) {
-                printf("load segment error when we need to alloc a page!\n");
-            }
-            pageInsert(pagetable, va, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
-        }
-        r = MIN(binSize, PAGE_SIZE - offset);
-        if (eread(de, 0, page2pa(page) + offset, fileOffset, r) != r) {
-            panic("load segment error when eread on offset\n");
+ProcessSegmentMap segmentMaps[SEGMENT_MAP_NUMBER];
+u64 segmentMapBitmap[SEGMENT_MAP_NUMBER / 64];
+int segmentMapAlloc(ProcessSegmentMap **psm) {
+    for (int i = 0; i < SEGMENT_MAP_NUMBER / 64; i++) {
+        if (~segmentMapBitmap[i]) {
+            int bit = LOW_BIT64(~segmentMapBitmap[i]);
+            segmentMapBitmap[i] |= (1UL << bit);
+            *psm = &segmentMaps[(i << 6) | bit];
+            return 0;
         }
     }
+    panic("");
+}
 
-    for (i = r; i < binSize; i += r) {
-        if (pageAlloc(&page) != 0) {
-            panic("load segment error when we need to alloc a page 1!\n");
-        }
-        pageInsert(pagetable, va + i, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
-        r = MIN(PAGE_SIZE, binSize - i);
-        if (eread(de, 0, page2pa(page), fileOffset + i, r) != r) {
-            panic("load segment error when eread on offset 1\n");
-        }
-    }
+void appendSegmentMap(Process *p, ProcessSegmentMap *psm) {
+    psm->next = p->segmentMapHead;
+    p->segmentMapHead = psm;
+}
 
-    offset = va + i - DOWN_ALIGN(va + i, PAGE_SIZE);
-    if (offset > 0) {
-        page = pa2page(pageLookup(pagetable, va + i, &entry));
-        if (page == NULL) {
-            if (pageAlloc(&page) != 0) {
-                panic("load segment error when we need to alloc a page 2!\n");
-            }
-            pageInsert(pagetable, va + i, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
-        }
-        r = MIN(segmentSize - i, PAGE_SIZE - offset);
-        bzero((void*)page2pa(page) + offset, r);
-    }
+void segmentMapFree(ProcessSegmentMap *psm) {
+    int off = psm - segmentMaps;
+    segmentMapBitmap[off >> 6] &= ~(1UL << (off & 63));
+    return;
+}
 
-    for (i += r; i < segmentSize; i += r) {
-        if (pageAlloc(&page) != 0) {
-            panic("load segment error when we need to alloc a page 3!\n");
-        }
-        pageInsert(pagetable, va + i, page2pa(page), PTE_EXECUTE | PTE_READ | PTE_WRITE | PTE_USER);
-        r = MIN(PAGE_SIZE, segmentSize - i);
-        bzero((void*)page2pa(page), r);
+void processMapFree(Process *p) {
+    for (ProcessSegmentMap *psm = p->segmentMapHead; psm; psm = psm->next) {
+        segmentMapFree(psm);
     }
-    return 0;
+    p->segmentMapHead = NULL;
 }
 
 /* for compat with linux interface */
@@ -272,10 +249,47 @@ out:
 	return error;
 }
 
+int exec(char* path, char** argv);
+/* sizeof(linux_binprm->buf) */
+#define BINPRM_BUF_SIZE 128
+int load_script(char* bprmbuf, char* path, char** argv) {
+    char *cp, *i_name, *i_arg;
+    if ((cp = strchr(bprmbuf, '\n')) == NULL)
+        cp = bprmbuf + strlen(bprmbuf);
+    *cp = '\0';
+    while (cp > bprmbuf) {
+        cp--;
+        if ((*cp == ' ') || (*cp == '\t'))
+            *cp = '\0';
+        else
+            break;
+    }
+    for (cp = bprmbuf + 2; (*cp == ' ') || (*cp == '\t'); cp++)
+        ;
+    if (*cp == '\0')
+        return -ENOEXEC; /* No interpreter name found */
+    i_name = cp;
+    i_arg = NULL;
+    for (; *cp && (*cp != ' ') && (*cp != '\t'); cp++)
+        /* nothing */;
+    while ((*cp == ' ') || (*cp == '\t'))
+        *cp++ = '\0';
+    if (*cp)
+        i_arg = cp;
+
+    char* script_argv[MAXARG] = {0};
+    int script_argc = 0;
+    script_argv[script_argc++] = i_name;
+    if (i_arg) {
+        script_argv[script_argc++] = i_arg;
+    }
+    while (*argv) {
+        script_argv[script_argc++] = *(argv++);
+    }
+    return exec(i_name, script_argv);
+}
 
 int exec(char* path, char** argv) {
-    MSG_PRINT("in exec");    
-    STR_PRINT(path);
     // char **s = argv;
 
     // while(*s)
@@ -290,14 +304,27 @@ int exec(char* path, char** argv) {
     Phdr ph;
     u64 *pagetable = 0, *old_pagetable = 0;
     Process* p = myProcess();
+    processMapFree(p);
     u64* oldpagetable = p->pgdir;
     u64 phdr_addr = 0; // virtual address in user space, point to the program header. We will pass 'phdr_addr' to ld.so
 
-    if ((de = ename(AT_FDCWD, path)) == 0) {
+    if ((de = ename(AT_FDCWD, path, true)) == 0) {
         MSG_PRINT("find file error\n");
         return -1;
     }
     elock(de);
+
+/* ========== check executable format (script or elf) =========== */
+
+    char bprmbuf[BINPRM_BUF_SIZE];
+    memset(bprmbuf, 0, sizeof(bprmbuf));
+    eread(de, 0, (u64)bprmbuf, 0, BINPRM_BUF_SIZE - 1);
+    if (bprmbuf[0] == '#' && bprmbuf[1] == '!') {
+        eunlock(de);
+        eput(de);
+        return load_script(bprmbuf, path, argv);
+    }
+
     PhysicalPage *page;
     int r = allocPgdir(&page);
     if (r < 0) {
@@ -339,6 +366,7 @@ int exec(char* path, char** argv) {
         MSG_PRINT("not elf format\n");
         goto bad;
     }
+    p->execFile = de;
 
     MSG_PRINT("begin map");
 
@@ -352,8 +380,25 @@ int exec(char* path, char** argv) {
             continue;
         if (ph.memsz < ph.filesz)
             goto bad;
-        if (loadSegment(pagetable, ph.vaddr, ph.memsz, de, ph.offset, ph.filesz) < 0)
-            goto bad;
+        ProcessSegmentMap *psm;
+        if (ph.filesz > 0) {
+            segmentMapAlloc(&psm);
+            psm->sourceFile = de;
+            psm->va = ph.vaddr;
+            psm->fileOffset = ph.offset;
+            psm->len = ph.filesz;
+            psm->flag = PTE_EXECUTE | PTE_READ | PTE_WRITE;
+            appendSegmentMap(p, psm);
+        }
+        if (ph.memsz > ph.filesz) {
+            segmentMapAlloc(&psm);
+            psm->sourceFile = NULL;
+            psm->va = ph.vaddr + ph.filesz;
+            psm->fileOffset = 0;
+            psm->len = ph.memsz - ph.filesz;
+            psm->flag = PTE_READ | PTE_WRITE | MAP_ZERO;
+            appendSegmentMap(p, psm);
+        }
 		/*
 		 * Figure out which segment in the file contains the Program
 		 * Header table, and map to the associated memory address.
@@ -398,7 +443,7 @@ int exec(char* path, char** argv) {
         if (elf_interpreter[ph.filesz - 1] != '\0')
             panic("interpreter path is not NULL terminated");
 
-        interpreter = ename(AT_FDCWD, elf_interpreter);
+        interpreter = ename(AT_FDCWD, elf_interpreter, true);
 
         // kfree(elf_interpreter);
         if (interpreter == NULL)
@@ -435,10 +480,6 @@ int exec(char* path, char** argv) {
 #endif
 /* ============ End of find and load interpreter ============== */
 
-    eunlock(de);
-    eput(de);
-    de = 0;
-
     p = myProcess();
     sp = USER_STACK_TOP;
     stackbase = sp - PGSIZE;
@@ -465,8 +506,8 @@ int exec(char* path, char** argv) {
     ustack[0] = argc;
     ustack[argc + 1] = 0;
 
-    int envCount = 1;
-    char *envVariable[1] = {"LD_LIBRARY_PATH=/"};
+    char *envVariable[] = {"LD_LIBRARY_PATH=/", "PATH=/", /*"LOOP_O=100", "TIMING_O=100", "ENOUGH=100"*/};
+    int envCount = sizeof(envVariable) / sizeof(char*);
     for (i = 0; i < envCount; i++) {
         sp -= strlen(envVariable[i]) + 1;
         sp -= sp % 16;  // riscv sp must be 16-byte aligned
@@ -587,11 +628,29 @@ int exec(char* path, char** argv) {
 
     getHartTrapFrame()->epc = elf_entry;  // initial program counter = main
     getHartTrapFrame()->sp = sp;          // initial stack pointer
-
+    
+    
+    char buf[FAT32_MAX_PATH];
+    r = getAbsolutePath(de, false, (u64)buf, sizeof(buf));
+    if (r) {
+        panic("");
+    }
+    eunlock(de);
+    eput(de);
+    de = ename(AT_FDCWD, "/proc/self/exe", false);
+    if (!de) {
+        panic("");
+    }
+    r = ewrite(de, false, (u64)buf, 0, strlen(buf) + 1);
+    if (r < 0) {
+        panic("");
+    }
+    myThread()->clearChildTid = 0;
     //free old pagetable
     pgdirFree(oldpagetable);
     asm volatile("fence.i");
-    return argc;  // this ends up in a0, the first argument to main(argc, argv)
+    // printf("[exec]exec finish %s\n", path);
+    return 0;  // this ends up in a0, the first argument to main(argc, argv)
 
 bad:
     p->pgdir = old_pagetable;

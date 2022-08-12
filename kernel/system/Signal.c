@@ -38,7 +38,8 @@ int signalContextAlloc(SignalContext **signalContext) {
     return -1;
 }
 
-int signalSend(int tid, int sig) {
+int signalSend(int tgid, int tid, int sig) {
+/* if tgid != 0, we will check if tid is belong to tgid. tgid is the same as processId */
     if (tid == -1) {
         panic("thread to group not support!\n");
     }
@@ -47,6 +48,10 @@ int signalSend(int tid, int sig) {
     if (r < 0) {
         panic("");
         return -EINVAL;
+    }
+    if (tgid != 0 && thread->process->processId != tgid) {
+        // 线程所属的线程组（进程）与tgid不相等
+        return -ESRCH; // tid所代表的线程已经结束了
     }
     // if (!LIST_EMPTY(&thread->waitingSignal)) {
     //     // dangerous
@@ -59,9 +64,30 @@ int signalSend(int tid, int sig) {
     }
     acquireLock(&thread->lock);
     sc->signal = sig;
+    if (sig == SIGKILL) {
+        thread->state = RUNNABLE;
+    }
     LIST_INSERT_HEAD(&thread->waitingSignal, sc, link);
     releaseLock(&thread->lock);
     return 0;
+}
+
+int processSignalSend(int pid, int sig) {
+    extern Thread threads[];
+    int ret = -ESRCH;
+    for (int i = 0; i < PROCESS_TOTAL_NUMBER; i++) {
+        acquireLock(&threads[i].lock);
+        if (threads[i].state != UNUSED) {
+            if (pid == 0 || pid == -1 || pid == threads[i].process->processId) {
+                releaseLock(&threads[i].lock);
+                ret = signalSend(0, threads[i].id, sig);
+                ret = ret == 0 ? 0 : ret;
+                continue;
+            }
+        }
+        releaseLock(&threads[i].lock);
+    }
+    return ret;
 }
 
 int signProccessMask(u64 how, SignalSet *newSet) {
@@ -69,14 +95,12 @@ int signProccessMask(u64 how, SignalSet *newSet) {
     switch (how) {
     case SIG_BLOCK:
         th->blocked.signal[0] |= newSet->signal[0];
-        th->blocked.signal[1] |= newSet->signal[1];
         return 0;
     case SIG_UNBLOCK:
         th->blocked.signal[0] &= ~(newSet->signal[0]);
-        th->blocked.signal[1] &= ~(newSet->signal[1]);
         return 0;
     case SIG_SETMASK:
-        th->blocked = *newSet;
+        th->blocked.signal[0] = newSet->signal[0];
         return 0;
     default:
         return -1;
@@ -124,6 +148,21 @@ SignalContext* getHandlingSignal(Thread* thread) {
     return sc;
 }
 
+bool hasKillSignal(Thread* thread) {
+    SignalContext* sc = NULL;
+    acquireLock(&thread->lock);
+    bool find = false;
+    LIST_FOREACH(sc, &thread->waitingSignal, link) {
+        if (sc->signal == SIGKILL) {
+            find = true;
+            break;
+        }
+    }
+    releaseLock(&thread->lock);
+    return find;
+}
+
+
 void initFrame(SignalContext* sc, Thread* thread) {
     Trapframe* tf = getHartTrapFrame();
     u64 sp = DOWN_ALIGN(tf->sp - PAGE_SIZE, PAGE_SIZE);
@@ -168,14 +207,12 @@ void handleSignal(Thread* thread) {
         if (sc == NULL) {
             return;
         }
-        if (sc->start) {
+        if (hasKillSignal(thread)) {
+            threadDestroy(thread);
             return;
         }
-        switch (sc->signal) {
-            case SIGQUIT:
-            case SIGKILL:
-                threadDestroy(thread);
-                return;
+        if (sc->start) {
+            return;
         }
         SignalAction *sa = getSignalHandler(thread->process) + (sc->signal - 1);
         if (sa->handler == NULL) {
@@ -197,7 +234,7 @@ void handleSignal(Thread* thread) {
 int doSignalTimedWait(SignalSet *which, SignalInfo *info, TimeSpec *ts) {
     Thread* thread = myThread();
     // if (ts) {
-    //     thread->awakeTime = r_time() +  ts->second * 1000000 + ts->microSecond;
+    //     thread->awakeTime = r_time() +  ts->second * 1000000 + ts->nanoSecond / 1000;
     // }
     SignalContext *sc = getFirstSignalContext(thread);
     return sc == NULL ? 0 : sc->signal;    

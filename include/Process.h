@@ -9,8 +9,9 @@
 #include <file.h>
 #include <Signal.h>
 #include <Resource.h>
+#include <exec.h>
 
-#define NOFILE 128  //Number of fds that a process can open
+#define NOFILE 1024  //Number of fds that a process can open
 #define LOG_PROCESS_NUM 10
 #define PROCESS_TOTAL_NUMBER (1 << LOG_PROCESS_NUM)
 #define PROCESS_OFFSET(processId) ((processId) & (PROCESS_TOTAL_NUMBER - 1))
@@ -56,6 +57,7 @@ typedef struct Process {
     // int reason;
     u32 retValue;
     u64 heapBottom;
+    struct dirent *execFile;
     struct dirent *cwd;
     // SignalSet blocked;
     // SignalSet pending;
@@ -63,6 +65,7 @@ typedef struct Process {
     // u64 clearChildTid;
     int threadCount;
     struct ResourceLimit fileDescription;
+    ProcessSegmentMap *segmentMapHead;
 } Process;
 
 LIST_HEAD(ProcessList, Process);
@@ -108,7 +111,7 @@ int pid2Process(u32 processId, struct Process **process, int checkPerm);
 int either_copyout(int user_dst, u64 dst, void* src, u64 len);
 int either_copyin(void* dst, int user_src, u64 src, u64 len);
 int either_memset(bool user, u64 dst, u8 value, u64 len);
-int wait(int, u64);
+int wait(int, u64, int);
 int setup(Process *p);
 void kernelProcessCpuTimeBegin(void);
 void kernelProcessCpuTimeEnd(void);

@@ -46,14 +46,19 @@ void syscallWriteVector(void);
 void syscallReadVector(void);
 void syscallPRead();
 void syscallUtimensat();
+void syscallSendFile();
+void syscallAccess();
+void syscallRenameAt(void);
+void syscallReadLinkAt(void);
+void syscallUmask(void);
+void syscallFileSychornize();
+void syscallOpen(void);
 
 int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen);
 
 u64 sys_remove(void);
-// Must hold too many locks at a time! It's possible to raise a deadlock.
-// Because this op takes some steps, we can't promise
-u64 sys_rename(void);
 int do_linkat(int oldDirFd, char* oldPath, int newDirFd, char* newPath);
+int do_unlinkat(int fd, char* path);
 
 #define AT_FDCWD -100
 

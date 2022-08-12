@@ -14,6 +14,7 @@
 #include <Signal.h>
 #include <Thread.h>
 #include <Sysfile.h>
+#include <Wait.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
 static struct ProcessList freeProcesses;
@@ -21,15 +22,13 @@ static struct ProcessList freeProcesses;
 struct Spinlock freeProcessesLock, processIdLock, waitLock, currentProcessLock;
 
 Process* myProcess() {
-    interruptPush();
-    Thread* thread = myThread();
-    if (thread == NULL) {
-        interruptPop();
+    // interruptPush();
+    if (myThread() == NULL) {
+        // interruptPop();
         return NULL;
     }
-    Process* ret = thread->process;
-    interruptPop();
-    return ret;
+    // interruptPop();
+    return myThread()->process;
 }
 
 SignalAction *getSignalHandler(Process* p) {
@@ -77,6 +76,7 @@ void processFree(Process *p) {
             p->ofile[fd] = 0;
         }
     }
+    processMapFree(p);
     kernelProcessCpuTimeEnd();
     if (p->parentId > 0) {
         Process* parentProcess;
@@ -119,7 +119,6 @@ int pid2Process(u32 processId, struct Process **process, int checkPerm) {
     return 0;
 }
 
-extern FileSystem rootFileSystem;
 extern void userVector();
 int processSetup(Process *p) {
     int r;
@@ -135,7 +134,11 @@ int processSetup(Process *p) {
     p->state = UNUSED;
     p->parentId = 0;
     p->heapBottom = USER_HEAP_BOTTOM;
-    p->cwd = &rootFileSystem.root;
+    extern FileSystem *rootFileSystem;
+    if (rootFileSystem == NULL) {
+        fsAlloc(&rootFileSystem);
+    }
+    p->cwd = &rootFileSystem->root;
     p->fileDescription.hard = p->fileDescription.soft = NOFILE;
 
     extern char trampoline[];
@@ -264,7 +267,7 @@ static inline void updateAncestorsCpuTime(Process *p) {
     }
 }
 
-int wait(int targetProcessId, u64 addr) {
+int wait(int targetProcessId, u64 addr, int flags) {
     Process* p = myProcess();
     int haveChildProcess, pid;
 
@@ -275,7 +278,7 @@ int wait(int targetProcessId, u64 addr) {
         for (int i = 0; i < PROCESS_TOTAL_NUMBER; ++i) {
             Process* np = &processes[i];
             acquireLock(&np->lock);
-            if (np->parentId == p->processId) {
+            if (np->state != UNUSED && np->parentId == p->processId) {
                 haveChildProcess = 1;
                 if ((targetProcessId == -1 || np->processId == targetProcessId) && np->state == ZOMBIE) {
                     pid = np->processId;
@@ -303,6 +306,10 @@ int wait(int targetProcessId, u64 addr) {
             return -1;
         }
 
+        if (flags == WNOHANG) {
+            releaseLock(&waitLock);
+            return 0;    
+        }
         // printf("[WAIT]porcess id %x wait for %x\n", p->id, p);
         sleep(p, &waitLock);
     }

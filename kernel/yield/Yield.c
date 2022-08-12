@@ -19,7 +19,7 @@ void yield() {
     struct Thread* thread = myThread(); 
     acquireLock(&scheduleListLock);
     if (thread && thread->state == RUNNING) {
-        if(thread->reason==KERNEL_GIVE_UP){
+        if (thread->reason & KERNEL_GIVE_UP) {
             bcopy(getHartTrapFrame(), &thread->trapframe, sizeof(Trapframe));
         }
         thread->state = RUNNABLE;

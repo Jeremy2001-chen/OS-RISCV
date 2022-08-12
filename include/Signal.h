@@ -8,39 +8,30 @@
 
 // Don't include Thread.h!!!!
 
-#define SIGNAL_COUNT 1024
+#define SIGNAL_COUNT 128
 typedef struct SignalSet {
-    u64 signal[128 / sizeof(u64)];
+    u64 signal[SIGNAL_COUNT / sizeof(u64)];
 } SignalSet;
 
 inline static bool signalSetAnd(int signal, SignalSet *ss) {
-    if (signal > 128) {
+    if (signal > 64) {
         panic("");
     }
-    if (signal <= 64) {
-        return (ss->signal[0] & (1UL << (signal - 1))) != 0;
-    }
-    return (ss->signal[1] & (1UL << (signal - 65))) != 0;
+    return (ss->signal[0] & (1UL << (signal - 1))) != 0;
 }
 
 inline static void signalProcessStart(int signal, SignalSet *ss) {
-    if (signal > 128) {
+    if (signal > 64) {
         panic("");
     }
-    if (signal <= 64) {
-        ss->signal[0] |= (1UL << (signal - 1));
-    }
-    ss->signal[1] |= (1UL << (signal - 65));
+    ss->signal[0] |= (1UL << (signal - 1));
 }
 
 inline static void signalProcessEnd(int signal, SignalSet *ss) {
-    if (signal > 128) {
+    if (signal > 64) {
         panic("");
     }
-    if (signal <= 64) {
-        ss->signal[0] &= ~(1UL << (signal - 1));
-    }
-    ss->signal[1] &= ~(1UL << (signal - 65));
+    ss->signal[0] &= ~(1UL << (signal - 1));
 }
 
 typedef struct SignalInfo {
@@ -129,11 +120,12 @@ typedef struct SignalContext SignalContext;
 typedef struct Thread Thread;
 LIST_HEAD(SignalContextList, SignalContext);
 
-#define SIGNAL_CONTEXT_COUNT (1024)
+#define SIGNAL_CONTEXT_COUNT (4096)
 void signalInit();
 void signalContextFree(SignalContext* sc);
 int signalContextAlloc(SignalContext **signalContext);
-int signalSend(int tid, int sig);
+int signalSend(int tgid, int tid, int sig);
+int processSignalSend(int pid, int sig);
 int signProccessMask(u64 how, SignalSet *newSet);
 int doSignalAction(int sig, u64 act, u64 oldAction);
 SignalContext* getFirstSignalContext(Thread* thread);
@@ -142,6 +134,7 @@ void signalFinish(Thread* thread, SignalContext* sc);
 void handleSignal(Thread* thread);
 int doSignalTimedWait(SignalSet *which, SignalInfo *info, TimeSpec *ts);
 SignalContext* getHandlingSignal(Thread* thread);
+bool hasKillSignal(Thread* thread);
 
 #define MC_PC gregs[0]
 

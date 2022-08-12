@@ -9,7 +9,7 @@
 void pageLockInit(void);
 
 #define DOWN_ALIGN(x, y) (((u64)(x)) & (~((u64)((y)-1))))
-#define UP_ALIGN(x, y) (DOWN_ALIGN((x)-1, (y)) + (y))
+#define UP_ALIGN(x, y) ((DOWN_ALIGN((x)-1, (y))) + (y))
 #define PAGE_OFFSET(x, y) ((x) & ((y)-1))
 #define PGSIZE (4096)
 
@@ -89,7 +89,7 @@ int pageInsert(u64 *pgdir, u64 va, u64 pa, u64 perm);
 void pgdirFree(u64* pgdir);
 u64 pageLookup(u64 *pgdir, u64 va, u64 **pte);
 int allocPgdir(PhysicalPage **page);
-void pageout(u64 *pgdir, u64 badAddr);
+u64 pageout(u64 *pgdir, u64 badAddr);
 void cowHandler(u64 *pgdir, u64 badAddr);
 void pageFree(PhysicalPage *page);
 
