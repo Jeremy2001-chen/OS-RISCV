@@ -4,6 +4,7 @@
 #include <Spinlock.h>
 #include <file.h>
 #include <Process.h>
+#include <Thread.h>
 
 static u64 uartBaseAddr = 0x10010000;
 
@@ -46,8 +47,8 @@ inline int getchar(void)
 {
     int* uartRegRXFIFO = (int*)(uartBaseAddr + UART_REG_RXFIFO);
 	u32 ret = readl(uartRegRXFIFO);
-    while (ret & UART_RXFIFO_EMPTY) {
-        ret = readl(uartRegRXFIFO);
+    if (ret & UART_RXFIFO_EMPTY) {
+        return -1;
     }
     // if ((ret & UART_RXFIFO_DATA) == '\r')
     //     return '\n';
@@ -75,6 +76,12 @@ int consoleRead(int isUser, u64 dst, u64 start, u64 n) {
     int i;
     for (i = 0; i < n; i++) {
         char c = getchar();
+        if (c == (char)-1 && i == 0) {
+            getHartTrapFrame()->epc -= 4;
+            yield();
+        }
+        if (c == -1)
+            return i;
         if (c == '\n')
             putchar('\r');
         if (either_copyout(isUser, dst + i, &c, 1) == -1)
