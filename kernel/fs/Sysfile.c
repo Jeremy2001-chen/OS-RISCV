@@ -286,6 +286,7 @@ void syscallGetFileStateAt(void) {
         tf->a0 = -1;
         return;
     }
+    // printf("path: %s\n", path);
     struct dirent* entryPoint = ename(dirfd, path, true);
     if (entryPoint == NULL) {
         tf->a0 = -ENOENT;
@@ -402,7 +403,7 @@ void syscallOpenAt(void) {
     }
 
     struct dirent* entryPoint;
-    // printf("open path: %s\n", path);
+    // printf("openat path: %s\n", path);
     // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
     if (flags & O_CREATE) {
         entryPoint = create(startFd, path, T_FILE, mode);
@@ -412,6 +413,75 @@ void syscallOpenAt(void) {
         }
     } else {
         if ((entryPoint = ename(startFd, path, true)) == NULL) {
+            tf->a0 = -2; /*must be -ENOENT */
+            goto bad;
+        }
+        elock(entryPoint);
+        if (!(entryPoint->attribute & ATTR_DIRECTORY) && (flags & O_DIRECTORY)) {
+            eunlock(entryPoint);
+            eput(entryPoint);
+            tf->a0 = -1;
+            goto bad;
+        }
+        if ((entryPoint->attribute & ATTR_DIRECTORY) && (flags & 0xFFF) != O_RDONLY) { //todo
+            eunlock(entryPoint);
+            eput(entryPoint);
+            tf->a0 = -1;
+            goto bad;
+        }
+    }
+    struct File* file;
+    int fd;
+    if ((file = filealloc()) == NULL || (fd = fdalloc(file)) < 0) {
+        if (file) {
+            fileclose(file);
+        }
+        eunlock(entryPoint);
+        eput(entryPoint);
+        tf->a0 = -24;
+        goto bad;
+    }
+
+    if (!(entryPoint->attribute & ATTR_DIRECTORY) && (flags & O_TRUNC)) {
+        etrunc(entryPoint);
+    }
+
+    file->type = FD_ENTRY;
+    file->off = (flags & O_APPEND) ? entryPoint->file_size : 0;
+    file->ep = entryPoint;
+    file->readable = !(flags & O_WRONLY);
+    file->writable = (flags & O_WRONLY) || (flags & O_RDWR);
+
+    eunlock(entryPoint);
+
+
+    tf->a0 = fd;
+    // printf("open at: %d\n", fd);
+bad:
+    return;
+    // printf("open at: %d\n", tf->a0);
+}
+
+void syscallOpen(void) {
+    Trapframe* tf = getHartTrapFrame();
+    char path[FAT32_MAX_PATH];
+    int flags = tf->a1, mode = 0;
+    if (fetchstr(tf->a0, path, FAT32_MAX_PATH) < 0) {
+        tf->a0 = -1;
+        return;
+    }
+   
+    struct dirent* entryPoint;
+    printf("open path: %s\n", path);
+    // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
+    if (flags & O_CREATE) {
+        entryPoint = create(AT_FDCWD, path, T_FILE, mode);
+        if (entryPoint == NULL) {
+            tf->a0 = -1;
+            goto bad;
+        }
+    } else {
+        if ((entryPoint = ename(AT_FDCWD, path, true)) == NULL) {
             tf->a0 = -2; /*must be -ENOENT */
             goto bad;
         }

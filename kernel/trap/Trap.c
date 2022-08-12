@@ -141,6 +141,7 @@ void userTrap() {
                 // printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
             // }
             if (!syscallVector[trapframe->a7]) {
+                // printf("%lx\n", r_scause());
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
             syscallVector[trapframe->a7]();
