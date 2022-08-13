@@ -89,9 +89,11 @@ void main(u64 hartId) {
         startPage();
         trapInit();
 
+        
         //PROCESS_CREATE_PRIORITY(ForkTest, 1);
         //PROCESS_CREATE_PRIORITY(ProcessB, 3);
         //printf("Reach this place\n");
+        for(;;);
     }
 
     yield();

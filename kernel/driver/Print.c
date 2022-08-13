@@ -200,7 +200,7 @@ static void print(const char *fmt, va_list ap) {
 }
 
 void printf(const char *fmt, ...) {
-    acquireLock(&printLock);
+    // acquireLock(&printLock);
     // printString("[hart is : ");
     // printInt(r_hartid(), 10, 0);
     // printString("]");
@@ -208,7 +208,7 @@ void printf(const char *fmt, ...) {
     va_start(ap, fmt);
     print(fmt, ap);
     va_end(ap);
-    releaseLock(&printLock);
+    // releaseLock(&printLock);
 }
 
 void printChar(char *buf, char c, int length, int ladjust) {
@@ -344,14 +344,14 @@ void panicPrintf(const char *fmt, ...) {
 }
 
 void _panic_(const char *file, int line, const char *func,const char *fmt, ...) {
-    acquireLock(&printLock);
+    // acquireLock(&printLock);
     panicPrintf("hartId %d panic at %s: %d in %s(): ", r_hartid(), file, line, func);
     va_list ap;
     va_start(ap, fmt);
     print(fmt, ap);
     va_end(ap);
     putchar('\n');
-    releaseLock(&printLock);
+    // releaseLock(&printLock);
     //timerTick();
     //w_sstatus(r_sstatus() | SSTATUS_SIE);
     while (true);

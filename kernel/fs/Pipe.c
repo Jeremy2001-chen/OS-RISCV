@@ -60,7 +60,7 @@ bad:
 }
 
 void pipeClose(struct pipe* pi, int writable) {
-    acquireLock(&pi->lock);
+    // acquireLock(&pi->lock);
     // printf("%x %x %x\n", pi->writeopen, pi->readopen, writable);
     if (writable) {
         pi->writeopen = 0;
@@ -70,10 +70,11 @@ void pipeClose(struct pipe* pi, int writable) {
         wakeup(&pi->nwrite);
     }
     if (pi->readopen == 0 && pi->writeopen == 0) {
-        releaseLock(&pi->lock);
+        // releaseLock(&pi->lock);
         pipeFree(pi);
-    } else
-        releaseLock(&pi->lock);
+    }
+    // } else
+        // releaseLock(&pi->lock);
 }
 
 void pipeOut(bool isUser, u64 dstva, char* src);
@@ -96,10 +97,10 @@ int pipeWrite(struct pipe* pi, bool isUser, u64 addr, int n) {
         }
     }
 
-    acquireLock(&pi->lock);
+    // acquireLock(&pi->lock);
     while (i < n) {
         if (pi->readopen == 0 /*|| pr->killed*/) {
-            releaseLock(&pi->lock);
+            // releaseLock(&pi->lock);
             panic("");
             return -1;
         }
@@ -131,7 +132,7 @@ int pipeWrite(struct pipe* pi, bool isUser, u64 addr, int n) {
         }
     }
     wakeup(&pi->nread);
-    releaseLock(&pi->lock);
+    // releaseLock(&pi->lock);
     assert(i != 0);
     return i;
 }
@@ -148,7 +149,7 @@ int pipeRead(struct pipe* pi, bool isUser, u64 addr, int n) {
         }
     }
 
-    acquireLock(&pi->lock);
+    // acquireLock(&pi->lock);
     while (pi->nread == pi->nwrite && pi->writeopen) {  // DOC: pipe-empty
         sleep(&pi->nread, &pi->lock);  // DOC: piperead-sleep
     }
@@ -173,7 +174,7 @@ int pipeRead(struct pipe* pi, bool isUser, u64 addr, int n) {
         // pipeOut(isUser, addr + i, &ch);
     }
     wakeup(&pi->nwrite);  // DOC: piperead-wakeup
-    releaseLock(&pi->lock);
+    // releaseLock(&pi->lock);
     return i;
 }
 

@@ -58,10 +58,10 @@ void processInit() {
 }
 
 u32 generateProcessId(Process *p) {
-    acquireLock(&processIdLock);
+    // acquireLock(&processIdLock);
     static u32 nextId = 0;
     u32 processId = (++nextId << (1 + LOG_PROCESS_NUM)) | (u32)(p - processes);
-    releaseLock(&processIdLock);
+    // releaseLock(&processIdLock);
     return processId;
 }
 
@@ -256,9 +256,9 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
     }
     th->trapframe.epc = entryPoint;
 
-    acquireLock(&scheduleListLock);
+    // acquireLock(&scheduleListLock);
     LIST_INSERT_TAIL(&scheduleList[0], th, scheduleLink);
-    releaseLock(&scheduleListLock);
+    // releaseLock(&scheduleListLock);
 }
 
 static inline void updateAncestorsCpuTime(Process *p) {
@@ -273,7 +273,7 @@ int wait(int targetProcessId, u64 addr, int flags) {
     Process* p = myProcess();
     int haveChildProcess, pid;
 
-    acquireLock(&waitLock);
+    // acquireLock(&waitLock);
 
     while (true) {
         haveChildProcess = 0;
@@ -285,8 +285,8 @@ int wait(int targetProcessId, u64 addr, int flags) {
                 if ((targetProcessId == -1 || np->processId == targetProcessId) && np->state == ZOMBIE) {
                     pid = np->processId;
                     if (addr != 0 && copyout(p->pgdir, addr, (char *)&np->retValue, sizeof(np->retValue)) < 0) {
-                        releaseLock(&np->lock);
-                        releaseLock(&waitLock);
+                        // releaseLock(&np->lock);
+                        // releaseLock(&waitLock);
                         return -1;
                     }
                     acquireLock(&processListLock);
@@ -301,7 +301,7 @@ int wait(int targetProcessId, u64 addr, int flags) {
                     return pid;
                 }
             }
-            releaseLock(&np->lock);
+            // releaseLock(&np->lock);
         }
 
         if (flags & WNOHANG) {
@@ -354,12 +354,14 @@ int either_copyin(void* dst, int user_src, u64 src, u64 len) {
 }
 
 void kernelProcessCpuTimeBegin() {
+    return;
     Process *p = myProcess();
     long currentTime = r_time();
     p->cpuTime.kernel += currentTime - p->processTime.lastKernelTime;
 }
 
 void kernelProcessCpuTimeEnd() {
+    return;
     Process *p = myProcess();
     p->processTime.lastKernelTime = r_time();
 }

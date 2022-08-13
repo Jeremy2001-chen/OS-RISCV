@@ -933,7 +933,7 @@ void syscallUmount() {
     }
 
     extern DirentCache direntCache;
-    acquireLock(&direntCache.lock);
+    // acquireLock(&direntCache.lock);
     // bool canUmount = true;
     for(int i = 0; i < ENTRY_CACHE_NUM; i++) {
         struct dirent* entry = &direntCache.entries[i];
@@ -942,7 +942,7 @@ void syscallUmount() {
         }
     }
 
-    releaseLock(&direntCache.lock);
+    // releaseLock(&direntCache.lock);
 
     ep->head->valid = 0;
     ep->head = ep->head->next;

@@ -39,26 +39,26 @@ int pageRemove(u64 *pgdir, u64 va) {
 int countFreePages() {
     struct PhysicalPage* page;
     int count = 0;
-    acquireLock(&pageListLock);
+    // acquireLock(&pageListLock);
     LIST_FOREACH(page, &freePages, link)
         count++;
-    releaseLock(&pageListLock);
+    // releaseLock(&pageListLock);
     return count;
 }
 
 int pageAlloc(PhysicalPage **pp) {
-    acquireLock(&pageListLock);
+    // acquireLock(&pageListLock);
     PhysicalPage *page;
     if ((page = LIST_FIRST(&freePages)) != NULL) {
         *pp = page;
         page->hartId = r_hartid();
         LIST_REMOVE(page, link);
-        releaseLock(&pageListLock);
+        // releaseLock(&pageListLock);
         bzero((void*)page2pa(page), PAGE_SIZE);
         return 0;
     }
     panic("");
-    releaseLock(&pageListLock);
+    // releaseLock(&pageListLock);
     printf("there's no physical page left!\n");
     *pp = NULL;
     return -NO_FREE_MEMORY;
@@ -105,9 +105,9 @@ void pageFree(PhysicalPage *page) {
         return;
     }
     if (page->ref == 0) {
-        acquireLock(&pageListLock);
+        // acquireLock(&pageListLock);
         LIST_INSERT_HEAD(&freePages, page, link);
-        releaseLock(&pageListLock);
+        // releaseLock(&pageListLock);
     }
 }
 
@@ -116,9 +116,9 @@ static void paDecreaseRef(u64 pa) {
     page->ref--;
     assert(page->ref==0);
     if (page->ref == 0) {
-        acquireLock(&pageListLock);
+        // acquireLock(&pageListLock);
         LIST_INSERT_HEAD(&freePages, page, link);
-        releaseLock(&pageListLock);
+        // releaseLock(&pageListLock);
     }
 }
 
@@ -241,12 +241,12 @@ void cowHandler(u64 *pgdir, u64 badAddr) {
         panic("cow handler error");
         return;
     }
-    acquireLock(&cowBufferLock);
+    // acquireLock(&cowBufferLock);
     pa = pageLookup(pgdir, badAddr, &pte);
     bcopy((void *)pa, (void*)cowBuffer, PAGE_SIZE);
     pageInsert(pgdir, badAddr, page2pa(page), (PTE2PERM(*pte) | PTE_WRITE) & ~PTE_COW);
     bcopy((void*) cowBuffer, (void*) page2pa(page), PAGE_SIZE);
-    releaseLock(&cowBufferLock);
+    // releaseLock(&cowBufferLock);
 }
 
 // Look up a virtual address, return the physical address,
