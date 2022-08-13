@@ -95,6 +95,7 @@ void kernelTrap() {
 }
 
 static inline void userProcessCpuTimeEnd() {
+    return;
     Process *p = myProcess();
     long currentTime = r_time();
     p->cpuTime.user += currentTime - p->processTime.lastUserTime;
@@ -191,6 +192,7 @@ void userTrap() {
 }
 
 static inline void userProcessCpuTimeBegin() {
+    return;
     Process *p = myProcess();
     p->processTime.lastUserTime = r_time();
 }

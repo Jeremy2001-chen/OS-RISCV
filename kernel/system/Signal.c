@@ -17,22 +17,22 @@ void signalInit() {
 }
 
 void signalContextFree(SignalContext* sc) {
-    acquireLock(&signalContextListLock);
+    // acquireLock(&signalContextListLock);
     LIST_INSERT_HEAD(&freeSignalContextList, sc, link);
-    releaseLock(&signalContextListLock);
+    // releaseLock(&signalContextListLock);
 }
 
 int signalContextAlloc(SignalContext **signalContext) {
-    acquireLock(&signalContextListLock);
+    // acquireLock(&signalContextListLock);
     SignalContext *sc;
     if ((sc = LIST_FIRST(&freeSignalContextList)) != NULL) {
         *signalContext = sc;
         LIST_REMOVE(sc, link);
         sc->start = false;
-        releaseLock(&signalContextListLock);
+        // releaseLock(&signalContextListLock);
         return 0;
     }
-    releaseLock(&signalContextListLock);
+    // releaseLock(&signalContextListLock);
     printf("there's no signal context left!\n");
     *signalContext = NULL;
     return -1;
@@ -62,13 +62,13 @@ int signalSend(int tgid, int tid, int sig) {
     if (r < 0) {
         panic("");
     }
-    acquireLock(&thread->lock);
+    // acquireLock(&thread->lock);
     sc->signal = sig;
     if (sig == SIGKILL) {
         thread->state = RUNNABLE;
     }
     LIST_INSERT_HEAD(&thread->waitingSignal, sc, link);
-    releaseLock(&thread->lock);
+    // releaseLock(&thread->lock);
     return 0;
 }
 
@@ -76,16 +76,16 @@ int processSignalSend(int pid, int sig) {
     extern Thread threads[];
     int ret = -ESRCH;
     for (int i = 0; i < PROCESS_TOTAL_NUMBER; i++) {
-        acquireLock(&threads[i].lock);
+        // acquireLock(&threads[i].lock);
         if (threads[i].state != UNUSED) {
             if (pid == 0 || pid == -1 || pid == threads[i].process->processId) {
-                releaseLock(&threads[i].lock);
+                // releaseLock(&threads[i].lock);
                 ret = signalSend(0, threads[i].id, sig);
                 ret = ret == 0 ? 0 : ret;
                 continue;
             }
         }
-        releaseLock(&threads[i].lock);
+        // releaseLock(&threads[i].lock);
     }
     return ret;
 }
@@ -124,33 +124,33 @@ int doSignalAction(int sig, u64 act, u64 oldAction) {
 
 SignalContext* getFirstSignalContext(Thread* thread) {
     SignalContext* sc = NULL;
-    acquireLock(&thread->lock);
+    // acquireLock(&thread->lock);
     LIST_FOREACH(sc, &thread->waitingSignal, link) {
         if (!sc->start && (signalSetAnd(sc->signal, &thread->blocked) || signalSetAnd(sc->signal, &thread->processing))) {
             continue;
         }
         break;
     }
-    releaseLock(&thread->lock);
+    // releaseLock(&thread->lock);
     return sc;
 }
 
 SignalContext* getHandlingSignal(Thread* thread) {
     SignalContext* sc = NULL;
-    acquireLock(&thread->lock);
+    // acquireLock(&thread->lock);
     LIST_FOREACH(sc, &thread->waitingSignal, link) {
         if (sc->start) {
             break;
         }
     }
-    releaseLock(&thread->lock);
+    // releaseLock(&thread->lock);
     assert(sc != NULL);
     return sc;
 }
 
 bool hasKillSignal(Thread* thread) {
     SignalContext* sc = NULL;
-    acquireLock(&thread->lock);
+    // acquireLock(&thread->lock);
     bool find = false;
     LIST_FOREACH(sc, &thread->waitingSignal, link) {
         if (sc->signal == SIGKILL) {
@@ -158,7 +158,7 @@ bool hasKillSignal(Thread* thread) {
             break;
         }
     }
-    releaseLock(&thread->lock);
+    // releaseLock(&thread->lock);
     return find;
 }
 
@@ -194,9 +194,9 @@ void initFrame(SignalContext* sc, Thread* thread) {
 }
 
 void signalFinish(Thread* thread, SignalContext* sc) {
-    acquireLock(&thread->lock);
+    // acquireLock(&thread->lock);
     LIST_REMOVE(sc, link);
-    releaseLock(&thread->lock);
+    // releaseLock(&thread->lock);
     signalContextFree(sc);
 }
 

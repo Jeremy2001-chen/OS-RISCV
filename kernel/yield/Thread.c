@@ -52,10 +52,10 @@ void threadInit() {
 }
 
 u32 generateThreadId(Thread* th) {
-    acquireLock(&threadIdLock);
+    // acquireLock(&threadIdLock);
     static u32 nextId = 0;
     u32 threadId = (++nextId << (1 + LOG_PROCESS_NUM)) | (u32)(th - threads);
-    releaseLock(&threadIdLock);
+    // releaseLock(&threadIdLock);
     return threadId;
 }
 
@@ -74,14 +74,14 @@ void threadDestroy(Thread *th) {
 
 void threadFree(Thread *th) {
     Process* p = th->process;
-    acquireLock(&th->lock);
+    // acquireLock(&th->lock);
     while (!LIST_EMPTY(&th->waitingSignal)) {
         SignalContext* sc = LIST_FIRST(&th->waitingSignal);
         LIST_REMOVE(sc, link);
         signalContextFree(sc);
     }
-    releaseLock(&th->lock);
-    acquireLock(&p->lock);
+    // releaseLock(&th->lock);
+    // acquireLock(&p->lock);
     if (th->clearChildTid) {
         int val = 0;
         copyout(p->pgdir, th->clearChildTid, (char*)&val, sizeof(int));
@@ -90,16 +90,16 @@ void threadFree(Thread *th) {
     p->threadCount--;
     if (!p->threadCount) {
         p->retValue = th->retValue;
-        releaseLock(&p->lock);
+        // releaseLock(&p->lock);
         processFree(p);    
     } else {
-        releaseLock(&p->lock);
+        // releaseLock(&p->lock);
     }
 
-    acquireLock(&freeThreadListLock);
+    // acquireLock(&freeThreadListLock);
     th->state = UNUSED;
     LIST_INSERT_HEAD(&freeThreades, th, link); //test pipe
-    releaseLock(&freeThreadListLock);
+    // releaseLock(&freeThreadListLock);
 }
 
 int tid2Thread(u32 threadId, struct Thread **thread, int checkPerm) {
@@ -162,15 +162,15 @@ u64 getSignalHandlerSp(Thread *th) {
 int mainThreadAlloc(Thread **new, u64 parentId) {
     int r;
     Thread *th;
-    acquireLock(&freeThreadListLock);
+    // acquireLock(&freeThreadListLock);
     if (LIST_EMPTY(&freeThreades)) {
-        releaseLock(&freeThreadListLock);
+        // releaseLock(&freeThreadListLock);
         *new = NULL;
         return -ESRCH;
     }
     th = LIST_FIRST(&freeThreades);
     LIST_REMOVE(th, link);
-    releaseLock(&freeThreadListLock);
+    // releaseLock(&freeThreadListLock);
 
     threadSetup(th);
     th->id = generateThreadId(th);
@@ -183,25 +183,25 @@ int mainThreadAlloc(Thread **new, u64 parentId) {
         *new = NULL;
         return r;
     }
-    acquireLock(&process->lock);
+    // acquireLock(&process->lock);
     th->process = process;
     process->threadCount++;
-    releaseLock(&process->lock);
+    // releaseLock(&process->lock);
     *new = th;
     return 0;
 }
 
 int threadAlloc(Thread **new, Process* process, u64 userSp) {
     Thread *th;
-    acquireLock(&freeThreadListLock);
+    // acquireLock(&freeThreadListLock);
     if (LIST_EMPTY(&freeThreades)) {
-        releaseLock(&freeThreadListLock);
+        // releaseLock(&freeThreadListLock);
         *new = NULL;
         return -ESRCH;
     }
     th = LIST_FIRST(&freeThreades);
     LIST_REMOVE(th, link);
-    releaseLock(&freeThreadListLock);
+    // releaseLock(&freeThreadListLock);
 
     threadSetup(th);
     th->id = generateThreadId(th);
@@ -209,10 +209,10 @@ int threadAlloc(Thread **new, Process* process, u64 userSp) {
     th->trapframe.kernelSp = getThreadTopSp(th);
     th->trapframe.sp = userSp;
 
-    acquireLock(&process->lock);
+    // acquireLock(&process->lock);
     th->process = process;
     process->threadCount++;
-    releaseLock(&process->lock);
+    // releaseLock(&process->lock);
 
     *new = th;
     return 0;
@@ -380,7 +380,7 @@ void threadRun(Thread* th) {
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
         u64 sp = getHartKernelTopSp(th);
         asm volatile("ld sp, 0(%0)" : :"r"(&sp): "memory");
-        // releaseLock(&currentProcessLock);
+        // // releaseLock(&currentProcessLock);
         userTrapReturn();
     }
 }
@@ -397,14 +397,14 @@ void sleep(void* chan, struct Spinlock* lk) {
     // so it's okay to release lk.
 
     kernelProcessCpuTimeEnd();
-    acquireLock(&th->lock);  // DOC: sleeplock1
-    releaseLock(lk);
+    // acquireLock(&th->lock);  // DOC: sleeplock1
+    // releaseLock(lk);
 
     // Go to sleep.
     th->chan = (u64)chan;
     th->state = SLEEPING;
     th->reason |= KERNEL_GIVE_UP;
-    releaseLock(&th->lock);
+    // releaseLock(&th->lock);
 
     if (hasKillSignal(th)) {
         threadDestroy(th);
@@ -415,9 +415,9 @@ void sleep(void* chan, struct Spinlock* lk) {
     sleepSave();
 
     // // Tidy up.
-    acquireLock(&th->lock);  // DOC: sleeplock1
+    // acquireLock(&th->lock);  // DOC: sleeplock1
     th->chan = 0;
-    releaseLock(&th->lock);
+    // releaseLock(&th->lock);
 
     kernelProcessCpuTimeBegin();
     
@@ -425,18 +425,18 @@ void sleep(void* chan, struct Spinlock* lk) {
         threadDestroy(th);    
     }    
     // Reacquire original lock.
-    acquireLock(lk);
+    // acquireLock(lk);
 }
 
 void wakeup(void* channel) {
     for (int i = 0; i < PROCESS_TOTAL_NUMBER; ++i) {
         if (&threads[i] != myThread()) {
-            acquireLock(&threads[i].lock);
+            // acquireLock(&threads[i].lock);
             if (threads[i].state == SLEEPING && threads[i].chan == (u64)channel) {
                 threads[i].state = RUNNABLE;
                 // printf("wake up thread %lx\n", threads[i].id);
             }
-            releaseLock(&threads[i].lock);
+            // releaseLock(&threads[i].lock);
         }
     }
 }

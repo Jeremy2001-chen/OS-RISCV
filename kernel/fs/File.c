@@ -31,25 +31,25 @@ void fileinit(void) {
 struct File* filealloc(void) {
     struct File* f;
 
-    acquireLock(&ftable.lock);
+    // acquireLock(&ftable.lock);
     for (f = ftable.file; f < ftable.file + NFILE; f++) {
         if (f->ref == 0) {
             f->ref = 1;
-            releaseLock(&ftable.lock);
+            // releaseLock(&ftable.lock);
             return f;
         }
     }
-    releaseLock(&ftable.lock);
+    // releaseLock(&ftable.lock);
     return NULL;
 }
 
 // Increment ref count for file f.
 struct File* filedup(struct File* f) {
-    acquireLock(&ftable.lock);
+    // acquireLock(&ftable.lock);
     if (f->ref < 1)
         panic("filedup");
     f->ref++;
-    releaseLock(&ftable.lock);
+    // releaseLock(&ftable.lock);
     return f;
 }
 
@@ -58,17 +58,17 @@ void fileclose(struct File* f) {
     struct File ff;
 
     // printf("[FILE CLOSE]%x %x\n", f, f->ref);
-    acquireLock(&ftable.lock);
+    // acquireLock(&ftable.lock);
     if (f->ref < 1)
         panic("fileclose");
     if (--f->ref > 0) {
-        releaseLock(&ftable.lock);
+        // releaseLock(&ftable.lock);
         return;
     }
     ff = *f;
     f->ref = 0;
     f->type = FD_NONE;
-    releaseLock(&ftable.lock);
+    // releaseLock(&ftable.lock);
 
     // printf("FILECLOSE %x\n", ff.type);
     if (ff.type == FD_PIPE) {

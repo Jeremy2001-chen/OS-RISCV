@@ -525,7 +525,7 @@ int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n) {
 // never get root by eget, it's easy to understand.
 static struct dirent* eget(struct dirent* parent, char* name) {
     struct dirent* ep;
-    acquireLock(&direntCache.lock);
+    // acquireLock(&direntCache.lock);
     if (name) {
         for (int i = 0; i < ENTRY_CACHE_NUM; i++) {
             ep = &direntCache.entries[i];
@@ -534,7 +534,7 @@ static struct dirent* eget(struct dirent* parent, char* name) {
                 if (ep->ref++ == 0) {
                     ep->parent->ref++;
                 }
-                releaseLock(&direntCache.lock);
+                // releaseLock(&direntCache.lock);
                 return ep;
             }
         }
@@ -549,7 +549,7 @@ static struct dirent* eget(struct dirent* parent, char* name) {
             ep->dirty = 0;
             ep->fileSystem = parent->fileSystem;
             eFreeInode(ep);
-            releaseLock(&direntCache.lock);
+            // releaseLock(&direntCache.lock);
             return ep;
         }
     }
@@ -772,9 +772,9 @@ struct dirent* ealloc(struct dirent* dp, char* name, int attr) {
 
 struct dirent* edup(struct dirent* entry) {
     if (entry != 0) {
-        acquireLock(&direntCache.lock);
+        // acquireLock(&direntCache.lock);
         entry->ref++;
-        releaseLock(&direntCache.lock);
+        // releaseLock(&direntCache.lock);
     }
     
     return entry;
@@ -888,8 +888,8 @@ void eunlock(struct dirent* entry) {
 
 void eput(struct dirent* entry) {
     return;
-    acquireLock(&direntCache.lock);
-    MSG_PRINT("acquireLock finish");
+    // acquireLock(&direntCache.lock);
+    MSG_PRINT("// acquireLock finish");
     if ((entry >= direntCache.entries && entry < direntCache.entries + ENTRY_CACHE_NUM) && entry->valid != 0 && entry->ref == 1) {
         // ref == 1 means no other process can have entry locked,
         // so this acquiresleep() won't block (or deadlock).
@@ -901,7 +901,7 @@ void eput(struct dirent* entry) {
       //  entry->prev = &root;
       //  root.next->prev = entry;
       //  root.next = entry;
-        releaseLock(&direntCache.lock);
+        // releaseLock(&direntCache.lock);
         if (entry->valid == -1) {  // this means some one has called eremove()
             etrunc(entry);
         } else {
@@ -915,9 +915,9 @@ void eput(struct dirent* entry) {
         // entry->parent field remains unchanged. Because eget() may take the
         // entry away and write it.
         struct dirent* eparent = entry->parent;
-        acquireLock(&direntCache.lock);
+        // acquireLock(&direntCache.lock);
         entry->ref--;
-        releaseLock(&direntCache.lock);
+        // releaseLock(&direntCache.lock);
         if (entry->ref == 0) {
             eput(eparent);
         }
@@ -925,7 +925,7 @@ void eput(struct dirent* entry) {
     }
     MSG_PRINT("end of eput");
     // entry->ref--;
-    releaseLock(&direntCache.lock);
+    // releaseLock(&direntCache.lock);
 }
 
 //todo(need more)

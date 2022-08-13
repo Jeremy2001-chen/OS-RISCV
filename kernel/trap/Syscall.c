@@ -117,9 +117,9 @@ extern struct Spinlock printLock;
 
 void syscallPutchar() {
     Trapframe* trapframe = getHartTrapFrame();
-    acquireLock(&printLock);
+    // acquireLock(&printLock);
     putchar(trapframe->a0);
-    releaseLock(&printLock);
+    // releaseLock(&printLock);
 }
 
 void syscallGetProcessId() {
@@ -180,12 +180,12 @@ void syscallPutString() {
         panic("Syscall put string address error!\nThe virtual address is %x, the length is %x\n", va, len);
     }
     char* start = (char*) pa;
-    acquireLock(&printLock);
+    // acquireLock(&printLock);
     while (len--) {
         putchar(*start);
         start++;
     }
-    releaseLock(&printLock);
+    // releaseLock(&printLock);
 }
 
 void syscallGetCpuTimes() {
@@ -371,9 +371,9 @@ void syscallProcessResourceLimit() {
     // printf("resource limit: pid: %lx, resource: %d, new: %lx, old: %lx\n", pid, resouce, newVa, oldVa);
     struct ResourceLimit newLimit;
     Process* process = myProcess();
-    acquireLock(&process->lock);
+    // acquireLock(&process->lock);
     if (newVa && copyin(process->pgdir, (char*)&newLimit, newVa, sizeof(struct ResourceLimit)) < 0) {
-        releaseLock(&process->lock);
+        // releaseLock(&process->lock);
         tf->a0 = -1;
     }
     switch(resouce) {
@@ -387,7 +387,7 @@ void syscallProcessResourceLimit() {
             }
             break;
     }
-    releaseLock(&process->lock);
+    // releaseLock(&process->lock);
     tf->a0 = 0;
 }
 
