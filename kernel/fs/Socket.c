@@ -210,7 +210,8 @@ int accept(int sockfd, SocketAddr* addr) {
         return -11; //EAGAIN /* Try again */
     }
 
-    *addr = local_sock->pending_queue[local_sock->pending_h++];
+    *addr =
+        local_sock->pending_queue[(local_sock->pending_h++) % PENDING_COUNT];
 
     Socket* new_sock;
     socketAlloc(&new_sock);
@@ -272,7 +273,11 @@ int connect(int sockfd, const SocketAddr* addr) {
         printf("remote socket don't exists!");
         return -1;
     }
-    target_socket->pending_queue[target_socket->pending_t++] = local_sock->addr;
+    if (target_socket->pending_t - target_socket->pending_h == PENDING_COUNT) {
+        return -1;  // Connect Count Reach Limit.
+    }
+    target_socket->pending_queue[(target_socket->pending_t++) % PENDING_COUNT] =
+        local_sock->addr;
     // printf("[%s] wakeup server sid %d\n", __func__, target_socket-sockets);
     // wakeup(target_socket);
 

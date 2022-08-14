@@ -5,6 +5,7 @@
 #include "Spinlock.h"
 
 #define SOCKET_COUNT 128
+#define PENDING_COUNT 128
 
 typedef struct Process Process;
 typedef struct {
@@ -21,7 +22,7 @@ typedef struct Socket {
     SocketAddr target_addr; /* remote addr */
     u64 head;
     u64 tail; // tail is equal or greater than head
-    SocketAddr pending_queue[10];
+    SocketAddr pending_queue[PENDING_COUNT];
     int pending_h, pending_t;
     struct Spinlock lock;
     int listening;
