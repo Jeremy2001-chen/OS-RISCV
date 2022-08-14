@@ -128,7 +128,7 @@ void syscall_fcntl(void){
         tf->a0 = fd;
         return;
     case FCNTL_SETFL:
-        printf("set file flag, bug not impl. flag :%x\n",flag);
+        printf("set file flag, bug not impl. flag :%x\n", tf->a2);
         break;
     default:
         panic("%d\n", tf->a1);
