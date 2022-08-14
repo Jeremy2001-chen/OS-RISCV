@@ -28,6 +28,7 @@ typedef struct Socket {
     int listening;
 } Socket;
 
+Socket* remote_find_peer_socket(const Socket* local_sock);
 int createSocket(int domain, int type, int protocal);
 int bindSocket(int fd, SocketAddr *sa);
 int getSocketName(int fd, u64 va);

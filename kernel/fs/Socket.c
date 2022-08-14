@@ -37,6 +37,21 @@ int socketAlloc(Socket **s) {
     return -1;
 }
 
+/**
+ * @brief 寻找远程主机（其实就是本机）上与 local_sock 建立连接的 socket
+ */
+ Socket* remote_find_peer_socket(const Socket* local_sock) {
+    for (int i = 0; i < SOCKET_COUNT; ++i) {
+        if (sockets[i].used &&
+            sockets[i].addr.family == local_sock->target_addr.family &&
+            sockets[i].addr.port == local_sock->target_addr.port &&
+            sockets[i].target_addr.port == local_sock->addr.port) {
+            return &sockets[i];
+        }
+    }
+    return NULL;
+}
+
 void socketFree(Socket *s) {
     extern u64 kernelPageDirectory[];
     pageRemove(kernelPageDirectory, getSocketBufferBase(s));
@@ -56,7 +71,7 @@ int createSocket(int family, int type, int protocal) {
     s->addr.family = family;
     s->pending_h = s->pending_t = 0;
     s->listening = 0;
-
+    
     f->socket = s;
     f->type = FD_SOCKET;
     f->readable = f->writable = true;
@@ -93,21 +108,6 @@ int getSocketName(int fd, u64 va) {
     assert(f->type == FD_SOCKET);
     copyout(myProcess()->pgdir, va, (char*)&f->socket->addr, sizeof(SocketAddr));
     return 0;
-}
-
-/**
- * @brief 寻找远程主机（其实就是本机）上与 local_sock 建立连接的 socket
- */
-static Socket* remote_find_peer_socket(const Socket* local_sock) {
-    for (int i = 0; i < SOCKET_COUNT; ++i) {
-        if (sockets[i].used &&
-            sockets[i].addr.family == local_sock->target_addr.family &&
-            sockets[i].addr.port == local_sock->target_addr.port &&
-            sockets[i].target_addr.port == local_sock->addr.port) {
-            return &sockets[i];
-        }
-    }
-    return NULL;
 }
 
 // 有修改，这个接口暂时无法通过 libc-test
