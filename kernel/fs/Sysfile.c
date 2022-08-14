@@ -48,7 +48,7 @@ int argfd(int n, int* pfd, struct File** pf) {
 int fdalloc(struct File* f) {
     int fd;
     struct Process* p = myProcess();
-    
+
     for (fd = 0; fd < p->fileDescription.hard; fd++) {
         if (p->ofile[fd] == 0) {
             p->ofile[fd] = f;
@@ -128,7 +128,6 @@ void syscall_fcntl(void){
         tf->a0 = fd;
         return;
     case FCNTL_SETFL:
-        fd = fdalloc(f);
         int flag = tf->a2;
         printf("set file flag, bug not impl. flag :%x\n",flag);
         break;
