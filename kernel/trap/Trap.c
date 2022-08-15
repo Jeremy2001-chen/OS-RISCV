@@ -130,7 +130,12 @@ void userTrap() {
         u64 pa = -1;
         // printf("sepc:%lx sstatus:%lx scause:%lx \n", sepc, sstatus, scause);
         switch (r_scause() & SCAUSE_EXCEPTION_CODE)
-        {
+        { // /musl-gcc/bin/gcc a.s b.s -nostdlib -static -fPIC --verbose -nostartfiles  /musl-gcc/bin/readelf -h a.out
+        // /musl-gcc/bin/gcc a.c b.s -o a.out -T ld.ld -static
+        // /musl-gcc/bin/gcc a.c -c -o a.o -nostdlib -static --strip -fvisibility=hidden
+        // /musl-gcc/bin/gcc b.s -c -o b.o -nostdlib -static -fvisibility=hidden
+        // /musl-gcc/bin/ld a.o b.o -T ld.ld -G 0 -n -nostdlib -fvisibility=hidden -share
+        // cat a.out
         // case SCAUSE_BREAKPOINT:
         //     trapframe->epc += 4;
         //     break;

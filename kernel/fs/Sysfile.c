@@ -403,7 +403,7 @@ void syscallOpenAt(void) {
 
     struct dirent* entryPoint;
     printf("openat path: %s\n", path);
-    // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
+    printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
     if (flags & O_CREATE_GLIBC) {
         entryPoint = create(startFd, path, T_FILE, mode);
         if (entryPoint == NULL) {
@@ -472,8 +472,8 @@ void syscallOpen(void) {
     }
    
     struct dirent* entryPoint;
-    printf("open path: %s\n", path);
-    printf("path: %s, flags: %x, mode: %x\n", path, flags, mode);
+    // printf("open path: %s\n", path);
+    // printf("path: %s, flags: %x, mode: %x\n", path, flags, mode);
     if (flags & O_CREATE_GPP) {
         entryPoint = create(AT_FDCWD, path, T_FILE, mode);
         if (entryPoint == NULL) {
@@ -1059,11 +1059,19 @@ void syscallLSeek() {
         default:
             goto bad;
     }
-    if (file->type != FD_ENTRY) {
-        file->off = off;
-    } else {
-        file->off = (off >= file->ep->file_size ? file->ep->file_size : off);
-    }
+    // if (file->type == FD_ENTRY && off > file->ep->file_size) {
+    //     char zero = 0;
+    //     file->off = file->ep->file_size;
+    //     for (int i = file->ep->file_size; i < off; i++) {
+    //         filewrite(file, false, (u64)&zero, 1);
+    //     }
+    // }
+    file->off = off;
+    // if (file->type != FD_ENTRY) {
+    //     file->off = off;
+    // } else {
+    //     file->off = (off >= file->ep->file_size ? file->ep->file_size : off);
+    // }
     tf->a0 = off;
     return;
 bad:
@@ -1228,6 +1236,12 @@ void syscallUmask() {
 
 
 void syscallFileSychornize() {
+    Trapframe *tf = getHartTrapFrame();
+    //todo
+    tf->a0 = 0;
+}
+
+void syscallChangeModAt() {
     Trapframe *tf = getHartTrapFrame();
     //todo
     tf->a0 = 0;
