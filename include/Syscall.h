@@ -62,6 +62,7 @@ void syscallMemorySychronize();
 void syscallMemeryAdvise();
 void syscallGetGroupId();
 void syscallGetEffectiveGroupId();
+void syscallGetRandom();
 
 extern void (*syscallVector[])(void);
 

@@ -203,14 +203,15 @@ int dirnext(struct File* f, u64 addr) {
 
 u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
     bool alloc = (start == 0);
+    assert(PAGE_OFFSET(start, PAGE_SIZE) == 0);
     Process *p = myProcess();
     if (alloc) {
         p->mmapHeapBottom = UP_ALIGN(p->mmapHeapBottom, PAGE_SIZE);
         start = p->mmapHeapBottom;
         p->mmapHeapBottom = UP_ALIGN(p->mmapHeapBottom + len, PAGE_SIZE);
         assert(p->mmapHeapBottom  < USER_STACK_BOTTOM);
-    }
-    printf("domap: fd: %d, start: %lx, len: %lx, perm: %lx, flags: %lx, off: %lx\n", fd, start, len, perm, flags, off);
+    }// ./runtest.exe -w entry-dynamic.exe argv
+    // printf("domap: fd: %d, start: %lx, len: %lx, perm: %lx, flags: %lx, off: %lx alloc: %d\n", fd, start, len, perm, flags, off, alloc);
     u64 addr = start, end = start + len;
     if (flags & MAP_FIXED) {
         assert(start <= p->brkHeapBottom);
@@ -222,6 +223,7 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
         u64 pa = pageLookup(p->pgdir, start, &pte);
         if (pa > 0 && (*pte & PTE_COW)) {
             cowHandler(p->pgdir, start);
+            pa = pageLookup(p->pgdir, start, &pte);
         }
         if (pa == 0) {
             PhysicalPage* page;
@@ -229,6 +231,9 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
                 return -1;
             }
             pageInsert(p->pgdir, start, page2pa(page), perm | PTE_USER);
+        } else {
+            bzero((void*)pa, MIN(PAGE_SIZE, end - start));
+            *pte = PA2PTE(pa) | perm | PTE_USER | PTE_VALID;
         }
         start += PGSIZE;
     }

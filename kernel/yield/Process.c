@@ -302,15 +302,16 @@ int wait(int targetProcessId, u64 addr, int flags) {
             releaseLock(&np->lock);
         }
 
-        if (!haveChildProcess) {
-            releaseLock(&waitLock);
-            return -1;
-        }
-
         if (flags == WNOHANG) {
             releaseLock(&waitLock);
-            return 0;    
+            return -1;    
         }
+
+        if (!haveChildProcess) {
+            releaseLock(&waitLock);
+            return 0;
+        }
+        
         // printf("[WAIT]porcess id %x wait for %x\n", p->id, p);
         sleep(p, &waitLock);
     }
