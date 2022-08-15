@@ -60,6 +60,8 @@ void syscallSelect();
 void syscallSetTimer();
 void syscallMemorySychronize();
 void syscallMemeryAdvise();
+void syscallGetGroupId();
+void syscallGetEffectiveGroupId();
 
 extern void (*syscallVector[])(void);
 

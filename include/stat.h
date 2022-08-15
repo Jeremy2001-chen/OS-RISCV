@@ -42,4 +42,30 @@ struct stat {
     // short type;   // Type of file
 };
 
+// struct stat {
+
+//     __mode_t st_mode;		/* File mode.  */
+// #ifndef __USE_FILE_OFFSET64
+//     __ino_t st_ino;		/* File serial number.  */
+// #else
+//     __ino64_t st_ino;		/* File serial number.	*/
+// #endif
+//     __dev_t st_dev;		/* Device containing the file.  */
+//     __nlink_t st_nlink;		/* Link count.  */
+
+//     __uid_t st_uid;		/* User ID of the file's owner.  */
+//     __gid_t st_gid;		/* Group ID of the file's group.  */
+// #ifndef __USE_FILE_OFFSET64
+//     __off_t st_size;		/* Size of file, in bytes.  */
+// #else
+//     __off64_t st_size;		/* Size of file, in bytes.  */
+// #endif
+
+//     __time_t st_atime;		/* Time of last access.  */
+//     __time_t st_mtime;		/* Time of last modification.  */
+//     __time_t st_ctime;		/* Time of last status change.  */
+
+//     /* This should be defined if there is a `st_blksize' member.  */
+// #undef	_STATBUF_ST_BLKSIZE
+//   };
 #endif

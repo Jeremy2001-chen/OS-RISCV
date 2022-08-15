@@ -202,28 +202,33 @@ int dirnext(struct File* f, u64 addr) {
 }
 
 u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
-    // printf("domap: fd: %d, start: %lx, len: %lx, perm: %lx, flags: %lx, off: %lx\n", fd, start, len, perm, flags, off);
     bool alloc = (start == 0);
+    Process *p = myProcess();
     if (alloc) {
-        myProcess()->mmapHeapBottom = UP_ALIGN(myProcess()->mmapHeapBottom, PAGE_SIZE);
-        start = myProcess()->mmapHeapBottom;
-        myProcess()->mmapHeapBottom = UP_ALIGN(myProcess()->mmapHeapBottom + len, PAGE_SIZE);
-        assert(myProcess()->mmapHeapBottom  < USER_STACK_BOTTOM);
+        p->mmapHeapBottom = UP_ALIGN(p->mmapHeapBottom, PAGE_SIZE);
+        start = p->mmapHeapBottom;
+        p->mmapHeapBottom = UP_ALIGN(p->mmapHeapBottom + len, PAGE_SIZE);
+        assert(p->mmapHeapBottom  < USER_STACK_BOTTOM);
     }
+    printf("domap: fd: %d, start: %lx, len: %lx, perm: %lx, flags: %lx, off: %lx\n", fd, start, len, perm, flags, off);
     u64 addr = start, end = start + len;
+    if (flags & MAP_FIXED) {
+        assert(start <= p->brkHeapBottom);
+        p->brkHeapBottom = MAX(UP_ALIGN(end, PAGE_SIZE), p->brkHeapBottom);
+    }
     start = DOWN_ALIGN(start, PAGE_SIZE);
     while (start < end) {
         u64* pte;
-        u64 pa = pageLookup(myProcess()->pgdir, start, &pte);
+        u64 pa = pageLookup(p->pgdir, start, &pte);
         if (pa > 0 && (*pte & PTE_COW)) {
-            cowHandler(myProcess()->pgdir, start);
+            cowHandler(p->pgdir, start);
         }
         if (pa == 0) {
             PhysicalPage* page;
             if (pageAlloc(&page) < 0) {
                 return -1;
             }
-            pageInsert(myProcess()->pgdir, start, page2pa(page), perm | PTE_USER);
+            pageInsert(p->pgdir, start, page2pa(page), perm | PTE_USER);
         }
         start += PGSIZE;
     }
