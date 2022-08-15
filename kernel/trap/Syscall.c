@@ -111,7 +111,9 @@ void (*syscallVector[])(void) = {
     [SYSCALL_FSSYC]                     syscallFileSychornize,
     [SYSCALL_MSYNC]                     syscallMemorySychronize,
     [SYSCALL_OPEN]                      syscallOpen,
-    [SYSCALL_MADVISE]                   syscallMemeryAdvise
+    [SYSCALL_MADVISE]                   syscallMemeryAdvise,
+    [SYSCALL_GET_GROUP_ID]              syscallGetGroupId,
+    [SYSCALL_GET_EFFECTIVE_GROUP_ID]    syscallGetEffectiveGroupId
 };
 
 extern struct Spinlock printLock;
@@ -231,7 +233,7 @@ void syscallSleepTime() {
 void syscallBrk() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 addr = trapframe->a0;
-    // printf("addr: %lx, heapbottom: %lx\n", addr, myProcess()->brkHeapBottom);
+    printf("addr: %lx, heapbottom: %lx\n", addr, myProcess()->brkHeapBottom);
     if (addr == 0) {
         trapframe->a0 = myProcess()->brkHeapBottom;
     } else if (addr >= myProcess()->brkHeapBottom) {
@@ -807,6 +809,16 @@ void syscallMemorySychronize() {
 }
 
 void syscallMemeryAdvise(){
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallGetGroupId() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallGetEffectiveGroupId() {
     Trapframe *tf = getHartTrapFrame();
     tf->a0 = 0;
 }

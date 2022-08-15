@@ -285,7 +285,7 @@ void syscallGetFileStateAt(void) {
         tf->a0 = -1;
         return;
     }
-    // printf("path: %s\n", path);
+    printf("fsstate path: %s uva: %lx\n", path, uva);
     struct dirent* entryPoint = ename(dirfd, path, true);
     if (entryPoint == NULL) {
         tf->a0 = -ENOENT;
@@ -402,7 +402,7 @@ void syscallOpenAt(void) {
     }
 
     struct dirent* entryPoint;
-    // printf("openat path: %s\n", path);
+    printf("openat path: %s\n", path);
     // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
     if (flags & O_CREATE_GLIBC) {
         entryPoint = create(startFd, path, T_FILE, mode);
@@ -1165,6 +1165,7 @@ void syscallAccess() {
     Trapframe *tf = getHartTrapFrame();
     int dirfd = tf->a0;
     char path[FAT32_MAX_PATH];
+    printf("path: %s ua: %lx\n", path, tf->a1);
     if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
         tf->a0 = -1;
         return;
@@ -1187,7 +1188,7 @@ void syscallReadLinkAt() {
     }
     u64 buf = tf->a3;
     u32 size = tf->a4;
-    tf->a0 = -1;
+    printf("readlinkat: %d %s %lx %lx\n", dirFd, path, buf, size);
     struct dirent* entryPoint = ename(dirFd, path, false);
     if (entryPoint == NULL || entryPoint->_nt_res != DT_LNK ) {
         goto bad;
@@ -1198,7 +1199,6 @@ void syscallReadLinkAt() {
     return;
 bad:
     tf->a0 = -1;
-    printf("%d %s %lx %lx\n", dirFd, path, buf, size);
 }
 
 int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen) {
