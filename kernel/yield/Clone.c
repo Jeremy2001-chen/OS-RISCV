@@ -28,7 +28,7 @@ int processFork() {
     process->priority = current->priority;
     process->brkHeapBottom = current->brkHeapBottom;
     process->mmapHeapBottom = current->mmapHeapBottom;
-    assert(current->threadCount == 1);
+    // assert(current->threadCount == 1);
     Trapframe* trapframe = getHartTrapFrame();
     bcopy(trapframe, &thread->trapframe, sizeof(Trapframe));
     thread->trapframe.a0 = 0;

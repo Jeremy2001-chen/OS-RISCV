@@ -80,7 +80,7 @@ int consoleRead(int isUser, u64 dst, u64 start, u64 n) {
             getHartTrapFrame()->epc -= 4;
             yield();
         }
-        if (c == -1)
+        if (c == (char)-1)
             return i;
         if (c == '\n')
             putchar('\r');

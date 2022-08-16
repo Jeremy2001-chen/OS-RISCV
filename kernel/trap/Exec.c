@@ -371,6 +371,10 @@ int exec(char* path, char** argv) {
 
     MSG_PRINT("begin map");
 
+    u64 offset = 0;
+    if (elf.type == ET_DYN) {
+        offset += 0x10000;
+    }
 
     // Load program into memory.
     for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
@@ -385,7 +389,7 @@ int exec(char* path, char** argv) {
         if (ph.filesz > 0) {
             segmentMapAlloc(&psm);
             psm->sourceFile = de;
-            psm->va = ph.vaddr;
+            psm->va = ph.vaddr + offset;
             psm->fileOffset = ph.offset;
             psm->len = ph.filesz;
             psm->flag = PTE_EXECUTE | PTE_READ | PTE_WRITE;
@@ -394,7 +398,7 @@ int exec(char* path, char** argv) {
         if (ph.memsz > ph.filesz) {
             segmentMapAlloc(&psm);
             psm->sourceFile = NULL;
-            psm->va = ph.vaddr + ph.filesz;
+            psm->va = ph.vaddr + ph.filesz + offset;
             psm->fileOffset = 0;
             psm->len = ph.memsz - ph.filesz;
             psm->flag = PTE_READ | PTE_WRITE | MAP_ZERO;
@@ -405,7 +409,7 @@ int exec(char* path, char** argv) {
 		 * Header table, and map to the associated memory address.
 		 */
         if (ph.offset <= elf.phoff && elf.phoff < ph.offset + ph.filesz) {
-            phdr_addr = elf.phoff - ph.offset + ph.vaddr;
+            phdr_addr = elf.phoff - ph.offset + ph.vaddr + offset;
         }
     }
 
@@ -444,6 +448,8 @@ int exec(char* path, char** argv) {
         if (elf_interpreter[ph.filesz - 1] != '\0')
             panic("interpreter path is not NULL terminated");
 
+        printf("interpreter path: %s\n", elf_interpreter);
+        // elf_interpreter = "/lib/libc.so.6";
         interpreter = ename(AT_FDCWD, elf_interpreter, true);
 
         // kfree(elf_interpreter);
@@ -473,7 +479,7 @@ int exec(char* path, char** argv) {
         // kfree(interp_elf_ex);
         // kfree(interp_elf_phdata);
     } else {
-        elf_entry = elf.entry;
+        elf_entry = elf.entry + offset;
     }
 
 #ifdef ZZY_DEBUG
@@ -507,7 +513,7 @@ int exec(char* path, char** argv) {
     ustack[0] = argc;
     ustack[argc + 1] = 0;
 
-    char *envVariable[] = {"LD_LIBRARY_PATH=/", "PATH=/", /*"LOOP_O=100", "TIMING_O=100", "ENOUGH=100"*/};
+    char *envVariable[] = {"LD_LIBRARY_PATH=/", "PATH=/:/musl-gcc/include/:/bin/", /*"LOOP_O=100", "TIMING_O=100", "ENOUGH=100"*/};
     int envCount = sizeof(envVariable) / sizeof(char*);
     for (i = 0; i < envCount; i++) {
         sp -= strlen(envVariable[i]) + 1;
@@ -573,7 +579,7 @@ int exec(char* path, char** argv) {
 	NEW_AUX_ENT(AT_PHENT, sizeof(Phdr)); //每个 Phdr 的大小
 	NEW_AUX_ENT(AT_PHNUM, elf.phnum); //phdr的数量
 	NEW_AUX_ENT(AT_BASE, interp_load_addr);
-	NEW_AUX_ENT(AT_ENTRY, elf.entry);//源程序的入口
+	NEW_AUX_ENT(AT_ENTRY, elf.entry + offset);//源程序的入口
 	NEW_AUX_ENT(AT_UID, from_kuid_munged(cred->user_ns, cred->uid));// 0
 	NEW_AUX_ENT(AT_EUID, from_kuid_munged(cred->user_ns, cred->euid));// 0
 	NEW_AUX_ENT(AT_GID, from_kgid_munged(cred->user_ns, cred->gid));// 0
@@ -625,7 +631,6 @@ int exec(char* path, char** argv) {
     */
    
     // Commit to the user image.
-
 
     getHartTrapFrame()->epc = elf_entry;  // initial program counter = main
     getHartTrapFrame()->sp = sp;          // initial stack pointer

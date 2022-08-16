@@ -111,7 +111,11 @@ void (*syscallVector[])(void) = {
     [SYSCALL_FSSYC]                     syscallFileSychornize,
     [SYSCALL_MSYNC]                     syscallMemorySychronize,
     [SYSCALL_OPEN]                      syscallOpen,
-    [SYSCALL_MADVISE]                   syscallMemeryAdvise
+    [SYSCALL_MADVISE]                   syscallMemeryAdvise,
+    [SYSCALL_GET_GROUP_ID]              syscallGetGroupId,
+    [SYSCALL_GET_EFFECTIVE_GROUP_ID]    syscallGetEffectiveGroupId,
+    [SYSCALL_GET_RANDOM]                syscallGetRandom,
+    [SYSCALL_CHANGE_MODAT]              syscallChangeModAt
 };
 
 extern struct Spinlock printLock;
@@ -275,6 +279,7 @@ void syscallMapMemory() {
 
     trapframe->a0 =
         do_mmap(fd, start, len, perm, /*'type' currently not used */ flags, off);
+    // printf("mmap return value: %d\n", trapframe->a0);
     return;
 }
 
@@ -809,4 +814,19 @@ void syscallMemorySychronize() {
 void syscallMemeryAdvise(){
     Trapframe *tf = getHartTrapFrame();
     tf->a0 = 0;
+}
+
+void syscallGetGroupId() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallGetEffectiveGroupId() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallGetRandom() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = r_time();
 }

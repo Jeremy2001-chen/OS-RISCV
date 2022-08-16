@@ -129,8 +129,7 @@ void userTrap() {
         u64 *pte = NULL;
         u64 pa = -1;
         // printf("sepc:%lx sstatus:%lx scause:%lx \n", sepc, sstatus, scause);
-        switch (r_scause() & SCAUSE_EXCEPTION_CODE)
-        {
+        switch (r_scause() & SCAUSE_EXCEPTION_CODE) {
         // case SCAUSE_BREAKPOINT:
         //     trapframe->epc += 4;
         //     break;
@@ -140,7 +139,7 @@ void userTrap() {
             // if (trapframe->a7 == SYSCALL_WRITE || trapframe->a7 == SYSCALL_WRITE_VECTOR || trapframe->a7 == SYSCALL_SELECT || trapframe->a7 == SYSCALL_GET_TIME) {
             // if (trapframe->a7 != 63)
             //     printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
-            // }
+            // // }
             if (!syscallVector[trapframe->a7]) {
                 // printf("%lx\n", r_scause());
                 panic("unknown-syscall: %d\n", trapframe->a7);
@@ -148,10 +147,7 @@ void userTrap() {
             syscallVector[trapframe->a7]();
             // printf("syscall %d end\n", trapframe->a7);
             // if ((i64)trapframe->a0 <= -1) {
-            //     printf("return %d: %d\n", trapframe->a0, trapframe->a7);
-            // }
-            // if (trapframe->a7 == 72) {
-            //     printf("epc = %lx\n", trapframe->epc);
+            // printf("return %d: %d\n", trapframe->a0, trapframe->a7);
             // }
             break;
         case SCAUSE_LOAD_PAGE_FAULT:

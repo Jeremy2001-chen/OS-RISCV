@@ -59,7 +59,7 @@ void socketFree(Socket *s) {
 }
 
 int createSocket(int family, int type, int protocal) {
-    printf("[%s] family %x type  %x protocal %x\n", __func__, family, type, protocal);
+    // printf("[%s] family %x type  %x protocal %x\n", __func__, family, type, protocal);
     // if (family != 2)
     //     return -1;  // ANET_ERR
     // assert(family == 2);
@@ -80,7 +80,7 @@ int createSocket(int family, int type, int protocal) {
 }
 
 int bindSocket(int fd, SocketAddr *sa) {
-    printf("[%s]  addr 0x%lx port 0x%lx \n",__func__, sa->addr, sa->port);
+    // printf("[%s]  addr 0x%lx port 0x%lx \n",__func__, sa->addr, sa->port);
     File *f = myProcess()->ofile[fd];
     assert(f->type == FD_SOCKET);
     Socket *s = f->socket;
