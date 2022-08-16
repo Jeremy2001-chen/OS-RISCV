@@ -579,7 +579,7 @@ int exec(char* path, char** argv) {
 	NEW_AUX_ENT(AT_PHENT, sizeof(Phdr)); //每个 Phdr 的大小
 	NEW_AUX_ENT(AT_PHNUM, elf.phnum); //phdr的数量
 	NEW_AUX_ENT(AT_BASE, interp_load_addr);
-	NEW_AUX_ENT(AT_ENTRY, elf.entry);//源程序的入口
+	NEW_AUX_ENT(AT_ENTRY, elf.entry + offset);//源程序的入口
 	NEW_AUX_ENT(AT_UID, from_kuid_munged(cred->user_ns, cred->uid));// 0
 	NEW_AUX_ENT(AT_EUID, from_kuid_munged(cred->user_ns, cred->euid));// 0
 	NEW_AUX_ENT(AT_GID, from_kgid_munged(cred->user_ns, cred->gid));// 0

@@ -183,9 +183,9 @@ int allocPgdir(PhysicalPage **page) {
 }
 
 u64 pageout(u64 *pgdir, u64 badAddr) {
-    // if (badAddr <= PAGE_SIZE) {
-    //     panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
-    // }
+    if (badAddr <= PAGE_SIZE) {
+        panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
+    }
     PhysicalPage *page = NULL;
     if (badAddr >= USER_STACK_BOTTOM && badAddr < USER_STACK_TOP) {
         if (pageAlloc(&page) < 0) {
