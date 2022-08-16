@@ -632,8 +632,6 @@ int exec(char* path, char** argv) {
    
     // Commit to the user image.
 
-
-    printf("elf_entry: %lx\n", elf_entry);
     getHartTrapFrame()->epc = elf_entry;  // initial program counter = main
     getHartTrapFrame()->sp = sp;          // initial stack pointer
     

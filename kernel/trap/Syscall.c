@@ -235,7 +235,7 @@ void syscallSleepTime() {
 void syscallBrk() {
     Trapframe *trapframe = getHartTrapFrame();
     u64 addr = trapframe->a0;
-    printf("addr: %lx, heapbottom: %lx\n", addr, myProcess()->brkHeapBottom);
+    // printf("addr: %lx, heapbottom: %lx\n", addr, myProcess()->brkHeapBottom);
     if (addr == 0) {
         trapframe->a0 = myProcess()->brkHeapBottom;
     } else if (addr >= myProcess()->brkHeapBottom) {

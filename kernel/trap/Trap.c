@@ -129,13 +129,7 @@ void userTrap() {
         u64 *pte = NULL;
         u64 pa = -1;
         // printf("sepc:%lx sstatus:%lx scause:%lx \n", sepc, sstatus, scause);
-        switch (r_scause() & SCAUSE_EXCEPTION_CODE)
-        { // /musl-gcc/bin/gcc a.s b.s -nostdlib -static -fPIC --verbose -nostartfiles  /musl-gcc/bin/readelf -h a.out
-        // /musl-gcc/bin/gcc a.c b.s -o a.out -T ld.ld -static
-        // /musl-gcc/bin/gcc a.c -c -o a.o -nostdlib -static --strip -fvisibility=hidden
-        // /musl-gcc/bin/gcc b.s -c -o b.o -nostdlib -static -fvisibility=hidden
-        // /musl-gcc/bin/ld a.o b.o -T ld.ld -G 0 -n -nostdlib -fvisibility=hidden -share
-        // cat a.out
+        switch (r_scause() & SCAUSE_EXCEPTION_CODE) {
         // case SCAUSE_BREAKPOINT:
         //     trapframe->epc += 4;
         //     break;
@@ -152,11 +146,8 @@ void userTrap() {
             }
             syscallVector[trapframe->a7]();
             // printf("syscall %d end\n", trapframe->a7);
-            if ((i64)trapframe->a0 <= -1) {
-                printf("return %d: %d\n", trapframe->a0, trapframe->a7);
-            }
-            // if (trapframe->a7 == 72) {
-            //     printf("epc = %lx\n", trapframe->epc);
+            // if ((i64)trapframe->a0 <= -1) {
+            // printf("return %d: %d\n", trapframe->a0, trapframe->a7);
             // }
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
