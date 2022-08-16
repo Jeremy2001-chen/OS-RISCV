@@ -4,7 +4,6 @@
 // ./a.out
 int main() {
     int a, b;
-    scanf("%d%d", &a, &b);
-    printf("a+b=%d\n", a + b);
+    printf("hello world\n");
     return 0;
 }

@@ -5,7 +5,7 @@ _start:
     li a0, 48
 	li a7, 4
 	ecall
-	jal main
+	# jal main
 	li a7, 93
 	ecall
 

@@ -184,11 +184,9 @@ int allocPgdir(PhysicalPage **page) {
 
 u64 pageout(u64 *pgdir, u64 badAddr) {
     // if (badAddr <= PAGE_SIZE) {
-    //     printf("pageout epc: %lx\n", getHartTrapFrame()->epc);
     //     panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     // }
     PhysicalPage *page = NULL;
-    // printf("[Page out]Process Id: %lx, pageout at %lx, bottom: %lx\n", myProcess()->processId, badAddr, USER_STACK_BOTTOM);
     if (badAddr >= USER_STACK_BOTTOM && badAddr < USER_STACK_TOP) {
         if (pageAlloc(&page) < 0) {
             panic("");
@@ -216,10 +214,8 @@ u64 pageout(u64 *pgdir, u64 badAddr) {
             perm |= (psm->flag & ~MAP_ZERO);
         }
     }
-    // if (page == NULL) {
-    //     panic("");
-    // }
     if (page == NULL) {
+        // panic("");
         pageAlloc(&page);
         perm = PTE_READ | PTE_WRITE | PTE_EXECUTE;
     }
