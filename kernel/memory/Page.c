@@ -184,6 +184,8 @@ int allocPgdir(PhysicalPage **page) {
 
 u64 pageout(u64 *pgdir, u64 badAddr) {
     if (badAddr <= PAGE_SIZE) {
+        // Trapframe* tf = getHartTrapFrame();
+        // printf("epc: %lx\n", tf->epc);
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
     PhysicalPage *page = NULL;
@@ -215,9 +217,9 @@ u64 pageout(u64 *pgdir, u64 badAddr) {
         }
     }
     if (page == NULL) {
-        // panic("");
-        pageAlloc(&page);
-        perm = PTE_READ | PTE_WRITE | PTE_EXECUTE;
+        panic("");
+        // pageAlloc(&page);
+        // perm = PTE_READ | PTE_WRITE | PTE_EXECUTE;
     }
     pageInsert(pgdir, badAddr, page2pa(page), PTE_USER | perm);
     return page2pa(page) + (badAddr & 0xFFF);

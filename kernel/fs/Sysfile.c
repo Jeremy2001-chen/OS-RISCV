@@ -1192,16 +1192,16 @@ void syscallReadLinkAt() {
         tf->a0 = -1;
         return;
     }
-    u64 buf = tf->a3;
-    u32 size = tf->a4;
+    // u64 buf = tf->a3;
+    // u32 size = tf->a4;
     // printf("readlinkat: %d %s %lx %lx\n", dirFd, path, buf, size);
     struct dirent* entryPoint = ename(dirFd, path, false);
     if (entryPoint == NULL || entryPoint->_nt_res != DT_LNK ) {
         goto bad;
     }
-    char kbuf[FAT32_MAX_FILENAME];
-    eread(entryPoint, false, (u64)kbuf, 0, entryPoint->file_size);
-    ewrite(entryPoint, true, (u64)buf, 0, MIN(size, sizeof(kbuf)));
+    // char kbuf[FAT32_MAX_FILENAME];
+    // eread(entryPoint, false, (u64)kbuf, 0, entryPoint->file_size);
+    // ewrite(entryPoint, true, (u64)buf, 0, MIN(size, sizeof(kbuf)));
     tf->a0 = 0;
     return;
 bad:
