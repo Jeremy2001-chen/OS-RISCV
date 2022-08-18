@@ -6,6 +6,8 @@
 
 在决赛第一阶段，我们编写了测试程序通过所有 Musl-Libc Test 的测试点。
 
+在决赛第二阶段，我们编写了测试程序通过所有 Busybox、Lua 和 Lmbench 的测试点，并且在内核上支持了使用 musl-gcc 编译的 redis 和 musl-gcc 本身，并为此编写了对应的测试程序。
+
 ## 测试程序
 
 测试程序包括驱动测试、进程调度测试、管道测试、基础文件系统测试、虚拟文件系统测试、Fork 测试、进程编号测试程序、软链接测试程序。
@@ -491,3 +493,194 @@ void userMain() {
 该程序首先测试所有静态链接的测试点，之后再继续测试动态链接测试点。
 
 该测试文件放在 `user/MuslLibcTest.c`，通过了决赛第一阶段的所有测试点。
+
+## 决赛第二阶段测试程序
+
+在决赛第二阶段由于包含了 Busybox，因此我们直接使用 Busybox 的 Shell 解释器去执行对应的三个脚本，得以通过所有的测试点，测试程序如下所示：
+
+```c
+#include <Syscall.h>
+#include <Printf.h>
+#include <userfile.h>
+#include <uLib.h>
+
+char *argvBusybox[] = {"./busybox", "sh", "busybox_testcode.sh", 0};
+char *argvLua[] = {"./busybox", "sh", "lua_testcode.sh", 0};
+char *argvLmbanch[] = {"./busybox", "sh", "lmbench_testcode.sh", 0};
+char *shell[] = {"./busybox", "sh", 0};
+
+void userMain() {
+    dev(1, O_RDWR); //stdin
+    dup(0); //stdout
+    dup(0); //stderr
+
+    int pid = fork();
+    if (pid == 0) {
+        exec("./busybox", argvBusybox);
+    } else {
+        wait(0);
+    }
+
+    pid = fork();
+    if (pid == 0) {
+        exec("./busybox", argvLua);
+    } else {
+        wait(0);
+    }
+    
+    pid = fork();
+    if (pid == 0) {
+        exec("./busybox", argvLmbanch);
+    } else {
+        wait(0);
+    }
+
+    exit(0);
+}
+```
+
+由于 Busybox 解释器本身与 Bash 语法并不相同，因此有一些输出会有些不一样，但是评测结果并不影响。
+
+该测试文件放在 `user/BusyBoxTest.c`，通过了决赛第二阶段的所有测试点。
+
+## Redis 测试程序
+
+我们将 Redis 服务端程序 `redis-serve`，Redis 客户端程序 `redis-cli` 和 Redis 测试集程序 `redis-benchmark` 放到了生成镜像的 `/root` 目录下，在生成镜像时将全部放至根目录下。
+
+首先启动 BusyBox 的 `Shell`：
+
+```c
+#include <Syscall.h>
+#include <Printf.h>
+#include <userfile.h>
+#include <uLib.h>
+
+char *argvBusybox[] = {"./busybox", "sh", "busybox_testcode.sh", 0};
+char *argvLua[] = {"./busybox", "sh", "lua_testcode.sh", 0};
+char *argvLmbanch[] = {"./busybox", "sh", "lmbench_testcode.sh", 0};
+char *shell[] = {"./busybox", "sh", 0};
+
+void userMain() {
+    dev(1, O_RDWR); //stdin
+    dup(0); //stdout
+    dup(0); //stderr
+
+    int pid = fork();
+    if (pid == 0) {
+        exec("./busybox", shell);
+    } else {
+        wait(0);
+    }
+
+    exit(0);
+}
+```
+
+该测试程序依然使用了 `user/BusyBoxTest.c` 中的代码。
+
+在 `Shell` 中首先启动 Redis 服务端进程：
+
+```shell
+/ # redis-server redis.conf &
+```
+
+该命令在**后台**执行 `redis-server` 进程，`redis.conf` 是预设好的 Redis 配置文件。
+
+之后等待 Redis 服务进程初始化结束，启动 `redis-cli` 进程进行客户端交互：
+
+```shell
+/ # redis-cli
+```
+
+执行上述命令后会进入 Redis 的 Shell，之后执行最简单的 Set 和 Get 操作即可测试 Redis 是否正确加载和实现：
+
+```shell
+> 127.0.0.1: set x 1111
+OK!
+> 127.0.0.1: get x
+"1111"
+> 127.0.0.1: delete x
+OK!
+> 127.0.0.1: get x
+(nil)
+```
+
+Redis 的 benchmark 测试程序执行下面的指令即可执行：
+
+/todo
+
+## GCC 测试程序
+
+我们将编译的 GCC 放置在 `/usr/musl-gcc/bin` 下，编写了两个简单的测试程序进行编译的测试，分别测试静态编译和动态编译：
+
+首先是 `a_plus_b` 测试：
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+int main() {
+    int a, b;
+    FILE* file = fopen("a_plus_b.in", "r");
+    if (file == NULL) {
+        printf("No such file!\n");
+        exit(0);
+    }
+    fscanf(file, "%d%d", &a, &b);
+    printf("a+b=%d\n", a + b);
+    fclose(file);
+    return 0;
+}
+```
+
+该测试程序将从文件 `a_plus_b.in` 中读入两个数，并将两个数之和输出到屏幕上。测试文件内容为：
+
+```c
+3 4
+```
+
+在控制台上编译该程序并进行静态链接：
+
+```c
+/ # /usr/musl-gcc/bin/gcc a_plus_b.c -static
+/ # ./a.out
+7
+/ #
+```
+
+接下来是参数传递测试 `argv.c`:
+
+```c
+#include <stdio.h>
+#include <stdlib.h>
+
+int main(int argc, char** argv) {
+    int a, b;
+    FILE* file = fopen("argc.out", "w");
+    if (file == NULL) {
+        printf("No such file!\n");
+        exit(0);
+    }
+    fprintf(file, "argc=%d\n", argc);
+    for (int i = 0; i < argc; i++) {
+        fprintf(file, "argv[%d]: %s\n", i, argv[i]);
+    }
+    fclose(file);
+    return 0;
+}
+```
+
+该测试程序将读入可执行文件的所有参数，并将这些参数输出到文件中：
+
+在控制台上编译该程序并进行动态链接：
+
+```c
+/ # /usr/musl-gcc/bin/gcc argv.c
+/ # ./a.out 1 2 3
+argc=4
+argv[0]: ./a.out
+argv[1]: 1
+argv[2]: 2
+argv[3]: 3
+/ #
+```
