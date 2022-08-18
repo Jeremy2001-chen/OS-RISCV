@@ -3,7 +3,7 @@
 
 #include <fat.h>
 
-#define DIRENT_NUM 65536
+#define DIRENT_NUM 4096
 typedef struct Dirent {
     char filename[FAT32_MAX_FILENAME + 1];
     uint8 attribute;

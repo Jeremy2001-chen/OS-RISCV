@@ -517,7 +517,18 @@ void eSetTime(Dirent *entry, TimeSpec ts[2]) {
 // caller must hold entry->parent->lock
 // remove the entry in its parent directory
 void eremove(Dirent* entry) {
-    //direntFree(entry);
+    Dirent *i = entry->parent->firstChild;
+    if (i == entry) {
+        entry->parent->firstChild = entry->nextBrother;
+    } else {
+        for (; i->nextBrother; i = i->nextBrother) {
+            if (i->nextBrother == entry) {
+                i->nextBrother = entry->nextBrother;
+                break;
+            }
+        }
+    }
+    direntFree(entry);
 }
 
 // truncate a file
