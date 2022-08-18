@@ -147,7 +147,9 @@ void userTrap() {
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
             syscallVector[trapframe->a7]();
-            // printf("syscall %d end\n", trapframe->a7);
+            // if (trapframe->a7 != 73 && trapframe->a7 != 64 && trapframe->a7 != 165 && trapframe->a7 != 113) {
+            //     printf("syscall-end: %d\n", trapframe->a7);
+            // }
             // if ((i64)trapframe->a0 <= -1) {
             // printf("return %d: %d\n", trapframe->a0, trapframe->a7);
             // }

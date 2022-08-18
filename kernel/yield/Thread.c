@@ -191,6 +191,7 @@ int mainThreadAlloc(Thread **new, u64 parentId) {
     acquireLock(&threadListLock);
     if (LIST_EMPTY(&freeThreads)) {
         releaseLock(&threadListLock);
+        panic("");
         *new = NULL;
         return -ESRCH;
     }
@@ -223,6 +224,7 @@ int threadAlloc(Thread **new, Process* process, u64 userSp) {
     acquireLock(&threadListLock);
     if (LIST_EMPTY(&freeThreads)) {
         releaseLock(&threadListLock);
+        panic("");
         *new = NULL;
         return -ESRCH;
     }
