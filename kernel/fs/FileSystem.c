@@ -137,7 +137,7 @@ void loadDirents(FileSystem *fs, Dirent *parent) {
         ep->fileSystem = fs;
         parent->firstChild = ep;
         printf("name: %s, parent: %s\n", ep->filename, parent->filename);
-        if ((ep->attribute & ATTR_DIRECTORY) && off > 32) {
+        if ((ep->attribute & ATTR_DIRECTORY) && (off > 32 || parent == &fs->root)) {
             loadDirents(fs, ep);
         }
         direntAlloc(&ep);
