@@ -13,6 +13,7 @@ typedef int __attribute__((__mode__(DI))) i64;
 typedef u8 bool;
 #define true 1
 #define false 0
+#define NULL 0
 
 typedef __builtin_va_list va_list;
 #define va_start(ap, param) __builtin_va_start(ap, param)

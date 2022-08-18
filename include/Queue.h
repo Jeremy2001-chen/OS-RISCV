@@ -46,7 +46,7 @@
  * where HEADNAME is the name of the structure to be defined, and TYPE is the type of the
  * elements to be linked into the list.
  */
-#define NULL 0
+#include <Type.h>
 
 #define LIST_HEAD(name, type)                                           \
         struct name {                                                           \

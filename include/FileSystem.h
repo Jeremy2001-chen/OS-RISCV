@@ -35,7 +35,7 @@ typedef struct FileSystemStatus {
 void fatClusterInit();
 int fsAlloc(FileSystem **fs);
 int fatInit(FileSystem *fs);
-void initDirentCache();
 int getFsStatus(char *path, FileSystemStatus *fss);
+void initRootFileSystem();
 
 #endif
