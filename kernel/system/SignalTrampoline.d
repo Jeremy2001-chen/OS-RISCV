@@ -1,1 +1,0 @@
-SignalTrampoline.o: SignalTrampoline.S

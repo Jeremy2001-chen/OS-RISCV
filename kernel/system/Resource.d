@@ -1,1 +1,0 @@
-Resource.o: Resource.c
