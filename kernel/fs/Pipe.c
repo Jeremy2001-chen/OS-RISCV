@@ -92,8 +92,8 @@ int pipeWrite(struct pipe* pi, bool isUser, u64 addr, int n) {
             pa = pageout(pageTable, addr);
         }
         if (cow) {
-            cowHandler(pageTable, addr);
-            pa = vir2phy(pageTable, addr, NULL);
+            pa = cowHandler(pageTable, addr);
+            // pa = vir2phy(pageTable, addr, NULL);
         }
     }
 
@@ -123,8 +123,8 @@ int pipeWrite(struct pipe* pi, bool isUser, u64 addr, int n) {
                     pa = pageout(pageTable, addr + i);
                 }
                 if (cow) {
-                    cowHandler(pageTable, addr);
-                    pa = vir2phy(pageTable, addr, NULL);
+                    pa = cowHandler(pageTable, addr);
+                    // pa = vir2phy(pageTable, addr, NULL);
                 }
             } else {
                 pa++;
@@ -191,8 +191,8 @@ void pipeOut(bool isUser, u64 dstva, char* src) {
         pa = pageout(pageTable, dstva);
     }
     if (cow) {
-        cowHandler(pageTable, dstva);
-        pa = vir2phy(pageTable, dstva, &cow);
+        pa = cowHandler(pageTable, dstva);
+        // pa = vir2phy(pageTable, dstva, &cow);
     }
     *((char*)pa) = *src;
 }

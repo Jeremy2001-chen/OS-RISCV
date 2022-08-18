@@ -317,7 +317,6 @@ int exec(char* path, char** argv) {
 /* ========== check executable format (script or elf) =========== */
 
     char bprmbuf[BINPRM_BUF_SIZE];
-    memset(bprmbuf, 0, sizeof(bprmbuf));
     eread(de, 0, (u64)bprmbuf, 0, BINPRM_BUF_SIZE - 1);
     if (bprmbuf[0] == '#' && bprmbuf[1] == '!') {
         eunlock(de);
@@ -416,7 +415,7 @@ int exec(char* path, char** argv) {
     Ehdr* interp_elf_ex;
     u64 elf_entry;
     u64 interp_load_addr = 0;
-    u64 load_bias =0;  // load_bias only work when object is ET_DYN, such as ./ld.so
+    u64 load_bias = 0;  // load_bias only work when object is ET_DYN, such as ./ld.so
     for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
         if (eread(de, 0, (u64)&ph, off, sizeof(ph)) != sizeof(ph)) {
             goto bad;
@@ -673,6 +672,7 @@ u64 sys_exec(void) {
     if (argstr(0, path, MAXPATH) < 0 || argaddr(1, &uargv) < 0) {
         return -1;
     }
+
     memset(argv, 0, sizeof(argv));
     for (i = 0;; i++) {
         if (i >= NELEM(argv)) {
@@ -695,6 +695,10 @@ u64 sys_exec(void) {
             goto bad;
     }
 
+    // printf("[EXEC] %s\n", path);
+    // for (int i = 0; argv[i] != 0; i++) {
+    //     printf("argv[%d] = %s\n", i, argv[i]);
+    // }
     int ret = exec(path, argv);
 
     for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)

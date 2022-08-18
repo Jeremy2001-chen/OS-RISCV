@@ -22,7 +22,7 @@ int processFork() {
         *new = *psm;
         appendSegmentMap(process, new);
     }
-    for (int i = 0; i < NOFILE; i++)
+    for (int i = 0; i < process->fileDescription.hard; i++)
         if (current->ofile[i])
             process->ofile[i] = filedup(current->ofile[i]);
     process->priority = current->priority;

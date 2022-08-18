@@ -138,7 +138,10 @@ void userTrap() {
             // if (trapframe->a7 == SYSCALL_WRITE || trapframe->a7 == SYSCALL_WRITE_VECTOR || trapframe->a7 == SYSCALL_SELECT || trapframe->a7 == SYSCALL_GET_TIME) {
             // if (trapframe->a7 != 63)
             //     printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
-            // // }
+            // }
+            // if (trapframe->a7 != 72 && trapframe->a7 != 63 && trapframe->a7 != 165 && trapframe->a7 != 113) {
+            //     printf("syscall-trigger: %d\n", trapframe->a7);
+            // }
             if (!syscallVector[trapframe->a7]) {
                 // printf("%lx\n", r_scause());
                 panic("unknown-syscall: %d\n", trapframe->a7);

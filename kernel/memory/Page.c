@@ -225,27 +225,28 @@ u64 pageout(u64 *pgdir, u64 badAddr) {
     return page2pa(page) + (badAddr & 0xFFF);
 }
 
-u8 cowBuffer[PAGE_SIZE];
-void cowHandler(u64 *pgdir, u64 badAddr) {
+// u8 cowBuffer[PAGE_SIZE];
+u64 cowHandler(u64 *pgdir, u64 badAddr) {
     u64 pa;
     u64 *pte = NULL;
     pa = pageLookup(pgdir, badAddr, &pte);
     // printf("[COW] %x to cow %lx %lx\n", myProcess()->processId, badAddr, pa);
     if (!(*pte & PTE_COW)) {
-        printf("access denied\n");
-        return;
+        panic("access denied\n");
+        return 0;
     }
     PhysicalPage *page;
     int r = pageAlloc(&page);
     if (r < 0) {
         panic("cow handler error");
-        return;
+        return 0;
     }
     // acquireLock(&cowBufferLock);
     pa = pageLookup(pgdir, badAddr, &pte);
-    bcopy((void *)pa, (void*)cowBuffer, PAGE_SIZE);
+    bcopy((void *)pa, (void*)page2pa(page), PAGE_SIZE);
     pageInsert(pgdir, badAddr, page2pa(page), (PTE2PERM(*pte) | PTE_WRITE) & ~PTE_COW);
-    bcopy((void*) cowBuffer, (void*) page2pa(page), PAGE_SIZE);
+    return page2pa(page) + (badAddr & 0xFFF); 
+    // bcopy((void*) cowBuffer, (void*) page2pa(page), PAGE_SIZE);
     // releaseLock(&cowBufferLock);
 }
 
@@ -262,9 +263,6 @@ u64 vir2phy(u64* pagetable, u64 va, int* cow) {
     int ret = pageWalk(pagetable, va, 0, &pte);
     if (ret < 0) {
         panic("pageWalk error in vir2phy function!");
-    }
-    if (pte == 0) {
-        return NULL;
     }
     if ((*pte & PTE_VALID) == 0)
         return NULL;
@@ -316,8 +314,8 @@ int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
             pa0 = pageout(pagetable, dstva);
         }
         if (cow) {
-            cowHandler(pagetable, dstva);
-            pa0 = vir2phy(pagetable, dstva, NULL);
+            pa0 = cowHandler(pagetable, dstva);
+            // pa0 = vir2phy(pagetable, dstva, NULL);
         }
         n = PGSIZE - (dstva - va0);
         if (n > len)
@@ -342,8 +340,8 @@ int memsetOut(u64 *pgdir, u64 dst, u8 value, u64 len) {
             pa0 = pageout(pgdir, dst);
         }
         if (cow) {
-            cowHandler(pgdir, dst);
-            pa0 = vir2phy(pgdir, dst, NULL);
+            pa0 = cowHandler(pgdir, dst);
+            // pa0 = vir2phy(pgdir, dst, NULL);
         }
         n = PGSIZE - (dst - va0);
         if (n > len)
