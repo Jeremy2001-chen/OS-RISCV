@@ -153,6 +153,30 @@ void threadSetup(Thread* th) {
         panic("");
     }
     pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 3, page2pa(page), PTE_READ | PTE_WRITE);
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 4, page2pa(page), PTE_READ | PTE_WRITE);
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 5, page2pa(page), PTE_READ | PTE_WRITE);
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 6, page2pa(page), PTE_READ | PTE_WRITE);
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 7, page2pa(page), PTE_READ | PTE_WRITE);
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 8, page2pa(page), PTE_READ | PTE_WRITE);
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 9, page2pa(page), PTE_READ | PTE_WRITE);
 }
 
 u64 getSignalHandlerSp(Thread *th) {
@@ -248,12 +272,12 @@ void threadRun(Thread* th) {
             
             rootFileSystem->read = blockRead;
             
-            fatInit(rootFileSystem);
             initDirentCache();
+            fatInit(rootFileSystem);
             void testfat();
             testfat();
 
-            struct dirent* ep = create(AT_FDCWD, "/var/tmp/XXX", T_FILE, O_RDONLY);
+            Dirent* ep = create(AT_FDCWD, "/var/tmp/XXX", T_FILE, O_RDONLY);
             assert(ep != NULL);
             eunlock(ep);
             eput(ep);

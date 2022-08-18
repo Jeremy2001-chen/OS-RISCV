@@ -99,7 +99,7 @@ struct buf* mountBlockRead(FileSystem* fs, u64 blockNum) {
         return bread(file->major, blockNum);
     }
     assert(file->type == FD_ENTRY);
-    struct dirent *image = fs->image->ep;
+    Dirent *image = fs->image->ep;
     FileSystem* parentFs = image->fileSystem;
     int parentBlockNum = getBlockNumber(image, blockNum); 
     if (parentBlockNum < 0) {

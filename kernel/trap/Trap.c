@@ -138,8 +138,8 @@ void userTrap() {
         case SCAUSE_ENVIRONMENT_CALL:
             trapframe->epc += 4;
             // printf("syscall %d\n", trapframe->a7);
-            // if (trapframe->a7 == SYSCALL_WRITE || trapframe->a7 == SYSCALL_WRITE_VECTOR || trapframe->a7 == SYSCALL_SELECT || trapframe->a7 == SYSCALL_GET_TIME) {
-                // printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
+            // if (trapframe->a7 != 63)
+            //     printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
             // }
             if (!syscallVector[trapframe->a7]) {
                 // printf("%lx\n", r_scause());

@@ -35,7 +35,6 @@ void syscallChangeDir(void);
 void syscallGetWorkDir(void);
 void syscallPipe(void);
 void syscallDevice(void);
-void syscallReadDir(void);
 void syscallGetDirent();
 void syscallMount(void);
 void syscallUmount(void);
@@ -54,7 +53,7 @@ void syscallUmask(void);
 void syscallFileSychornize();
 void syscallOpen(void);
 
-int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen);
+int getAbsolutePath(Dirent* d, int isUser, u64 buf, int maxLen);
 
 u64 sys_remove(void);
 int do_linkat(int oldDirFd, char* oldPath, int newDirFd, char* newPath);

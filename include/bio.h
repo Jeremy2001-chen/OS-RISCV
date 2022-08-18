@@ -9,7 +9,6 @@
 #define NBUF 16
 
 typedef struct FileSystem FileSystem;
-struct dirent;
 struct buf {
     int valid;  // has data been read from disk?
     int disk;   // does disk "own" buf?

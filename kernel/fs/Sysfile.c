@@ -287,7 +287,7 @@ void syscallGetFileStateAt(void) {
         return;
     }
     // printf("path: %s\n", path);
-    struct dirent* entryPoint = ename(dirfd, path, true);
+    Dirent* entryPoint = ename(dirfd, path, true);
     if (entryPoint == NULL) {
         tf->a0 = -ENOENT;
         return;
@@ -304,8 +304,9 @@ void syscallGetFileStateAt(void) {
     tf->a0 = 0;
 }
 
-extern struct entry_cache* ecache;
+#define DEBUG_FS
 void syscallGetDirent() {
+    #ifndef DEBUG_FS
     struct File* f;
     int fd, n;
     u64 addr;
@@ -321,7 +322,7 @@ void syscallGetDirent() {
     if (f->type == FD_ENTRY) {
         int count = 0;
         int ret;
-        struct dirent de;
+        Dirent de;
         int nread=0;
         elock(f->ep);
         for (;;) {
@@ -362,31 +363,10 @@ void syscallGetDirent() {
         }
         eunlock(f->ep);
 
-        // elock(f->ep);
-        // dir64->d_ino = f->ep - ecache->entries;
-        // dir64->d_off = f->ep->off;
-        // dir64->d_reclen = 0;  // What's this?
-        // dir64->d_type = f->ep->attribute;
-        // int len = strlen(f->ep->filename);
-        // int prefix = ((u64)dir64->d_name - (u64)dir64);
-        // if (len + prefix + 1 > n) {
-        //     getHartTrapFrame()->a0 = -1;
-        //     eunlock(f->ep);
-        //     return; 
-        // }
-        // if (copyout(p->pgdir, addr, (char*)dir64, prefix) != 0) {
-        //     getHartTrapFrame()->a0 = -4;
-        //     eunlock(f->ep);
-        //     return;
-        // }
-        // if (copyout(p->pgdir, addr + prefix, f->ep->filename, len) != 0) {
-        //     getHartTrapFrame()->a0 = -114;
-        //     eunlock(f->ep);
-        //     return;
-        // }
         getHartTrapFrame()->a0 = nread;
         return;
     }
+    #endif
     getHartTrapFrame()->a0 = -5;
     return;
 }
@@ -402,7 +382,7 @@ void syscallOpenAt(void) {
         return;
     }
 
-    struct dirent* entryPoint;
+    Dirent* entryPoint;
     // printf("openat path: %s\n", path);
     // printf("startFd: %d, path: %s, flags: %x, mode: %x\n", startFd, path, flags, mode);
     if (flags & O_CREATE_GLIBC) {
@@ -472,7 +452,7 @@ void syscallOpen(void) {
         return;
     }
    
-    struct dirent* entryPoint;
+    Dirent* entryPoint;
     printf("open path: %s\n", path);
     printf("path: %s, flags: %x, mode: %x\n", path, flags, mode);
     if (flags & O_CREATE_GPP) {
@@ -542,7 +522,7 @@ void syscallMakeDirAt(void) {
         tf->a0 = -1;
         return;
     }
-    struct dirent* entryPoint;
+    Dirent* entryPoint;
     bool flag = true;
     for (int i = 0; path[i]; i++) {
         if (path[i] != '/') {
@@ -571,7 +551,7 @@ bad:
 void syscallChangeDir(void) {
     Trapframe* tf = getHartTrapFrame();
     char path[FAT32_MAX_PATH];
-    struct dirent* ep;
+    Dirent* ep;
 
     struct Process* process = myProcess();
     
@@ -685,100 +665,19 @@ bad:
     tf->a0 = -1;
 }
 
-void syscallReadDir(void) {
-    Trapframe* tf = getHartTrapFrame();
-    struct File* f;
-    int fd = tf->a0;
-    u64 uva = tf->a1;
-
-    if (fd < 0 || fd >= NOFILE || (f = myProcess()->ofile[fd]) == NULL) {
-        tf->a0 = -1;
-        return;
-    }
-    
-    tf->a0 = dirnext(f, uva);
-}
-
-// get absolute cwd string
-/*
-u64 sys_getcwd(void) {
-    u64 addr;
-    if (argaddr(0, &addr) < 0)
-        return -1;
-
-    struct dirent* de = myProcess()->cwd;
-    char path[FAT32_MAX_PATH];
-    char* s;
-    int len;
-
-    if (de->parent == NULL) {
-        s = "/";
-    } else {
-        s = path + FAT32_MAX_PATH - 1;
-        *s = '\0';
-        while (de->parent) {
-            len = strlen(de->filename);
-            s -= len;
-            if (s <= path)  // can't reach root "/"
-                return -1;
-            strncpy(s, de->filename, len);
-            *--s = '/';
-            de = de->parent;
-        }
-    }
-
-    // if (copyout(myProcess()->pgdir, addr, s, strlen(s) + 1) < 0)
-    if (copyout2(addr, s, strlen(s) + 1) < 0)
-        return -1;
-
-    return 0;
-}
-*/
-
+#ifndef DEBUG_FS
 // Is the directory dp empty except for "." and ".." ?
-static int isDirEmpty(struct dirent* dp) {
-    struct dirent ep;
+static int isDirEmpty(Dirent* dp) {
+    Dirent ep;
     int count;
     ep.valid = 0;
     return enext(dp, &ep, 2 * 32, &count) == -1; // skip the "." and ".."
 }
-
-/*
-u64 sys_remove(void) {
-    char path[FAT32_MAX_PATH];
-    struct dirent* ep;
-    int len;
-    if ((len = argstr(0, path, FAT32_MAX_PATH)) <= 0)
-        return -1;
-
-    char* s = path + len - 1;
-    while (s >= path && *s == '/') {
-        s--;
-    }
-    if (s >= path && *s == '.' && (s == path || *--s == '/')) {
-        return -1;
-    }
-
-    if ((ep = ename(path)) == NULL) {
-        return -1;
-    }
-    elock(ep);
-    if ((ep->attribute & ATTR_DIRECTORY) && !isDirEmpty(ep)) {
-        eunlock(ep);
-        eput(ep);
-        return -1;
-    }
-    elock(ep->parent);  // Will this lead to deadlock?
-    eremove(ep);
-    eunlock(ep->parent);
-    eunlock(ep);
-    eput(ep);
-
-    return 0;
-} */
+#endif
 
 void syscallRenameAt(void) {
     Trapframe* tf = getHartTrapFrame();
+    #ifndef DEBUG_FS
     int oldFd = tf->a0, newFd = tf->a2;
     char old[FAT32_MAX_PATH], new[FAT32_MAX_PATH];
     if (argstr(1, old, FAT32_MAX_PATH) < 0 || argstr(3, new, FAT32_MAX_PATH) < 0) {
@@ -786,7 +685,7 @@ void syscallRenameAt(void) {
         return ;
     }
 
-    struct dirent *src = NULL, *dst = NULL, *pdst = NULL;
+    Dirent *src = NULL, *dst = NULL, *pdst = NULL;
     int srclock = 0;
     char* name;
     if ((src = ename(oldFd, old, true)) == NULL || (pdst = enameparent(newFd, new, old)) == NULL ||
@@ -794,7 +693,7 @@ void syscallRenameAt(void) {
         goto fail;  // src doesn't exist || dst parent doesn't exist || illegal
                     // new name
     }
-    for (struct dirent* ep = pdst; ep != NULL; ep = ep->parent) {
+    for (Dirent* ep = pdst; ep != NULL; ep = ep->parent) {
         if (ep ==
             src) {  // In what universe can we move a directory into its child?
             goto fail;
@@ -812,12 +711,10 @@ void syscallRenameAt(void) {
         if (src == dst) {
             goto fail;
         } else if (src->attribute & dst->attribute & ATTR_DIRECTORY) {
-            elock(dst);
             if (!isDirEmpty(dst)) {  // it's ok to overwrite an empty dir
                 eunlock(dst);
                 goto fail;
             }
-            elock(pdst);
         } else {  // src is not a dir || dst exists and is not an dir
             goto fail;
         }
@@ -835,7 +732,7 @@ void syscallRenameAt(void) {
     }
     eremove(src);
     eunlock(src->parent);
-    struct dirent* psrc = src->parent;  // src must not be root, or it won't
+    Dirent* psrc = src->parent;  // src must not be root, or it won't
                                         // pass the for-loop test
     src->parent = edup(pdst);
     src->off = off;
@@ -848,21 +745,15 @@ void syscallRenameAt(void) {
     }
     eput(pdst);
     eput(src);
-
+    #endif
     tf->a0 = 0;
     return;
 
+    #ifndef DEBUG_FS
 fail:
-    if (srclock)
-        eunlock(src);
-    if (dst)
-        eput(dst);
-    if (pdst)
-        eput(pdst);
-    if (src)
-        eput(src);
     tf->a0 = -1;
     return;
+    #endif
 }
 
 void syscallMount() {
@@ -874,7 +765,7 @@ void syscallMount() {
         tf->a0 = -1;
         return;
     }
-    struct dirent *ep, *dp;
+    Dirent *ep, *dp;
     if (fetchstr(imagePathUva, imagePath, FAT32_MAX_PATH) < 0 || (ep = ename(AT_FDCWD, imagePath, true)) == NULL) {
         tf->a0 = -1;
         return;
@@ -920,7 +811,7 @@ void syscallUmount() {
     u64 mountPathUva = tf->a0;
     int flag = tf->a1;
     char mountPath[FAT32_MAX_FILENAME];
-    struct dirent *ep;
+    Dirent *ep;
 
     if (fetchstr(mountPathUva, mountPath, FAT32_MAX_PATH) < 0 || (ep = ename(AT_FDCWD, mountPath, true)) == NULL) {
         tf->a0 = -1;
@@ -934,18 +825,6 @@ void syscallUmount() {
         return;
     }
 
-    extern DirentCache direntCache;
-    // acquireLock(&direntCache.lock);
-    // bool canUmount = true;
-    for(int i = 0; i < ENTRY_CACHE_NUM; i++) {
-        struct dirent* entry = &direntCache.entries[i];
-        if (entry->fileSystem == ep->head) {
-            eput(entry);
-        }
-    }
-
-    // releaseLock(&direntCache.lock);
-
     ep->head->valid = 0;
     ep->head = ep->head->next;
 
@@ -953,7 +832,7 @@ void syscallUmount() {
 }
 
 int do_linkat(int oldDirFd, char* oldPath, int newDirFd, char* newPath) {
-    struct dirent *entryPoint, *targetPoint = NULL;
+    Dirent *entryPoint, *targetPoint = NULL;
 
     if ((entryPoint = ename(oldDirFd, oldPath, true)) == NULL) {
         goto bad;
@@ -974,11 +853,6 @@ int do_linkat(int oldDirFd, char* oldPath, int newDirFd, char* newPath) {
     }
 
     targetPoint->_nt_res = DT_LNK;
-    eupdate(targetPoint);
-
-    // eput(entryPoint);
-
-    // eput(targetPoint);
 
     return 0;
 bad:
@@ -1007,7 +881,7 @@ void syscallLinkAt() {
 }
 
 int do_unlinkat(int fd, char* path) {
-    struct dirent* entryPoint;
+    Dirent* entryPoint;
     if((entryPoint = ename(fd, path, true)) == NULL) {
         goto bad;
     }
@@ -1090,7 +964,7 @@ void syscallUtimensat() {
     Trapframe *tf = getHartTrapFrame();
     char path[FAT32_MAX_PATH];
     int dirFd = tf->a0;
-    struct dirent *de;
+    Dirent *de;
     if (tf->a1) {
         if (fetchstr(tf->a1, path, FAT32_MAX_PATH) < 0) {
             tf->a0 = -1;
@@ -1170,7 +1044,7 @@ void syscallAccess() {
         tf->a0 = -1;
         return;
     }
-    struct dirent* entryPoint = ename(dirfd, path, true);
+    Dirent* entryPoint = ename(dirfd, path, true);
     if (entryPoint == NULL) {
         tf->a0 = -1;
         return;
@@ -1189,7 +1063,7 @@ void syscallReadLinkAt() {
     u64 buf = tf->a3;
     u32 size = tf->a4;
     tf->a0 = -1;
-    struct dirent* entryPoint = ename(dirFd, path, false);
+    Dirent* entryPoint = ename(dirFd, path, false);
     if (entryPoint == NULL || entryPoint->_nt_res != DT_LNK ) {
         goto bad;
     }
@@ -1202,7 +1076,7 @@ bad:
     printf("%d %s %lx %lx\n", dirFd, path, buf, size);
 }
 
-int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen) {
+int getAbsolutePath(Dirent* d, int isUser, u64 buf, int maxLen) {
     char path[FAT32_MAX_PATH];
     
     if (d->parent == NULL) {

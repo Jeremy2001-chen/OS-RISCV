@@ -18,9 +18,6 @@ int inodeAlloc() {
 }
 
 void inodeFree(int x) {
-    if (x == -1) {
-        panic("");
-    }
     assert(inodeBitmap[x >> 6] & (1UL << (x & 63)));
     inodeBitmap[x >> 6] &= ~(1UL << (x & 63));
 }

@@ -3,7 +3,7 @@
 #include <Type.h>
 #include <Queue.h>
 #include <bio.h>
-#include <fat.h>
+#include <Dirent.h>
 #include <MemoryConfig.h>
 #define MAX_NAME_LENGTH 64
 
@@ -12,7 +12,7 @@ typedef struct FileSystem {
     bool valid;
     char name[MAX_NAME_LENGTH];
     struct superblock superBlock;
-    struct dirent root;
+    Dirent root;
     struct File *image;
     FileSystem *next;
     int deviceNumber;
@@ -23,11 +23,6 @@ static inline u64 getFileSystemClusterBitmap(FileSystem *fs) {
     extern FileSystem fileSystem[];
     return FILE_SYSTEM_CLUSTER_BITMAP_BASE + ((fs - fileSystem) << 10) * PAGE_SIZE;
 }
-
-typedef struct DirentCache {
-    struct Spinlock lock;
-    struct dirent entries[ENTRY_CACHE_NUM];
-} DirentCache;
 
 typedef struct FileSystemStatus {
 	unsigned long f_type, f_bsize;

@@ -6,7 +6,7 @@
 
 typedef struct Process Process;
 typedef struct ProcessSegmentMap {
-    struct dirent *sourceFile;
+    Dirent *sourceFile;
     u64 va;
     u64 fileOffset;
     u32 len;
