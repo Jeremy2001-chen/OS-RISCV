@@ -34,5 +34,12 @@ void userMain() {
         wait(0);
     }
 
+    pid = fork();
+    if (pid == 0) {
+        exec("./busybox", shell);
+    } else {
+        wait(0);
+    }
+
     exit(0);
 }

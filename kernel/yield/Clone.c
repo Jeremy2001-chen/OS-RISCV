@@ -22,12 +22,12 @@ int processFork() {
         *new = *psm;
         appendSegmentMap(process, new);
     }
-    for (int i = 0; i < NOFILE; i++)
+    for (int i = 0; i < process->fileDescription.hard; i++)
         if (current->ofile[i])
             process->ofile[i] = filedup(current->ofile[i]);
     process->priority = current->priority;
     process->heapBottom = current->heapBottom;
-    assert(current->threadCount == 1);
+    // assert(current->threadCount == 1);
     Trapframe* trapframe = getHartTrapFrame();
     bcopy(trapframe, &thread->trapframe, sizeof(Trapframe));
     thread->trapframe.a0 = 0;

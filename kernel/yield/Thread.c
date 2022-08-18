@@ -399,6 +399,10 @@ void threadRun(Thread* th) {
             assert(ep != NULL);
             eunlock(ep);
             eput(ep);
+            ep = create(AT_FDCWD, "/hello", T_FILE, O_RDONLY);
+            assert(ep != NULL);
+            eunlock(ep);
+            eput(ep);
             // setNextTimeout();
         }
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));

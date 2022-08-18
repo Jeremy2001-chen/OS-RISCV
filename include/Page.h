@@ -90,7 +90,7 @@ void pgdirFree(u64* pgdir);
 u64 pageLookup(u64 *pgdir, u64 va, u64 **pte);
 int allocPgdir(PhysicalPage **page);
 u64 pageout(u64 *pgdir, u64 badAddr);
-void cowHandler(u64 *pgdir, u64 badAddr);
+u64 cowHandler(u64 *pgdir, u64 badAddr);
 void pageFree(PhysicalPage *page);
 
 u64 vir2phy(u64* pagetable, u64 va, int* cow);

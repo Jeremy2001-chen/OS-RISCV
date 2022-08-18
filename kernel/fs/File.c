@@ -146,16 +146,14 @@ int filewrite(struct File* f, bool isUser, u64 addr, int n) {
 
     if (f->type == FD_PIPE) {
         ret = pipeWrite(f->pipe, isUser, addr, n);
-        if (ret == 0) {
-            printf("%d %lx %d\n", isUser, addr, n);
-        }
-        assert(ret != 0);
+        // assert(ret != 0);
     } else if (f->type == FD_DEVICE) {
         if (f->major < 0 || f->major >= NDEV || !devsw[f->major].write)
             return -1;
         ret = devsw[f->major].write(isUser, addr, 0, n);
     } else if (f->type == FD_ENTRY) {
         // elock(f->ep);
+        // printf("%s\n", f->ep->filename);
         if (ewrite(f->ep, isUser, addr, f->off, n) == n) {
             ret = n;
             f->off += n;

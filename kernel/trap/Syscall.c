@@ -750,10 +750,12 @@ void syscallSelect() {
         }
     }
     if (except) {
-        FdSet set;
+        // FdSet set;
         // copyin(myProcess()->pgdir, (char*)&set, except, sizeof(FdSet));
-        memset(&set, 0, sizeof(FdSet));
-        copyout(myProcess()->pgdir, except, (char*)&set, sizeof(FdSet));
+        u8 zero = 0;
+        memsetOut(myProcess()->pgdir, except, zero, nfd);
+        // memset(&set, 0, sizeof(FdSet));
+        // copyout(myProcess()->pgdir, except, (char*)&set, sizeof(FdSet));
     }
     if (cnt == 0) {
         if (!(myThread()->reason & SELECT_BLOCK)) {
