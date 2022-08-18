@@ -1060,11 +1060,11 @@ void syscallLSeek() {
         default:
             goto bad;
     }
-    if (file->type != FD_ENTRY) {
-        file->off = off;
-    } else {
-        file->off = (off >= file->ep->file_size ? file->ep->file_size : off);
-    }
+    file->off = off;
+    // if (file->type != FD_ENTRY) {
+    // } else {
+    //     file->off = (off >= file->ep->file_size ? file->ep->file_size : off);
+    // }
     tf->a0 = off;
     return;
 bad:
