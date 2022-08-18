@@ -164,6 +164,7 @@ int processAlloc(Process **new, u64 parentId) {
     // acquireLock(&freeProcessesLock);
     if (LIST_EMPTY(&freeProcesses)) {
         // releaseLock(&freeProcessesLock);
+        panic("");
         *new = NULL;
         return -NO_FREE_PROCESS;
     }

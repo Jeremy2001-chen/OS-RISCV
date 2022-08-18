@@ -7,6 +7,7 @@ char *argvBusybox[] = {"./busybox", "sh", "busybox_testcode.sh", 0};
 char *argvLua[] = {"./busybox", "sh", "lua_testcode.sh", 0};
 char *argvLmbanch[] = {"./busybox", "sh", "lmbench_testcode.sh", 0};
 char *shell[] = {"./busybox", "sh", 0};
+char *late[] = {"./busybox", "sh", "lmbench_all", "lat_fs", "/var/tmp", 0};
 
 void userMain() {
     dev(1, O_RDWR); //stdin

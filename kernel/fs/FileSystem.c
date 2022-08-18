@@ -192,7 +192,7 @@ int fatInit(FileSystem *fs) {
     fs->root.inodeMaxCluster = 1;
     fs->root.filename[0]='/';
     fs->root.fileSystem = fs;
-    
+    // fs->superBlock.bpb.fat_sz = MIN(512, fs->superBlock.bpb.fat_sz);
     int totalClusterNumber = fs->superBlock.bpb.fat_sz * fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
     u64 *clusterBitmap = (u64*)getFileSystemClusterBitmap(fs);
     int cnt = 0;
