@@ -24,7 +24,7 @@ void yield() {
         }
         thread->state = RUNNABLE;
     }
-    while ((count == 0) || !thread || (thread->state != RUNNABLE) || thread->awakeTime > r_time()) {
+    while ((count == 0) || !thread || (thread->state != RUNNABLE)/* || thread->awakeTime > r_time()*/) {
         if (thread)
             LIST_INSERT_TAIL(&scheduleList[point ^ 1], thread, scheduleLink);
         if (LIST_EMPTY(&scheduleList[point]))
@@ -46,6 +46,6 @@ void yield() {
         getHartTrapFrame()->a0 = 0;
         thread->awakeTime = 0;
     }
-    futexClear(thread);
+    // futexClear(thread);
     threadRun(thread);
 }

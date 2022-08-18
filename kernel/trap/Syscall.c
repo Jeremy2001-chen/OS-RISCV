@@ -698,9 +698,9 @@ void syscallSelect() {
     Trapframe *tf = getHartTrapFrame();
     // printf("thread %lx get in select, epc: %lx\n", myThread()->id, tf->epc);
     int nfd = tf->a0;
-    assert(nfd <= 128);
-    u64 read = tf->a1, write = tf->a2, except = tf->a3, timeout = tf->a4;
-    assert(timeout != 0);
+    // assert(nfd <= 128);
+    u64 read = tf->a1, write = tf->a2, except = tf->a3/*, timeout = tf->a4*/;
+    // assert(timeout != 0);
     int cnt = 0;
     struct File* file = NULL;
     // printf("[%s] \n", __func__);
@@ -774,7 +774,7 @@ void syscallSelect() {
     }
     if (except) {
         FdSet set;
-        copyin(myProcess()->pgdir, (char*)&set, except, sizeof(FdSet));
+        // copyin(myProcess()->pgdir, (char*)&set, except, sizeof(FdSet));
         memset(&set, 0, sizeof(FdSet));
         copyout(myProcess()->pgdir, except, (char*)&set, sizeof(FdSet));
     }
