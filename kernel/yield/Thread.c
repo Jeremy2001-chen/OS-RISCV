@@ -272,7 +272,7 @@ void threadRun(Thread* th) {
             
             rootFileSystem->read = blockRead;
             
-            initDirentCache();
+            direntInit();
             fatInit(rootFileSystem);
             void testfat();
             testfat();

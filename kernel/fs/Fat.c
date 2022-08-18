@@ -517,18 +517,7 @@ void eSetTime(Dirent *entry, TimeSpec ts[2]) {
 // caller must hold entry->parent->lock
 // remove the entry in its parent directory
 void eremove(Dirent* entry) {
-    FileSystem *fs = entry->fileSystem;
-    uint entcnt = 0;
-    uint32 off = entry->off;
-    uint32 off2 = reloc_clus(fs, entry->parent, off, 0);
-    rw_clus(fs, entry->parent->cur_clus, 0, 0, (u64)&entcnt, off2, 1);
-    entcnt &= ~LAST_LONG_ENTRY;
-    uint8 flag = EMPTY_ENTRY;
-    for (int i = 0; i <= entcnt; i++) {
-        rw_clus(fs, entry->parent->cur_clus, 1, 0, (u64)&flag, off2, 1);
-        off += 32;
-        off2 = reloc_clus(fs, entry->parent, off, 0);
-    }
+    //direntFree(entry);
 }
 
 // truncate a file

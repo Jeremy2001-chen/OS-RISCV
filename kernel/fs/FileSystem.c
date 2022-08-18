@@ -146,6 +146,7 @@ void loadDirents(FileSystem *fs, Dirent *parent) {
     direntFree(ep);
 }
 
+FileSystem *rootFileSystem;
 // fs's read, name, mount_point should be inited
 int fatInit(FileSystem *fs) {
     printf("[FAT32 init]fat init begin\n");
@@ -224,8 +225,7 @@ int fatInit(FileSystem *fs) {
     return 0;
 }
 
-FileSystem *rootFileSystem;
-void initDirentCache() {
+void initRootFileSystem() {
     struct File* file = filealloc();
     rootFileSystem->image = file;
     file->type = FD_DEVICE;
