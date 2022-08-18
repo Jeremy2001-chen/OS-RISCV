@@ -64,26 +64,34 @@ int pageAlloc(PhysicalPage **pp) {
     return -NO_FREE_MEMORY;
 }
 
-static int pageWalk(u64 *pgdir, u64 va, bool create, u64 **pte) {
-    int level;
+static inline int pageWalk(u64 *pgdir, u64 va, bool create, u64 **pte) {
     u64 *addr = pgdir;
-    for (level = 2; level > 0; level--) {
-        addr += GET_PAGE_TABLE_INDEX(va, level);
-        if (!(*addr) & PTE_VALID) {
-            if (!create) {
-                *pte = NULL;
-                return 0;
-            }
-            PhysicalPage *pp;
-            int ret = pageAlloc(&pp);
-            if (ret < 0) {
-                return ret;
-            }
-            (*addr) = page2pte(pp) | PTE_VALID;
-            pp->ref++;
+    PhysicalPage *pp;
+
+    addr += GET_PAGE_TABLE_INDEX(va, 2);
+    if (!(*addr) & PTE_VALID) {
+        if (!create) {
+            *pte = NULL;
+            return 0;
         }
-        addr = (u64*)PTE2PA(*addr);
+        pageAlloc(&pp);
+        (*addr) = page2pte(pp) | PTE_VALID;
+        pp->ref++;
     }
+    addr = (u64*)PTE2PA(*addr);
+
+    addr += GET_PAGE_TABLE_INDEX(va, 1);
+    if (!(*addr) & PTE_VALID) {
+        if (!create) {
+            *pte = NULL;
+            return 0;
+        }
+        pageAlloc(&pp);
+        (*addr) = page2pte(pp) | PTE_VALID;
+        pp->ref++;
+    }
+    addr = (u64*)PTE2PA(*addr);
+
     *pte = addr + GET_PAGE_TABLE_INDEX(va, 0);
     return 0;
 }
