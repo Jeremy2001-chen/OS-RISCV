@@ -6,6 +6,7 @@
 #include <file.h>
 #include <Sysfile.h>
 #include <Page.h>
+#include <Dirent.h>
 FileSystem fileSystem[32];
 
 int fsAlloc(FileSystem **fs) {
@@ -20,7 +21,131 @@ int fsAlloc(FileSystem **fs) {
     return -1;
 }
 
-DirentCache direntCache;
+/**
+ * Read filename from directory entry.
+ * @param   buffer      pointer to the array that stores the name
+ * @param   raw_entry   pointer to the entry in a sector buffer
+ * @param   islong      if non-zero, read as l-n-e, otherwise s-n-e.
+ */
+static void read_entry_name(char* buffer, union dentry* d) {
+    if (d->lne.attr == ATTR_LONG_NAME) {  // long entry branch
+        wchar temp[NELEM(d->lne.name1)];
+        memmove(temp, d->lne.name1, sizeof(temp));
+        snstr(buffer, temp, NELEM(d->lne.name1));
+        buffer += NELEM(d->lne.name1);
+        snstr(buffer, d->lne.name2, NELEM(d->lne.name2));
+        buffer += NELEM(d->lne.name2);
+        snstr(buffer, d->lne.name3, NELEM(d->lne.name3));
+    } else {
+        // assert: only "." and ".." will enter this branch
+        memset(buffer, 0, CHAR_SHORT_NAME + 2);  // plus '.' and '\0'
+        int i;
+        for (i = 0; d->sne.name[i] != ' ' && i < 8; i++) {
+            buffer[i] = d->sne.name[i];
+        }
+        if (d->sne.name[8] != ' ') {
+            buffer[i++] = '.';
+        }
+        for (int j = 8; j < CHAR_SHORT_NAME; j++, i++) {
+            if (d->sne.name[j] == ' ') {
+                break;
+            }
+            buffer[i] = d->sne.name[j];
+        }
+    }
+}
+
+/**
+ * Read entry_info from directory entry.
+ * @param   entry       pointer to the structure that stores the entry info
+ * @param   raw_entry   pointer to the entry in a sector buffer
+ */
+static void read_entry_info(Dirent* entry, union dentry* d) {
+    entry->attribute = d->sne.attr;
+    entry->first_clus = ((uint32)d->sne.fst_clus_hi << 16) | d->sne.fst_clus_lo;
+    entry->inode.item[0] = entry->first_clus;
+    entry->inodeMaxCluster = 1;
+    entry->file_size = d->sne.file_size;
+    entry->cur_clus = entry->first_clus;
+    entry->clus_cnt = 0;
+    entry->_nt_res = d->sne._nt_res;
+}
+
+int reloc_clus(FileSystem *fs, Dirent* entry, uint off, int alloc);
+uint rw_clus(FileSystem *fs, uint32 cluster,
+                    int write,
+                    int user,
+                    u64 data,
+                    uint off,
+                    uint n);
+static int enext(Dirent* dp, Dirent* ep, uint off, int* count) {
+    // assert(dp->fileSystem == ep->fileSystem);
+    if (!(dp->attribute & ATTR_DIRECTORY))
+        panic("enext not dir");
+    if (off % 32)
+        panic("enext not align");
+
+    union dentry de;
+    int cnt = 0;
+    memset(ep->filename, 0, FAT32_MAX_FILENAME + 1);
+    FileSystem *fs = dp->fileSystem;
+    for (int off2; (off2 = reloc_clus(fs, dp, off, 0)) != -1; off += 32) {
+        if (rw_clus(fs, dp->cur_clus, 0, 0, (u64)&de, off2, 32) != 32 ||
+            de.lne.order == END_OF_ENTRY) {
+            return -1;
+        }
+        if (de.lne.order == EMPTY_ENTRY) {
+            cnt++;
+            continue;
+        } else if (cnt) {
+            *count = cnt;
+            return 0;
+        }
+        if (de.lne.attr == ATTR_LONG_NAME) {
+            int lcnt = de.lne.order & ~LAST_LONG_ENTRY;
+            if (de.lne.order & LAST_LONG_ENTRY) {
+                *count = lcnt + 1;  // plus the s-n-e;
+                count = 0;
+            }
+            read_entry_name(ep->filename + (lcnt - 1) * CHAR_LONG_NAME, &de);
+        } else {
+            if (count) {
+                *count = 1;
+                read_entry_name(ep->filename, &de);
+            }
+            read_entry_info(ep, &de);
+            return 1;
+        }
+    }
+    return -1;
+}
+
+void loadDirents(FileSystem *fs, Dirent *parent) {
+    u32 off = 0;
+    int type;
+    reloc_clus(fs, parent, 0, 0);
+    Dirent *ep;
+    direntAlloc(&ep);
+    int count;
+    while ((type = enext(parent, ep, off, &count) != -1)) {
+        if (type == 0) {
+            continue;
+        }
+        ep->parent = parent;
+        ep->off = off;
+        ep->nextBrother = parent->firstChild;
+        ep->fileSystem = fs;
+        parent->firstChild = ep;
+        printf("name: %s, parent: %s\n", ep->filename, parent->filename);
+        if ((ep->attribute & ATTR_DIRECTORY) && off > 32) {
+            loadDirents(fs, ep);
+        }
+        direntAlloc(&ep);
+        off += count << 5;
+    }
+    direntFree(ep);
+}
+
 // fs's read, name, mount_point should be inited
 int fatInit(FileSystem *fs) {
     printf("[FAT32 init]fat init begin\n");
@@ -60,15 +185,12 @@ int fatInit(FileSystem *fs) {
     if (BSIZE != fs->superBlock.bpb.byts_per_sec)
         panic("byts_per_sec != BSIZE");
     memset(&fs->root, 0, sizeof(fs->root));
-    initsleeplock(&fs->root.lock, "entry");
     fs->root.attribute = (ATTR_DIRECTORY | ATTR_SYSTEM);
     memset(&fs->root.inode, -1, sizeof(Inode));
     fs->root.inode.item[0] = fs->root.first_clus = fs->root.cur_clus = fs->superBlock.bpb.root_clus;
     fs->root.inodeMaxCluster = 1;
-    fs->root.valid = 1;
     fs->root.filename[0]='/';
     fs->root.fileSystem = fs;
-    fs->root.ref = 1;
     
     int totalClusterNumber = fs->superBlock.bpb.fat_sz * fs->superBlock.bpb.byts_per_sec / sizeof(uint32);
     u64 *clusterBitmap = (u64*)getFileSystemClusterBitmap(fs);
@@ -96,6 +218,7 @@ int fatInit(FileSystem *fs) {
         }
         brelse(b);
     }
+    loadDirents(fs, &fs->root);
     
     printf("[FAT32 init]fat init end\n");
     return 0;
@@ -103,33 +226,16 @@ int fatInit(FileSystem *fs) {
 
 FileSystem *rootFileSystem;
 void initDirentCache() {
-    initLock(&direntCache.lock, "ecache");
     struct File* file = filealloc();
     rootFileSystem->image = file;
     file->type = FD_DEVICE;
     file->major = 0;
     file->readable = true;
     file->writable = true;
-   // fs->root.prev = &fs->root;
-   // fs->root.next = &fs->root;
-    for (struct dirent* de = direntCache.entries;
-         de < direntCache.entries + ENTRY_CACHE_NUM; de++) {
-        de->dev = 0;
-        de->valid = 0;
-        de->ref = 0;
-        de->dirty = 0;
-        de->parent = 0;
-        de->inodeMaxCluster = 0;
-     //   de->next = fs->root.next;
-     //   de->prev = &fs->root;
-        initsleeplock(&de->lock, "entry");
-     //   fs->root.next->prev = de;
-     //   fs->root.next = de;
-    }
 }
 
 int getFsStatus(char *path, FileSystemStatus *fss) {
-    struct dirent *de;
+    Dirent *de;
     if ((de = ename(AT_FDCWD, path, true)) == NULL) {
         return -1;
     }

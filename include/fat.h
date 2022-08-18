@@ -26,7 +26,6 @@
 
 #define FAT32_MAX_FILENAME 255
 #define FAT32_MAX_PATH 260
-#define ENTRY_CACHE_NUM 8192
 
 typedef struct FileSystem FileSystem;
 struct superblock {
@@ -47,44 +46,7 @@ struct superblock {
     } bpb;
 };
 
-struct dirent {
-    char filename[FAT32_MAX_FILENAME + 1];
-    uint8 attribute;
-    // uint8   create_time_tenth;
-    // uint16  create_time;
-    // uint16  create_date;
-    // uint16  last_access_date;
-    uint32 first_clus;
-    // uint16  last_write_time;
-    // uint16  last_write_date;
-    uint32 file_size;
-
-    uint32 cur_clus;
-    u32 inodeMaxCluster;
-    uint clus_cnt;
-    Inode inode;
-
-    u8 _nt_res;
-    FileSystem *fileSystem;
-    /* for OS */
-    enum { ZERO = 10, OSRELEASE=12, NONE=15 } dev;
-    uint8 dirty;
-    short valid;
-    FileSystem *head;
-    int ref;
-    uint32 off;  // offset in the parent dir entry, for writing convenience
-    struct dirent* parent;  // because FAT32 doesn't have such thing like inum,
-                            // use this for cache trick
-    // struct dirent* next;
-    // struct dirent* prev;
-    struct Sleeplock lock;
-    
-};
-
-struct entry_cache {
-    struct Spinlock lock;
-    struct dirent entries[ENTRY_CACHE_NUM];
-};
+typedef struct Dirent Dirent;
 
 struct linux_dirent64 {
     u64 d_ino;               /* 64-bit inode number */
@@ -95,25 +57,24 @@ struct linux_dirent64 {
 };
 
 int fat32_init(void);
-struct dirent* dirlookup(struct dirent* entry, char* filename, uint* poff);
+Dirent* dirlookup(Dirent* entry, char* filename);
 char* formatname(char* name);
-int getBlockNumber(struct dirent* entry, int dataBlockNum);
-void emake(struct dirent* dp, struct dirent* ep, uint off);
-struct dirent* ealloc(struct dirent* dp, char* name, int attr);
-struct dirent* edup(struct dirent* entry);
-void eupdate(struct dirent* entry);
-void etrunc(struct dirent* entry);
-void eremove(struct dirent* entry);
-void eput(struct dirent* entry);
-void estat(struct dirent* ep, struct stat* st);
-void elock(struct dirent* entry);
-void eunlock(struct dirent* entry);
-int enext(struct dirent* dp, struct dirent* ep, uint off, int* count);
-struct dirent* ename(int fd, char* path, bool jump);
-struct dirent* enameparent(int fd, char* path, char* name);
-int eread(struct dirent* entry, int user_dst, u64 dst, uint off, uint n);
-int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n);
-struct dirent* create(int fd, char* path, short type, int mode);
-void eSetTime(struct dirent *entry, TimeSpec ts[2]);
+int getBlockNumber(Dirent* entry, int dataBlockNum);
+void emake(Dirent* dp, Dirent* ep, uint off);
+Dirent* ealloc(Dirent* dp, char* name, int attr);
+Dirent* edup(Dirent* entry);
+void eupdate(Dirent* entry);
+void etrunc(Dirent* entry);
+void eremove(Dirent* entry);
+void eput(Dirent* entry);
+void estat(Dirent* ep, struct stat* st);
+void elock(Dirent* entry);
+void eunlock(Dirent* entry);
+Dirent* ename(int fd, char* path, bool jump);
+Dirent* enameparent(int fd, char* path, char* name);
+int eread(Dirent* entry, int user_dst, u64 dst, uint off, uint n);
+int ewrite(Dirent* entry, int user_src, u64 src, uint off, uint n);
+Dirent* create(int fd, char* path, short type, int mode);
+void eSetTime(Dirent *entry, TimeSpec ts[2]);
 
 #endif

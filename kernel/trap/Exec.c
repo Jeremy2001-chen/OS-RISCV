@@ -136,7 +136,7 @@ static inline int make_prot(u32 p_flags) {
 //加载动态链接器
 u64 load_elf_interp(u64* pagetable,
                     Ehdr* interp_elf_ex,
-                    struct dirent* interpreter,
+                    Dirent* interpreter,
                     u64 no_base,
                     Phdr* interp_elf_phdata) {
 	Phdr  *eppnt;
@@ -300,7 +300,7 @@ int exec(char* path, char** argv) {
     int i, off;
     u64 argc,  sp, ustack[MAXARG + AT_VECTOR_SIZE], stackbase;
     Ehdr elf;
-    struct dirent* de;
+    Dirent* de;
     Phdr ph;
     u64 *pagetable = 0, *old_pagetable = 0;
     Process* p = myProcess();
@@ -412,7 +412,7 @@ int exec(char* path, char** argv) {
 
 /* ============= Dynamic Link, find Interpreter Path and load Interpreter =============== */
     int retval = 0;
-    struct dirent* interpreter = NULL;
+    Dirent* interpreter = NULL;
     Ehdr* interp_elf_ex;
     u64 elf_entry;
     u64 interp_load_addr = 0;
@@ -661,11 +661,6 @@ bad:
     p->pgdir = old_pagetable;
     if (pagetable)
         pgdirFree((u64*)pagetable);
-    if (de) {
-        if(holdingsleep(&de->lock))
-            eunlock(de);
-        eput(de);
-    }
     return -1;
 }
 

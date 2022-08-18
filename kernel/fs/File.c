@@ -1,7 +1,7 @@
 //
 // Support functions for system calls that involve file descriptors.
 //
-#include "fat.h"
+#include <Dirent.h>
 #include <file.h>
 #include <Process.h>
 #include <Page.h>
@@ -170,35 +170,6 @@ int filewrite(struct File* f, bool isUser, u64 addr, int n) {
     }
 
     return ret;
-}
-
-// Read from dir f.
-// addr is a user virtual address.
-int dirnext(struct File* f, u64 addr) {
-    struct Process* p = myProcess();
-
-    if (f->readable == 0 || !(f->ep->attribute & ATTR_DIRECTORY))
-        return -1;
-
-    struct dirent de;
-    struct stat st;
-    int count = 0;
-    int ret;
-    elock(f->ep);
-    while ((ret = enext(f->ep, &de, f->off, &count)) ==
-           0) {  // skip empty entry
-        f->off += count * 32;
-    }
-    eunlock(f->ep);
-    if (ret == -1)
-        return 0;
-
-    f->off += count * 32;
-    estat(&de, &st);
-    if (copyout(p->pgdir, addr, (char*)&st, sizeof(st)) < 0)
-        return -1;
-
-    return 1;
 }
 
 u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {

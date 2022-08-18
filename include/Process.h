@@ -50,7 +50,7 @@ typedef struct Process {
     u32 priority;
     enum ProcessState state;
     struct Spinlock lock;
-    // struct dirent *cwd;           // Current directory
+    // Dirent *cwd;           // Current directory
     struct File *ofile[NOFILE];
     // u64 chan;//wait Object
     // u64 currentKernelSp;
@@ -58,8 +58,8 @@ typedef struct Process {
     u32 retValue;
     u64 brkHeapBottom;
     u64 mmapHeapBottom;
-    struct dirent *execFile;
-    struct dirent *cwd;
+    Dirent *execFile;
+    Dirent *cwd;
     // SignalSet blocked;
     // SignalSet pending;
     // u64 setChildTid;
