@@ -155,7 +155,7 @@ int socket_read(Socket* sock, bool isUser, u64 addr, int n) {
     return receiveFrom(sock, addr, n, 0, 0);
 }
 int socket_write(Socket* sock, bool isUser, u64 addr, int n) {
-    static char buf[PAGE_SIZE];
+    static char buf[PAGE_SIZE * 10];
     either_copyin(buf, isUser, addr, n);
     return sendTo(sock, buf, n, 0, &sock->target_addr);
 }
