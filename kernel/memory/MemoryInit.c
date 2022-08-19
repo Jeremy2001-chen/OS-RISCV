@@ -80,7 +80,7 @@ void memoryInit() {
     startPage();
     printf("Memory init finish!\n");
     printf("Test memory start...\n");
-    testMemory();
+    // testMemory();
     printf("Test memory finish!\n");
 }
 
