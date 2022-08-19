@@ -574,31 +574,31 @@ void estat(Dirent* ep, struct stat* st) {
     st->st_blksize = ep->fileSystem->superBlock.bpb.byts_per_sec;
     st->st_blocks = st->st_size / st->st_blksize;
     // printf("attr: %d\n", st->st_mode);
-    // if (ep->parent != NULL) {
-    //     uint entcnt = 0;
-    //     FileSystem *fs = ep->fileSystem;
-    //     uint32 off = reloc_clus(fs, ep->parent, ep->off, 0);
-    //     rw_clus(fs, ep->parent->cur_clus, 0, 0, (u64)&entcnt, off, 1);
-    //     entcnt &= ~LAST_LONG_ENTRY;
-    //     off = reloc_clus(fs, ep->parent, ep->off + (entcnt << 5), 0);
-    //     union dentry de;
-    //     rw_clus(ep->fileSystem, ep->parent->cur_clus, 0, 0, (u64)&de, off, sizeof(de));
-    //     st->st_atime_sec = (((u64)de.sne._crt_time_tenth) << 32) + 
-    //         (((u64)de.sne._crt_time) << 16) + de.sne._crt_date;
-    //     st->st_atime_nsec = 0;
-    //     st->st_mtime_sec = (((u64)de.sne._lst_acce_date) << 32) + 
-    //         (((u64)de.sne._lst_wrt_time) << 16) + de.sne._lst_wrt_date;
-    //     st->st_mtime_nsec = 0;
-    //     st->st_ctime_sec = 0;
-    //     st->st_ctime_nsec = 0;
-    // } else {
-    //     st->st_atime_sec = 0;
-    //     st->st_atime_nsec = 0;
-    //     st->st_mtime_sec = 0;
-    //     st->st_mtime_nsec = 0;
-    //     st->st_ctime_sec = 0;
-    //     st->st_ctime_nsec = 0;
-    // }
+    if (ep->parent != NULL) {
+        uint entcnt = 0;
+        FileSystem *fs = ep->fileSystem;
+        uint32 off = reloc_clus(fs, ep->parent, ep->off, 0);
+        rw_clus(fs, ep->parent->cur_clus, 0, 0, (u64)&entcnt, off, 1);
+        entcnt &= ~LAST_LONG_ENTRY;
+        off = reloc_clus(fs, ep->parent, ep->off + (entcnt << 5), 0);
+        union dentry de;
+        rw_clus(ep->fileSystem, ep->parent->cur_clus, 0, 0, (u64)&de, off, sizeof(de));
+        st->st_atime_sec = (((u64)de.sne._crt_time_tenth) << 32) + 
+            (((u64)de.sne._crt_time) << 16) + de.sne._crt_date;
+        st->st_atime_nsec = 0;
+        st->st_mtime_sec = (((u64)de.sne._lst_acce_date) << 32) + 
+            (((u64)de.sne._lst_wrt_time) << 16) + de.sne._lst_wrt_date;
+        st->st_mtime_nsec = 0;
+        st->st_ctime_sec = 0;
+        st->st_ctime_nsec = 0;
+    } else {
+        st->st_atime_sec = 0;
+        st->st_atime_nsec = 0;
+        st->st_mtime_sec = 0;
+        st->st_mtime_nsec = 0;
+        st->st_ctime_sec = 0;
+        st->st_ctime_nsec = 0;
+    }
 }
 
 /**
