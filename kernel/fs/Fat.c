@@ -529,6 +529,9 @@ void eremove(Dirent* entry) {
         }
     }
     direntFree(entry);
+    for(int i = 1; i <= 200; i++) {
+        printf("");
+    }
 }
 
 // truncate a file
