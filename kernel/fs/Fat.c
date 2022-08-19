@@ -529,7 +529,7 @@ void eremove(Dirent* entry) {
         }
     }
     direntFree(entry);
-    for(int i = 1; i <= 500; i++) {
+    for(int i = 1; i <= 300; i++) {
         printf("");
     }
 }
