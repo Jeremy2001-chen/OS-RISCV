@@ -304,8 +304,8 @@ void syscallGetFileStateAt(void) {
 }
 
 #define DEBUG_FS
+
 void syscallGetDirent() {
-    #ifndef DEBUG_FS
     struct File* f;
     int fd, n;
     u64 addr;
@@ -319,53 +319,42 @@ void syscallGetDirent() {
     struct linux_dirent64* dir64 = (struct linux_dirent64*)buf;
 
     if (f->type == FD_ENTRY) {
-        int count = 0;
-        int ret;
-        Dirent de;
         int nread=0;
         elock(f->ep);
-        for (;;) {
-            de.valid = 0;
-            while ((ret = enext(f->ep, &de, f->off, &count)) ==
-                   0) {  // skip empty entry
-                f->off += count * 32;
-                de.valid = 0;
-            }
-            if (ret == -1)
-                break;
-            f->off += count * 32;
-
-            int len = strlen(de.filename);
+        while (f->curChild) {
+            // printf("get dir %s\n", f->curChild->filename);
+            Dirent *cur  = f->curChild;
+            int len = strlen(cur->filename);
             int prefix = ((u64)dir64->d_name - (u64)dir64);
-
             if (n < prefix + len + 1) {
                 eunlock(f->ep);
                 getHartTrapFrame()->a0 = nread;
                 return;
-            }            
-
+            }
             dir64->d_ino = 0;
             dir64->d_off = 0;  // This maybe wrong;
             dir64->d_reclen = len + prefix + 1;
-            dir64->d_type = (de.attribute & ATTR_DIRECTORY) ? DT_DIR : DT_REG;
+            dir64->d_type = (cur->attribute & ATTR_DIRECTORY) ? DT_DIR : DT_REG;
+
             if (copyout(p->pgdir, addr, (char*)dir64, prefix) != 0) {
                 getHartTrapFrame()->a0 = -4;
                 return;
             }
-            if (copyout(p->pgdir, addr + prefix, de.filename, len+1) != 0) {
+            if (copyout(p->pgdir, addr + prefix, cur->filename, len + 1) != 0) {
                 getHartTrapFrame()->a0 = -114;
                 return;
             }
             addr += prefix + len + 1;
             nread += prefix + len + 1;
             n -= prefix + len + 1;
+
+            f->curChild = f->curChild->nextBrother;
         }
         eunlock(f->ep);
 
         getHartTrapFrame()->a0 = nread;
         return;
     }
-    #endif
     getHartTrapFrame()->a0 = -5;
     return;
 }
@@ -430,6 +419,10 @@ void syscallOpenAt(void) {
     file->ep = entryPoint;
     file->readable = !(flags & O_WRONLY);
     file->writable = (flags & O_WRONLY) || (flags & O_RDWR);
+    if (entryPoint->attribute & ATTR_DIRECTORY)
+        file->curChild = entryPoint->firstChild;
+    else
+        file->curChild = NULL;
 
     eunlock(entryPoint);
 

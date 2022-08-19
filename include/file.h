@@ -28,6 +28,7 @@ typedef struct File {
     Socket *socket;
     uint off;     // FD_ENTRY
     short major;  // FD_DEVICE
+    Dirent* curChild;   // current child for getDirent
 } File;
 
 #define major(dev) ((dev) >> 16 & 0xFFFF)
