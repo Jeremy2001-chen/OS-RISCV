@@ -1067,8 +1067,6 @@ void syscallReadLinkAt() {
         tf->a0 = -1;
         return;
     }
-    u64 buf = tf->a3;
-    u32 size = tf->a4;
     tf->a0 = -1;
     Dirent* entryPoint = ename(dirFd, path, false);
     if (entryPoint == NULL || entryPoint->_nt_res != DT_LNK ) {

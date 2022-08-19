@@ -163,9 +163,9 @@ int processSetup(Process *p) {
 int processAlloc(Process **new, u64 parentId) {
     int r;
     Process *p;
-    acquireLock(&processListLock);
+    // acquireLock(&processListLock);
     if (LIST_EMPTY(&freeProcesses)) {
-        releaseLock(&processListLock);
+        // releaseLock(&processListLock);
         panic("");
         *new = NULL;
         return -NO_FREE_PROCESS;
@@ -174,7 +174,7 @@ int processAlloc(Process **new, u64 parentId) {
     LIST_REMOVE(p, link);
     LIST_INSERT_HEAD(&usedProcesses, p, link);
     // printf("[Process Alloc] alloc an process %d, next : %x\n", (u32)(p - processes), (u32)(LIST_FIRST(&freeProcesses) - processes));
-    releaseLock(&processListLock);
+    // releaseLock(&processListLock);
     if ((r = processSetup(p)) < 0) {
         return r;
     }
@@ -281,7 +281,7 @@ int wait(int targetProcessId, u64 addr, int flags) {
         haveChildProcess = 0;
         Process* np = NULL;
         LIST_FOREACH(np, &usedProcesses, link) {
-            acquireLock(&np->lock);
+            // acquireLock(&np->lock);
             if (np->parentId == p->processId) {
                 haveChildProcess = 1;
                 if ((targetProcessId == -1 || np->processId == targetProcessId) && np->state == ZOMBIE) {
@@ -291,15 +291,15 @@ int wait(int targetProcessId, u64 addr, int flags) {
                         // releaseLock(&waitLock);
                         return -1;
                     }
-                    acquireLock(&processListLock);
+                    // acquireLock(&processListLock);
                     updateAncestorsCpuTime(np);
                     np->state = UNUSED;
                     LIST_REMOVE(np, link);
                     LIST_INSERT_HEAD(&freeProcesses, np, link); 
                     // printf("[Process Free] Free an process %d\n", (u32)(np - processes));
-                    releaseLock(&processListLock);
-                    releaseLock(&np->lock);
-                    releaseLock(&waitLock);
+                    // releaseLock(&processListLock);
+                    // releaseLock(&np->lock);
+                    // releaseLock(&waitLock);
                     return pid;
                 }
             }
@@ -307,11 +307,11 @@ int wait(int targetProcessId, u64 addr, int flags) {
         }
 
         if (flags & WNOHANG) {
-            releaseLock(&waitLock);
+            // releaseLock(&waitLock);
             return -1;
         }
         if (!haveChildProcess) {
-            releaseLock(&waitLock);
+            // releaseLock(&waitLock);
             return 0;
         }
         

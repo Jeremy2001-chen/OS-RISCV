@@ -97,11 +97,11 @@ void threadFree(Thread *th) {
         // releaseLock(&p->lock);
     }
 
-    acquireLock(&threadListLock);
+    // acquireLock(&threadListLock);
     th->state = UNUSED;
     LIST_REMOVE(th, link);
     LIST_INSERT_HEAD(&freeThreads, th, link); //test pipe
-    releaseLock(&threadListLock);
+    // releaseLock(&threadListLock);
 }
 
 int tid2Thread(u32 threadId, struct Thread **thread, int checkPerm) {
@@ -189,9 +189,9 @@ u64 getSignalHandlerSp(Thread *th) {
 int mainThreadAlloc(Thread **new, u64 parentId) {
     int r;
     Thread *th;
-    acquireLock(&threadListLock);
+    // acquireLock(&threadListLock);
     if (LIST_EMPTY(&freeThreads)) {
-        releaseLock(&threadListLock);
+        // releaseLock(&threadListLock);
         panic("");
         *new = NULL;
         return -ESRCH;
@@ -199,7 +199,7 @@ int mainThreadAlloc(Thread **new, u64 parentId) {
     th = LIST_FIRST(&freeThreads);
     LIST_REMOVE(th, link);
     LIST_INSERT_HEAD(&usedThreads, th, link);
-    releaseLock(&threadListLock);
+    // releaseLock(&threadListLock);
 
     threadSetup(th);
     th->id = generateThreadId(th);
@@ -222,9 +222,9 @@ int mainThreadAlloc(Thread **new, u64 parentId) {
 
 int threadAlloc(Thread **new, Process* process, u64 userSp) {
     Thread *th;
-    acquireLock(&threadListLock);
+    // acquireLock(&threadListLock);
     if (LIST_EMPTY(&freeThreads)) {
-        releaseLock(&threadListLock);
+        // releaseLock(&threadListLock);
         panic("");
         *new = NULL;
         return -ESRCH;
@@ -232,7 +232,7 @@ int threadAlloc(Thread **new, Process* process, u64 userSp) {
     th = LIST_FIRST(&freeThreads);
     LIST_REMOVE(th, link);
     LIST_INSERT_HEAD(&usedThreads, th, link);
-    releaseLock(&threadListLock);
+    // releaseLock(&threadListLock);
 
     threadSetup(th);
     th->id = generateThreadId(th);
@@ -415,7 +415,7 @@ void threadRun(Thread* th) {
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
         u64 sp = getHartKernelTopSp(th);
         asm volatile("ld sp, 0(%0)" : :"r"(&sp): "memory");
-        // // releaseLock(&currentProcessLock);
+        // releaseLock(&currentProcessLock);
         userTrapReturn();
     }
 }
@@ -466,11 +466,11 @@ void sleep(void* chan, struct Spinlock* lk) {
 void wakeup(void* channel) {
     Thread* thread = NULL;
     LIST_FOREACH(thread, &usedThreads, link) {
-        acquireLock(&thread->lock);
+        // acquireLock(&thread->lock);
         if (thread->state == SLEEPING && thread->chan == (u64)channel) {
             thread->state = RUNNABLE;
         }
-        releaseLock(&thread->lock);
+        // releaseLock(&thread->lock);
     }
 }
 

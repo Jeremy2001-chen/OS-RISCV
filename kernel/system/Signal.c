@@ -78,14 +78,14 @@ int processSignalSend(int pid, int sig) {
     int ret = -ESRCH;
     Thread* thread = NULL;
     LIST_FOREACH(thread, &usedThreads, link) {
-        acquireLock(&thread->lock);
+        // acquireLock(&thread->lock);
         if (pid == 0 || pid == -1 || pid == thread->process->processId) {
-            releaseLock(&thread->lock);
+            // releaseLock(&thread->lock);
             ret = signalSend(0, thread->id, sig);
             ret = ret == 0 ? 0 : ret;
             continue;
         }
-        releaseLock(&thread->lock);
+        // releaseLock(&thread->lock);
     }
     return ret;
 }
