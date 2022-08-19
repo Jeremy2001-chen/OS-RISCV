@@ -45,6 +45,7 @@ void processInit() {
     initLock(&waitLock, "waitProcess");
 
     LIST_INIT(&freeProcesses);
+    LIST_INIT(&usedProcesses);
     
     int i;
     // extern u64 kernelPageDirectory[];
