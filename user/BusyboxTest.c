@@ -6,7 +6,7 @@
 char *argvBusybox[] = {"./busybox", "sh", "busybox_testcode.sh", 0};
 char *argvLua[] = {"./busybox", "sh", "lua_testcode.sh", 0};
 char *argvLmbanch[] = {"./busybox", "sh", "lmbench_testcode.sh", 0};
-char *shell[] = {"./busybox", "sh", 0};
+char *shell[] = {"./home/busybox", "sh", 0};
 
 void userMain() {
     dev(1, O_RDWR); //stdin
@@ -29,7 +29,7 @@ void userMain() {
     
     // pid = fork();
     if (pid == 0) {
-        exec("./busybox", shell);
+        exec("./bin/busybox", shell);
     } else {
         wait(0);
     }

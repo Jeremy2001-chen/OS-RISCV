@@ -17,9 +17,9 @@
 #include <Wait.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
-static struct ProcessList freeProcesses;
 
-struct Spinlock freeProcessesLock, processIdLock, waitLock, currentProcessLock;
+struct ProcessList freeProcesses, usedProcesses;
+struct Spinlock processListLock, processIdLock, waitLock, currentProcessLock;
 
 Process* myProcess() {
     // interruptPush();
@@ -40,7 +40,7 @@ extern Trapframe trapframe[];
 void processInit() {
     printf("Process init start...\n");
     
-    initLock(&freeProcessesLock, "freeProcess");
+    initLock(&processListLock, "freeProcess");
     initLock(&processIdLock, "processId");
     initLock(&waitLock, "waitProcess");
 
@@ -162,16 +162,17 @@ int processSetup(Process *p) {
 int processAlloc(Process **new, u64 parentId) {
     int r;
     Process *p;
-    acquireLock(&freeProcessesLock);
+    acquireLock(&processListLock);
     if (LIST_EMPTY(&freeProcesses)) {
-        releaseLock(&freeProcessesLock);
+        releaseLock(&processListLock);
         *new = NULL;
         return -NO_FREE_PROCESS;
     }
     p = LIST_FIRST(&freeProcesses);
     LIST_REMOVE(p, link);
+    LIST_INSERT_HEAD(&usedProcesses, p, link);
     // printf("[Process Alloc] alloc an process %d, next : %x\n", (u32)(p - processes), (u32)(LIST_FIRST(&freeProcesses) - processes));
-    releaseLock(&freeProcessesLock);
+    releaseLock(&processListLock);
     if ((r = processSetup(p)) < 0) {
         return r;
     }
@@ -276,10 +277,10 @@ int wait(int targetProcessId, u64 addr, int flags) {
 
     while (true) {
         haveChildProcess = 0;
-        for (int i = 0; i < PROCESS_TOTAL_NUMBER; ++i) {
-            Process* np = &processes[i];
+        Process* np = NULL;
+        LIST_FOREACH(np, &usedProcesses, link) {
             acquireLock(&np->lock);
-            if (np->state != UNUSED && np->parentId == p->processId) {
+            if (np->parentId == p->processId) {
                 haveChildProcess = 1;
                 if ((targetProcessId == -1 || np->processId == targetProcessId) && np->state == ZOMBIE) {
                     pid = np->processId;
@@ -288,12 +289,13 @@ int wait(int targetProcessId, u64 addr, int flags) {
                         releaseLock(&waitLock);
                         return -1;
                     }
-                    acquireLock(&freeProcessesLock);
+                    acquireLock(&processListLock);
                     updateAncestorsCpuTime(np);
                     np->state = UNUSED;
+                    LIST_REMOVE(np, link);
                     LIST_INSERT_HEAD(&freeProcesses, np, link); 
                     // printf("[Process Free] Free an process %d\n", (u32)(np - processes));
-                    releaseLock(&freeProcessesLock);
+                    releaseLock(&processListLock);
                     releaseLock(&np->lock);
                     releaseLock(&waitLock);
                     return pid;

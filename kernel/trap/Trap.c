@@ -101,8 +101,6 @@ static inline void userProcessCpuTimeEnd() {
 }
 
 void userTrap() {
-    // u64 sepc = r_sepc();
-    // u64 scause = r_scause();
     u64* pgdir = myProcess()->pgdir;
     // if ((scause & SCAUSE_EXCEPTION_CODE) != SCAUSE_ENVIRONMENT_CALL) {
     // int hartId = r_hartid();

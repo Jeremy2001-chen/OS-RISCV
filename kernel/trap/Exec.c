@@ -513,7 +513,7 @@ int exec(char* path, char** argv) {
     ustack[0] = argc;
     ustack[argc + 1] = 0;
 
-    char *envVariable[] = {"LD_LIBRARY_PATH=/", "PATH=/:/musl-gcc/include/:/bin/", /*"LOOP_O=100", "TIMING_O=100", "ENOUGH=100"*/};
+    char *envVariable[] = {"LD_LIBRARY_PATH=/", "PATH=/:/usr/bin:/musl-gcc/include/:/bin/", /*"LOOP_O=100", "TIMING_O=100", "ENOUGH=100"*/};
     int envCount = sizeof(envVariable) / sizeof(char*);
     for (i = 0; i < envCount; i++) {
         sp -= strlen(envVariable[i]) + 1;

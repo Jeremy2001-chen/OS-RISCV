@@ -42,7 +42,7 @@ fat: $(user_dir)
 	# @sudo cp README $(dst)/README
 	@sudo cp -r user/mnt/* $(dst)/
 	# @sudo cp -r home $(dst)/
-	@sudo cp -r libc-test/** $(dst)/
+	@sudo cp -r root/** $(dst)/
 	# @for file in $$( ls user/_* ); do \
 	# 	sudo cp $$file $(dst)/$${file#$U/_};\
 	# 	sudo cp $$file $(dst)/bin/$${file#$U/_}; done

@@ -1176,9 +1176,10 @@ void syscallAccess() {
         tf->a0 = -1;
         return;
     }
+    // printf("[FAccess]%s\n", path);
     struct dirent* entryPoint = ename(dirfd, path, true);
     if (entryPoint == NULL) {
-        tf->a0 = -1;
+        tf->a0 = -ENOENT;
         return;
     }
     tf->a0 = 0;
