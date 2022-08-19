@@ -54,6 +54,17 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 * [信号量](docs/futex.md)
 * [信号](docs/signal.md)
 
+### 决赛第二阶段
+
+* [性能优化](docs/optimize.md)
+* [Socket](docs/socket.md)
+* [Redis](docs/redis.md)
+* [Musl-gcc](docs/gcc.md)
+
+### 经验分享
+
+* [经验分享](docs/experience.md)
+
 ## 编译内核和镜像
 
 * 编译内核：`make` 指令会生成内核镜像

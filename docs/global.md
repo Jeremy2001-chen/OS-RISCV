@@ -2,7 +2,7 @@
 
 ## 基本情况
 
-我们内核名称为 Too Low Too Simple Kernel，该内核是参考了 MOS、xv6 思路的基础上，重新设计的一个宏内核。该内核支持内存管理、进程和线程管理、中断和异常、Fat32 文件系统、Shell 界面，在决赛第一阶段期间增加了对动态链接、信号和信号量的支持。
+我们内核名称为 Too Low Too Simple Kernel，该内核是参考了 MOS（北航操作系统课设）、xv6 思路的基础上，从零重新设计的一个宏内核。该内核支持内存管理、进程和线程管理、中断和异常、Fat32 文件系统、Shell 界面。在决赛第一阶段期间我们的内核增加了对动态链接、信号和信号量的支持。在第二阶段我们更加完善了我们的内核，提高了内核的性能，并使我们的内核支持了 redis 和 musl-gcc。
 
 ## 整体架构
 
@@ -35,6 +35,12 @@
 * [信号量](futex.md)
 * [信号](signal.md)
 
+### 决赛第二阶段
+
+* [Socket](docs/socket.md)
+* [Redis](docs/redis.md)
+* [Musl-gcc](docs/gcc.md)
+
 ## 各阶段分工
 
 ### 初赛阶段
@@ -52,6 +58,14 @@
 郭衍培：Socket、信号
 
 邹增禹：动态链接
+
+### 决赛第二阶段
+
+陈纪源：busybox、lmbench、管道优化、musl-gcc
+
+郭衍培：busybox、lmbench、文件系统重构与优化、musl-gcc
+
+邹增禹：lua、redis、动态链接
 
 ## 遇到的问题及解决方法
 
