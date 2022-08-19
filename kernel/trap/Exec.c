@@ -332,8 +332,6 @@ int exec(char* path, char** argv) {
         return r;
     }
     
-    p->brkHeapBottom = USER_BRK_HEAP_BOTTOM;// TODO,these code have writen twice
-    p->mmapHeapBottom = USER_MMAP_HEAP_BOTTOM;
     pagetable = (u64*)page2pa(page);
     extern char trampoline[];
     pageInsert(pagetable, TRAMPOLINE_BASE, (u64)trampoline, 
@@ -367,7 +365,6 @@ int exec(char* path, char** argv) {
         MSG_PRINT("not elf format\n");
         goto bad;
     }
-    p->execFile = de;
 
     MSG_PRINT("begin map");
 
@@ -448,7 +445,7 @@ int exec(char* path, char** argv) {
         if (elf_interpreter[ph.filesz - 1] != '\0')
             panic("interpreter path is not NULL terminated");
 
-        printf("interpreter path: %s\n", elf_interpreter);
+        // printf("interpreter path: %s\n", elf_interpreter);
         // elf_interpreter = "/lib/libc.so.6";
         interpreter = ename(AT_FDCWD, elf_interpreter, true);
 
@@ -634,8 +631,10 @@ int exec(char* path, char** argv) {
 
     getHartTrapFrame()->epc = elf_entry;  // initial program counter = main
     getHartTrapFrame()->sp = sp;          // initial stack pointer
-    
-    
+    p->brkHeapBottom = USER_BRK_HEAP_BOTTOM;
+    p->mmapHeapBottom = USER_MMAP_HEAP_BOTTOM;
+    p->execFile = de;
+
     char buf[FAT32_MAX_PATH];
     r = getAbsolutePath(de, false, (u64)buf, sizeof(buf));
     if (r) {
