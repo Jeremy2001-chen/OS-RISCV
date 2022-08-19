@@ -171,22 +171,22 @@ void initFrame(SignalContext* sc, Thread* thread) {
     }
     pageInsert(myProcess()->pgdir, sp - PAGE_SIZE, page2pa(page), PTE_USER | PTE_READ | PTE_WRITE);
     u32 pageTop = PAGE_SIZE;
-    pageTop -= sizeof(SignalInfo);
-    u64 sigInfo;
-    sigInfo = pageTop = DOWN_ALIGN(pageTop, 16);
-    SignalInfo si = {0};
-    bcopy(&si, (void*)page2pa(page) + pageTop, sizeof(SignalInfo));
-    pageTop -= sizeof(ucontext);
-    u64 uContext;
-    uContext = pageTop = DOWN_ALIGN(pageTop, 16);
-    sc->uContext = (ucontext*) (uContext + page2pa(page));
-    ucontext uc = {0};
-    uc.uc_sigmask = thread->blocked;
-    uc.uc_mcontext.MC_PC = tf->epc;
-    bcopy(&uc, (void*)page2pa(page) + pageTop, sizeof(ucontext));
-    tf->a0 = sc->signal;
-    tf->a1 = sigInfo + sp - PAGE_SIZE;
-    tf->a2 = uContext + sp - PAGE_SIZE;
+    // pageTop -= sizeof(SignalInfo);
+    // u64 sigInfo;
+    // sigInfo = pageTop = DOWN_ALIGN(pageTop, 16);
+    // SignalInfo si = {0};
+    // bcopy(&si, (void*)page2pa(page) + pageTop, sizeof(SignalInfo));
+    // pageTop -= sizeof(ucontext);
+    // u64 uContext;
+    // uContext = pageTop = DOWN_ALIGN(pageTop, 16);
+    // sc->uContext = (ucontext*) (uContext + page2pa(page));
+    // ucontext uc = {0};
+    // uc.uc_sigmask = thread->blocked;
+    // uc.uc_mcontext.MC_PC = tf->epc;
+    // bcopy(&uc, (void*)page2pa(page) + pageTop, sizeof(ucontext));
+    // tf->a0 = sc->signal;
+    // tf->a1 = sigInfo + sp - PAGE_SIZE;
+    // tf->a2 = uContext + sp - PAGE_SIZE;
     tf->sp = pageTop + sp - PAGE_SIZE;
     tf->ra = SIGNAL_TRAMPOLINE_BASE;
 }
