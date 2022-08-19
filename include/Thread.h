@@ -103,6 +103,7 @@ typedef struct Thread {
     u64 clearChildTid;
     struct Process* process;
     u64 robustHeadPointer;
+    bool killed;
 	struct SignalContextList waitingSignal;
 } Thread;
 

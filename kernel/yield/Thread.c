@@ -53,10 +53,10 @@ void threadInit() {
 }
 
 u32 generateThreadId(Thread* th) {
-    acquireLock(&threadIdLock);
+    // acquireLock(&threadIdLock);
     static u32 nextId = 0;
     u32 threadId = (++nextId << (1 + LOG_PROCESS_NUM)) | (u32)(th - threads);
-    releaseLock(&threadIdLock);
+    // releaseLock(&threadIdLock);
     return threadId;
 }
 
@@ -75,14 +75,14 @@ void threadDestroy(Thread *th) {
 
 void threadFree(Thread *th) {
     Process* p = th->process;
-    acquireLock(&th->lock);
+    // acquireLock(&th->lock);
     while (!LIST_EMPTY(&th->waitingSignal)) {
         SignalContext* sc = LIST_FIRST(&th->waitingSignal);
         LIST_REMOVE(sc, link);
         signalContextFree(sc);
     }
-    releaseLock(&th->lock);
-    acquireLock(&p->lock);
+    // releaseLock(&th->lock);
+    // acquireLock(&p->lock);
     if (th->clearChildTid) {
         int val = 0;
         copyout(p->pgdir, th->clearChildTid, (char*)&val, sizeof(int));
@@ -91,17 +91,17 @@ void threadFree(Thread *th) {
     p->threadCount--;
     if (!p->threadCount) {
         p->retValue = th->retValue;
-        releaseLock(&p->lock);
+        // releaseLock(&p->lock);
         processFree(p);    
     } else {
-        releaseLock(&p->lock);
+        // releaseLock(&p->lock);
     }
 
-    acquireLock(&threadListLock);
+    // acquireLock(&threadListLock);
     th->state = UNUSED;
     LIST_REMOVE(th, link);
     LIST_INSERT_HEAD(&freeThreads, th, link); //test pipe
-    releaseLock(&threadListLock);
+    // releaseLock(&threadListLock);
 }
 
 int tid2Thread(u32 threadId, struct Thread **thread, int checkPerm) {
@@ -141,6 +141,7 @@ void threadSetup(Thread* th) {
     th->setChildTid = th->clearChildTid = 0;
     th->awakeTime = 0;
     th->robustHeadPointer = 0;
+    th->killed = false;
     LIST_INIT(&th->waitingSignal);
     PhysicalPage *page;
     if (pageAlloc(&page) < 0) {
@@ -155,6 +156,30 @@ void threadSetup(Thread* th) {
         panic("");
     }
     pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 3, page2pa(page), PTE_READ | PTE_WRITE);
+    if (pageAlloc(&page) < 0) {
+        panic("");
+    }
+    // pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 4, page2pa(page), PTE_READ | PTE_WRITE);
+    // if (pageAlloc(&page) < 0) {
+    //     panic("");
+    // }
+    // pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 5, page2pa(page), PTE_READ | PTE_WRITE);
+    // if (pageAlloc(&page) < 0) {
+    //     panic("");
+    // }
+    // pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 6, page2pa(page), PTE_READ | PTE_WRITE);
+    // if (pageAlloc(&page) < 0) {
+    //     panic("");
+    // }
+    // pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 7, page2pa(page), PTE_READ | PTE_WRITE);
+    // if (pageAlloc(&page) < 0) {
+    //     panic("");
+    // }
+    // pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 8, page2pa(page), PTE_READ | PTE_WRITE);
+    // if (pageAlloc(&page) < 0) {
+    //     panic("");
+    // }
+    // pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 9, page2pa(page), PTE_READ | PTE_WRITE);
 }
 
 u64 getSignalHandlerSp(Thread *th) {
@@ -164,16 +189,17 @@ u64 getSignalHandlerSp(Thread *th) {
 int mainThreadAlloc(Thread **new, u64 parentId) {
     int r;
     Thread *th;
-    acquireLock(&threadListLock);
+    // acquireLock(&threadListLock);
     if (LIST_EMPTY(&freeThreads)) {
-        releaseLock(&threadListLock);
+        // releaseLock(&threadListLock);
+        panic("");
         *new = NULL;
         return -ESRCH;
     }
     th = LIST_FIRST(&freeThreads);
     LIST_REMOVE(th, link);
     LIST_INSERT_HEAD(&usedThreads, th, link);
-    releaseLock(&threadListLock);
+    // releaseLock(&threadListLock);
 
     threadSetup(th);
     th->id = generateThreadId(th);
@@ -186,26 +212,27 @@ int mainThreadAlloc(Thread **new, u64 parentId) {
         *new = NULL;
         return r;
     }
-    acquireLock(&process->lock);
+    // acquireLock(&process->lock);
     th->process = process;
     process->threadCount++;
-    releaseLock(&process->lock);
+    // releaseLock(&process->lock);
     *new = th;
     return 0;
 }
 
 int threadAlloc(Thread **new, Process* process, u64 userSp) {
     Thread *th;
-    acquireLock(&threadListLock);
+    // acquireLock(&threadListLock);
     if (LIST_EMPTY(&freeThreads)) {
-        releaseLock(&threadListLock);
+        // releaseLock(&threadListLock);
+        panic("");
         *new = NULL;
         return -ESRCH;
     }
     th = LIST_FIRST(&freeThreads);
     LIST_REMOVE(th, link);
     LIST_INSERT_HEAD(&usedThreads, th, link);
-    releaseLock(&threadListLock);
+    // releaseLock(&threadListLock);
 
     threadSetup(th);
     th->id = generateThreadId(th);
@@ -213,10 +240,10 @@ int threadAlloc(Thread **new, Process* process, u64 userSp) {
     th->trapframe.kernelSp = getThreadTopSp(th);
     th->trapframe.sp = userSp;
 
-    acquireLock(&process->lock);
+    // acquireLock(&process->lock);
     th->process = process;
     process->threadCount++;
-    releaseLock(&process->lock);
+    // releaseLock(&process->lock);
 
     *new = th;
     return 0;
@@ -252,12 +279,12 @@ void threadRun(Thread* th) {
             
             rootFileSystem->read = blockRead;
             
+            direntInit();
             fatInit(rootFileSystem);
-            initDirentCache();
             void testfat();
             testfat();
 
-            struct dirent* ep = create(AT_FDCWD, "/var/tmp/XXX", T_FILE, O_RDONLY);
+            Dirent* ep = create(AT_FDCWD, "/var/tmp/XXX", T_FILE, O_RDONLY);
             assert(ep != NULL);
             eunlock(ep);
             eput(ep);
@@ -379,6 +406,10 @@ void threadRun(Thread* th) {
             assert(ep != NULL);
             eunlock(ep);
             eput(ep);
+            // ep = create(AT_FDCWD, "/hello", T_FILE, O_RDONLY);
+            // assert(ep != NULL);
+            // eunlock(ep);
+            // eput(ep);
             // setNextTimeout();
         }
         bcopy(&(currentThread[r_hartid()]->trapframe), trapframe, sizeof(Trapframe));
@@ -401,16 +432,16 @@ void sleep(void* chan, struct Spinlock* lk) {
     // so it's okay to release lk.
 
     kernelProcessCpuTimeEnd();
-    acquireLock(&th->lock);  // DOC: sleeplock1
-    releaseLock(lk);
+    // acquireLock(&th->lock);  // DOC: sleeplock1
+    // releaseLock(lk);
 
     // Go to sleep.
     th->chan = (u64)chan;
     th->state = SLEEPING;
     th->reason |= KERNEL_GIVE_UP;
-    releaseLock(&th->lock);
+    // releaseLock(&th->lock);
 
-    if (hasKillSignal(th)) {
+    if (th->killed) {
         threadDestroy(th);
     }    
 
@@ -419,27 +450,27 @@ void sleep(void* chan, struct Spinlock* lk) {
     sleepSave();
 
     // // Tidy up.
-    acquireLock(&th->lock);  // DOC: sleeplock1
+    // acquireLock(&th->lock);  // DOC: sleeplock1
     th->chan = 0;
-    releaseLock(&th->lock);
+    // releaseLock(&th->lock);
 
     kernelProcessCpuTimeBegin();
     
-    if (hasKillSignal(th)) {
-        threadDestroy(th);    
+    if (th->killed) {
+        threadDestroy(th);
     }    
     // Reacquire original lock.
-    acquireLock(lk);
+    // acquireLock(lk);
 }
 
 void wakeup(void* channel) {
     Thread* thread = NULL;
     LIST_FOREACH(thread, &usedThreads, link) {
-        acquireLock(&thread->lock);
+        // acquireLock(&thread->lock);
         if (thread->state == SLEEPING && thread->chan == (u64)channel) {
             thread->state = RUNNABLE;
         }
-        releaseLock(&thread->lock);
+        // releaseLock(&thread->lock);
     }
 }
 

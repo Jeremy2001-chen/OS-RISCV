@@ -45,6 +45,7 @@ void processInit() {
     initLock(&waitLock, "waitProcess");
 
     LIST_INIT(&freeProcesses);
+    LIST_INIT(&usedProcesses);
     
     int i;
     // extern u64 kernelPageDirectory[];
@@ -58,10 +59,10 @@ void processInit() {
 }
 
 u32 generateProcessId(Process *p) {
-    acquireLock(&processIdLock);
+    // acquireLock(&processIdLock);
     static u32 nextId = 0;
     u32 processId = (++nextId << (1 + LOG_PROCESS_NUM)) | (u32)(p - processes);
-    releaseLock(&processIdLock);
+    // releaseLock(&processIdLock);
     return processId;
 }
 
@@ -162,9 +163,10 @@ int processSetup(Process *p) {
 int processAlloc(Process **new, u64 parentId) {
     int r;
     Process *p;
-    acquireLock(&processListLock);
+    // acquireLock(&processListLock);
     if (LIST_EMPTY(&freeProcesses)) {
-        releaseLock(&processListLock);
+        // releaseLock(&processListLock);
+        panic("");
         *new = NULL;
         return -NO_FREE_PROCESS;
     }
@@ -172,7 +174,7 @@ int processAlloc(Process **new, u64 parentId) {
     LIST_REMOVE(p, link);
     LIST_INSERT_HEAD(&usedProcesses, p, link);
     // printf("[Process Alloc] alloc an process %d, next : %x\n", (u32)(p - processes), (u32)(LIST_FIRST(&freeProcesses) - processes));
-    releaseLock(&processListLock);
+    // releaseLock(&processListLock);
     if ((r = processSetup(p)) < 0) {
         return r;
     }
@@ -256,9 +258,9 @@ void processCreatePriority(u8 *binary, u32 size, u32 priority) {
     }
     th->trapframe.epc = entryPoint;
 
-    acquireLock(&scheduleListLock);
+    // acquireLock(&scheduleListLock);
     LIST_INSERT_TAIL(&scheduleList[0], th, scheduleLink);
-    releaseLock(&scheduleListLock);
+    // releaseLock(&scheduleListLock);
 }
 
 static inline void updateAncestorsCpuTime(Process *p) {
@@ -273,43 +275,43 @@ int wait(int targetProcessId, u64 addr, int flags) {
     Process* p = myProcess();
     int haveChildProcess, pid;
 
-    acquireLock(&waitLock);
+    // acquireLock(&waitLock);
 
     while (true) {
         haveChildProcess = 0;
         Process* np = NULL;
         LIST_FOREACH(np, &usedProcesses, link) {
-            acquireLock(&np->lock);
+            // acquireLock(&np->lock);
             if (np->parentId == p->processId) {
                 haveChildProcess = 1;
                 if ((targetProcessId == -1 || np->processId == targetProcessId) && np->state == ZOMBIE) {
                     pid = np->processId;
                     if (addr != 0 && copyout(p->pgdir, addr, (char *)&np->retValue, sizeof(np->retValue)) < 0) {
-                        releaseLock(&np->lock);
-                        releaseLock(&waitLock);
+                        // releaseLock(&np->lock);
+                        // releaseLock(&waitLock);
                         return -1;
                     }
-                    acquireLock(&processListLock);
+                    // acquireLock(&processListLock);
                     updateAncestorsCpuTime(np);
                     np->state = UNUSED;
                     LIST_REMOVE(np, link);
                     LIST_INSERT_HEAD(&freeProcesses, np, link); 
                     // printf("[Process Free] Free an process %d\n", (u32)(np - processes));
-                    releaseLock(&processListLock);
-                    releaseLock(&np->lock);
-                    releaseLock(&waitLock);
+                    // releaseLock(&processListLock);
+                    // releaseLock(&np->lock);
+                    // releaseLock(&waitLock);
                     return pid;
                 }
             }
-            releaseLock(&np->lock);
+            // releaseLock(&np->lock);
         }
 
         if (flags & WNOHANG) {
-            releaseLock(&waitLock);
+            // releaseLock(&waitLock);
             return -1;
         }
         if (!haveChildProcess) {
-            releaseLock(&waitLock);
+            // releaseLock(&waitLock);
             return 0;
         }
         
@@ -354,12 +356,14 @@ int either_copyin(void* dst, int user_src, u64 src, u64 len) {
 }
 
 void kernelProcessCpuTimeBegin() {
+    return;
     Process *p = myProcess();
     long currentTime = r_time();
     p->cpuTime.kernel += currentTime - p->processTime.lastKernelTime;
 }
 
 void kernelProcessCpuTimeEnd() {
+    return;
     Process *p = myProcess();
     p->processTime.lastKernelTime = r_time();
 }

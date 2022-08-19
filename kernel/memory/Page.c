@@ -39,51 +39,59 @@ int pageRemove(u64 *pgdir, u64 va) {
 int countFreePages() {
     struct PhysicalPage* page;
     int count = 0;
-    acquireLock(&pageListLock);
+    // acquireLock(&pageListLock);
     LIST_FOREACH(page, &freePages, link)
         count++;
-    releaseLock(&pageListLock);
+    // releaseLock(&pageListLock);
     return count;
 }
 
 int pageAlloc(PhysicalPage **pp) {
-    acquireLock(&pageListLock);
+    // acquireLock(&pageListLock);
     PhysicalPage *page;
     if ((page = LIST_FIRST(&freePages)) != NULL) {
         *pp = page;
         page->hartId = r_hartid();
         LIST_REMOVE(page, link);
-        releaseLock(&pageListLock);
+        // releaseLock(&pageListLock);
         bzero((void*)page2pa(page), PAGE_SIZE);
         return 0;
     }
     panic("");
-    releaseLock(&pageListLock);
+    // releaseLock(&pageListLock);
     printf("there's no physical page left!\n");
     *pp = NULL;
     return -NO_FREE_MEMORY;
 }
 
-static int pageWalk(u64 *pgdir, u64 va, bool create, u64 **pte) {
-    int level;
+static inline int pageWalk(u64 *pgdir, u64 va, bool create, u64 **pte) {
     u64 *addr = pgdir;
-    for (level = 2; level > 0; level--) {
-        addr += GET_PAGE_TABLE_INDEX(va, level);
-        if (!(*addr) & PTE_VALID) {
-            if (!create) {
-                *pte = NULL;
-                return 0;
-            }
-            PhysicalPage *pp;
-            int ret = pageAlloc(&pp);
-            if (ret < 0) {
-                return ret;
-            }
-            (*addr) = page2pte(pp) | PTE_VALID;
-            pp->ref++;
+    PhysicalPage *pp;
+
+    addr += GET_PAGE_TABLE_INDEX(va, 2);
+    if (!(*addr) & PTE_VALID) {
+        if (!create) {
+            *pte = NULL;
+            return 0;
         }
-        addr = (u64*)PTE2PA(*addr);
+        pageAlloc(&pp);
+        (*addr) = page2pte(pp) | PTE_VALID;
+        pp->ref++;
     }
+    addr = (u64*)PTE2PA(*addr);
+
+    addr += GET_PAGE_TABLE_INDEX(va, 1);
+    if (!(*addr) & PTE_VALID) {
+        if (!create) {
+            *pte = NULL;
+            return 0;
+        }
+        pageAlloc(&pp);
+        (*addr) = page2pte(pp) | PTE_VALID;
+        pp->ref++;
+    }
+    addr = (u64*)PTE2PA(*addr);
+
     *pte = addr + GET_PAGE_TABLE_INDEX(va, 0);
     return 0;
 }
@@ -105,9 +113,9 @@ void pageFree(PhysicalPage *page) {
         return;
     }
     if (page->ref == 0) {
-        acquireLock(&pageListLock);
+        // acquireLock(&pageListLock);
         LIST_INSERT_HEAD(&freePages, page, link);
-        releaseLock(&pageListLock);
+        // releaseLock(&pageListLock);
     }
 }
 
@@ -116,9 +124,9 @@ static void paDecreaseRef(u64 pa) {
     page->ref--;
     assert(page->ref==0);
     if (page->ref == 0) {
-        acquireLock(&pageListLock);
+        // acquireLock(&pageListLock);
         LIST_INSERT_HEAD(&freePages, page, link);
-        releaseLock(&pageListLock);
+        // releaseLock(&pageListLock);
     }
 }
 
@@ -225,28 +233,29 @@ u64 pageout(u64 *pgdir, u64 badAddr) {
     return page2pa(page) + (badAddr & 0xFFF);
 }
 
-u8 cowBuffer[PAGE_SIZE];
-void cowHandler(u64 *pgdir, u64 badAddr) {
+// u8 cowBuffer[PAGE_SIZE];
+u64 cowHandler(u64 *pgdir, u64 badAddr) {
     u64 pa;
     u64 *pte = NULL;
     pa = pageLookup(pgdir, badAddr, &pte);
     // printf("[COW] %x to cow %lx %lx\n", myProcess()->processId, badAddr, pa);
     if (!(*pte & PTE_COW)) {
-        printf("access denied\n");
-        return;
+        panic("access denied\n");
+        return 0;
     }
     PhysicalPage *page;
     int r = pageAlloc(&page);
     if (r < 0) {
         panic("cow handler error");
-        return;
+        return 0;
     }
-    acquireLock(&cowBufferLock);
+    // acquireLock(&cowBufferLock);
     pa = pageLookup(pgdir, badAddr, &pte);
-    bcopy((void *)pa, (void*)cowBuffer, PAGE_SIZE);
+    bcopy((void *)pa, (void*)page2pa(page), PAGE_SIZE);
     pageInsert(pgdir, badAddr, page2pa(page), (PTE2PERM(*pte) | PTE_WRITE) & ~PTE_COW);
-    bcopy((void*) cowBuffer, (void*) page2pa(page), PAGE_SIZE);
-    releaseLock(&cowBufferLock);
+    return page2pa(page) + (badAddr & 0xFFF); 
+    // bcopy((void*) cowBuffer, (void*) page2pa(page), PAGE_SIZE);
+    // releaseLock(&cowBufferLock);
 }
 
 // Look up a virtual address, return the physical address,
@@ -262,9 +271,6 @@ u64 vir2phy(u64* pagetable, u64 va, int* cow) {
     int ret = pageWalk(pagetable, va, 0, &pte);
     if (ret < 0) {
         panic("pageWalk error in vir2phy function!");
-    }
-    if (pte == 0) {
-        return NULL;
     }
     if ((*pte & PTE_VALID) == 0)
         return NULL;
@@ -316,8 +322,8 @@ int copyout(u64* pagetable, u64 dstva, char* src, u64 len) {
             pa0 = pageout(pagetable, dstva);
         }
         if (cow) {
-            cowHandler(pagetable, dstva);
-            pa0 = vir2phy(pagetable, dstva, NULL);
+            pa0 = cowHandler(pagetable, dstva);
+            // pa0 = vir2phy(pagetable, dstva, NULL);
         }
         n = PGSIZE - (dstva - va0);
         if (n > len)
@@ -342,8 +348,8 @@ int memsetOut(u64 *pgdir, u64 dst, u8 value, u64 len) {
             pa0 = pageout(pgdir, dst);
         }
         if (cow) {
-            cowHandler(pgdir, dst);
-            pa0 = vir2phy(pgdir, dst, NULL);
+            pa0 = cowHandler(pgdir, dst);
+            // pa0 = vir2phy(pgdir, dst, NULL);
         }
         n = PGSIZE - (dst - va0);
         if (n > len)

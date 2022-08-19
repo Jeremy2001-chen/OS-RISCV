@@ -136,7 +136,7 @@ static inline int make_prot(u32 p_flags) {
 //加载动态链接器
 u64 load_elf_interp(u64* pagetable,
                     Ehdr* interp_elf_ex,
-                    struct dirent* interpreter,
+                    Dirent* interpreter,
                     u64 no_base,
                     Phdr* interp_elf_phdata) {
 	Phdr  *eppnt;
@@ -300,7 +300,7 @@ int exec(char* path, char** argv) {
     int i, off;
     u64 argc,  sp, ustack[MAXARG + AT_VECTOR_SIZE], stackbase;
     Ehdr elf;
-    struct dirent* de;
+    Dirent* de;
     Phdr ph;
     u64 *pagetable = 0, *old_pagetable = 0;
     Process* p = myProcess();
@@ -317,7 +317,6 @@ int exec(char* path, char** argv) {
 /* ========== check executable format (script or elf) =========== */
 
     char bprmbuf[BINPRM_BUF_SIZE];
-    memset(bprmbuf, 0, sizeof(bprmbuf));
     eread(de, 0, (u64)bprmbuf, 0, BINPRM_BUF_SIZE - 1);
     if (bprmbuf[0] == '#' && bprmbuf[1] == '!') {
         eunlock(de);
@@ -412,11 +411,11 @@ int exec(char* path, char** argv) {
 
 /* ============= Dynamic Link, find Interpreter Path and load Interpreter =============== */
     int retval = 0;
-    struct dirent* interpreter = NULL;
+    Dirent* interpreter = NULL;
     Ehdr* interp_elf_ex;
     u64 elf_entry;
     u64 interp_load_addr = 0;
-    u64 load_bias =0;  // load_bias only work when object is ET_DYN, such as ./ld.so
+    u64 load_bias = 0;  // load_bias only work when object is ET_DYN, such as ./ld.so
     for (i = 0, off = elf.phoff; i < elf.phnum; i++, off += sizeof(ph)) {
         if (eread(de, 0, (u64)&ph, off, sizeof(ph)) != sizeof(ph)) {
             goto bad;
@@ -510,7 +509,7 @@ int exec(char* path, char** argv) {
     ustack[0] = argc;
     ustack[argc + 1] = 0;
 
-    char *envVariable[] = {"LD_LIBRARY_PATH=/", "PATH=/:/usr/bin:/musl-gcc/include/:/bin/", /*"LOOP_O=100", "TIMING_O=100", "ENOUGH=100"*/};
+    char *envVariable[] = {"LD_LIBRARY_PATH=/", "PATH=/:/usr/bin:/musl-gcc/include:/bin/" /*, "LOOP_O=11", "TIMING_O=1", "ENOUGH=1"*/};
     int envCount = sizeof(envVariable) / sizeof(char*);
     for (i = 0; i < envCount; i++) {
         sp -= strlen(envVariable[i]) + 1;
@@ -661,11 +660,6 @@ bad:
     p->pgdir = old_pagetable;
     if (pagetable)
         pgdirFree((u64*)pagetable);
-    if (de) {
-        if(holdingsleep(&de->lock))
-            eunlock(de);
-        eput(de);
-    }
     return -1;
 }
 
@@ -678,6 +672,7 @@ u64 sys_exec(void) {
     if (argstr(0, path, MAXPATH) < 0 || argaddr(1, &uargv) < 0) {
         return -1;
     }
+
     memset(argv, 0, sizeof(argv));
     for (i = 0;; i++) {
         if (i >= NELEM(argv)) {
@@ -700,6 +695,10 @@ u64 sys_exec(void) {
             goto bad;
     }
 
+    // printf("[EXEC] %s\n", path);
+    // for (int i = 0; argv[i] != 0; i++) {
+    //     printf("argv[%d] = %s\n", i, argv[i]);
+    // }
     int ret = exec(path, argv);
 
     for (i = 0; i < NELEM(argv) && argv[i] != 0; i++)

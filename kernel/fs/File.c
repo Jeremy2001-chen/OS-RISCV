@@ -1,7 +1,7 @@
 //
 // Support functions for system calls that involve file descriptors.
 //
-#include "fat.h"
+#include <Dirent.h>
 #include <file.h>
 #include <Process.h>
 #include <Page.h>
@@ -31,25 +31,25 @@ void fileinit(void) {
 struct File* filealloc(void) {
     struct File* f;
 
-    acquireLock(&ftable.lock);
+    // acquireLock(&ftable.lock);
     for (f = ftable.file; f < ftable.file + NFILE; f++) {
         if (f->ref == 0) {
             f->ref = 1;
-            releaseLock(&ftable.lock);
+            // releaseLock(&ftable.lock);
             return f;
         }
     }
-    releaseLock(&ftable.lock);
+    // releaseLock(&ftable.lock);
     return NULL;
 }
 
 // Increment ref count for file f.
 struct File* filedup(struct File* f) {
-    acquireLock(&ftable.lock);
+    // acquireLock(&ftable.lock);
     if (f->ref < 1)
         panic("filedup");
     f->ref++;
-    releaseLock(&ftable.lock);
+    // releaseLock(&ftable.lock);
     return f;
 }
 
@@ -58,17 +58,17 @@ void fileclose(struct File* f) {
     struct File ff;
 
     // printf("[FILE CLOSE]%x %x\n", f, f->ref);
-    acquireLock(&ftable.lock);
+    // acquireLock(&ftable.lock);
     if (f->ref < 1)
         panic("fileclose");
     if (--f->ref > 0) {
-        releaseLock(&ftable.lock);
+        // releaseLock(&ftable.lock);
         return;
     }
     ff = *f;
     f->ref = 0;
     f->type = FD_NONE;
-    releaseLock(&ftable.lock);
+    // releaseLock(&ftable.lock);
 
     // printf("FILECLOSE %x\n", ff.type);
     if (ff.type == FD_PIPE) {
@@ -146,16 +146,14 @@ int filewrite(struct File* f, bool isUser, u64 addr, int n) {
 
     if (f->type == FD_PIPE) {
         ret = pipeWrite(f->pipe, isUser, addr, n);
-        if (ret == 0) {
-            printf("%d %lx %d\n", isUser, addr, n);
-        }
-        assert(ret != 0);
+        // assert(ret != 0);
     } else if (f->type == FD_DEVICE) {
         if (f->major < 0 || f->major >= NDEV || !devsw[f->major].write)
             return -1;
         ret = devsw[f->major].write(isUser, addr, 0, n);
     } else if (f->type == FD_ENTRY) {
         // elock(f->ep);
+        // printf("%s\n", f->ep->filename);
         if (ewrite(f->ep, isUser, addr, f->off, n) == n) {
             ret = n;
             f->off += n;
@@ -172,35 +170,6 @@ int filewrite(struct File* f, bool isUser, u64 addr, int n) {
     return ret;
 }
 
-// Read from dir f.
-// addr is a user virtual address.
-int dirnext(struct File* f, u64 addr) {
-    struct Process* p = myProcess();
-
-    if (f->readable == 0 || !(f->ep->attribute & ATTR_DIRECTORY))
-        return -1;
-
-    struct dirent de;
-    struct stat st;
-    int count = 0;
-    int ret;
-    elock(f->ep);
-    while ((ret = enext(f->ep, &de, f->off, &count)) ==
-           0) {  // skip empty entry
-        f->off += count * 32;
-    }
-    eunlock(f->ep);
-    if (ret == -1)
-        return 0;
-
-    f->off += count * 32;
-    estat(&de, &st);
-    if (copyout(p->pgdir, addr, (char*)&st, sizeof(st)) < 0)
-        return -1;
-
-    return 1;
-}
-
 u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
     bool alloc = (start == 0);
     assert(PAGE_OFFSET(start, PAGE_SIZE) == 0);
@@ -210,14 +179,14 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
         start = p->mmapHeapBottom;
         p->mmapHeapBottom = UP_ALIGN(p->mmapHeapBottom + len, PAGE_SIZE);
         assert(p->mmapHeapBottom  < USER_STACK_BOTTOM);
-    }// ./runtest.exe -w entry-dynamic.exe argv
-    // printf("domap: fd: %d, start: %lx, len: %lx, perm: %lx, flags: %lx, off: %lx alloc: %d\n", fd, start, len, perm, flags, off, alloc);
+    }
+    
     u64 addr = start, end = start + len;
     if (flags & MAP_FIXED) {
         assert(start <= p->brkHeapBottom);
         p->brkHeapBottom = MAX(UP_ALIGN(end, PAGE_SIZE), p->brkHeapBottom);
     }
-    start = DOWN_ALIGN(start, PAGE_SIZE);
+
     while (start < end) {
         u64* pte;
         u64 pa = pageLookup(p->pgdir, start, &pte);

@@ -17,7 +17,7 @@ void yield() {
     int count = processTimeCount[hartId];
     int point = processBelongList[hartId];
     struct Thread* thread = myThread(); 
-    acquireLock(&scheduleListLock);
+    // acquireLock(&scheduleListLock);
     if (thread && thread->state == RUNNING) {
         if (thread->reason & KERNEL_GIVE_UP) {
             bcopy(getHartTrapFrame(), &thread->trapframe, sizeof(Trapframe));
@@ -34,10 +34,10 @@ void yield() {
             LIST_REMOVE(thread, scheduleLink);
             count = 1;
         }
-        releaseLock(&scheduleListLock);
-        acquireLock(&scheduleListLock);
+        // releaseLock(&scheduleListLock);
+        // acquireLock(&scheduleListLock);
     }
-    releaseLock(&scheduleListLock);
+    // releaseLock(&scheduleListLock);
     count--;
     processTimeCount[hartId] = count;
     processBelongList[hartId] = point;

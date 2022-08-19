@@ -17,16 +17,18 @@
 #define NFILE 512 //Number of fd that all process can open
 
 typedef struct Socket Socket;
+typedef struct Dirent Dirent;
 typedef struct File {
     enum { FD_NONE, FD_PIPE, FD_ENTRY, FD_DEVICE, FD_SOCKET } type;
     int ref;  // reference count
     char readable;
     char writable;
     struct pipe* pipe;  // FD_PIPE
-    struct dirent* ep;
+    Dirent* ep;
     Socket *socket;
     uint off;     // FD_ENTRY
     short major;  // FD_DEVICE
+    Dirent* curChild;   // current child for getDirent
 } File;
 
 #define major(dev) ((dev) >> 16 & 0xFFFF)
@@ -51,7 +53,6 @@ void fileinit(void);
 int fileread(struct File*, bool, u64, int n);
 int filestat(struct File*, u64 addr);
 int filewrite(struct File*, bool, u64, int n);
-int dirnext(struct File* f, u64 addr);
 
 /* File types.  */
 #define	DIR_TYPE	0040000	/* Directory.  */

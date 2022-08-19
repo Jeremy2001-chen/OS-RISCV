@@ -15,29 +15,29 @@ void initsleeplock(struct Sleeplock* lk, char* name) {
 }
 
 void acquiresleep(struct Sleeplock* lk) {
-    acquireLock(&lk->lk);
+    // acquireLock(&lk->lk);
     while (lk->locked) {
         // MSG_PRINT("in while");
         sleep(lk, &lk->lk);
     }
     lk->locked = 1;
     lk->tid = myThread()->id;
-    releaseLock(&lk->lk);
+    // releaseLock(&lk->lk);
 }
 
 void releasesleep(struct Sleeplock* lk) {
-    acquireLock(&lk->lk);
+    // acquireLock(&lk->lk);
     lk->locked = 0;
     lk->tid = 0;
     wakeup(lk);
-    releaseLock(&lk->lk);
+    // releaseLock(&lk->lk);
 }
 
 int holdingsleep(struct Sleeplock* lk) {
     int r;
 
-    acquireLock(&lk->lk);
+    // acquireLock(&lk->lk);
     r = lk->locked && (lk->tid == myThread()->id);
-    releaseLock(&lk->lk);
+    // releaseLock(&lk->lk);
     return r;
 }

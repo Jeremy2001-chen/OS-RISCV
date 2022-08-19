@@ -51,7 +51,6 @@ void (*syscallVector[])(void) = {
     [SYSCALL_FSTATAT]                   syscallGetFileStateAt,
     [SYSCALL_MAP_MEMORY]                syscallMapMemory,
     [SYSCALL_UNMAP_MEMORY]              syscallUnMapMemory,
-    [SYSCALL_READDIR]                   syscallReadDir,
     [SYSCALL_EXEC]                      syscallExec,
     [SYSCALL_GET_DIRENT]                syscallGetDirent,
     [SYSCALL_MOUNT]                     syscallMount,
@@ -122,9 +121,9 @@ extern struct Spinlock printLock;
 
 void syscallPutchar() {
     Trapframe* trapframe = getHartTrapFrame();
-    acquireLock(&printLock);
+    // acquireLock(&printLock);
     putchar(trapframe->a0);
-    releaseLock(&printLock);
+    // releaseLock(&printLock);
 }
 
 void syscallGetProcessId() {
@@ -185,12 +184,12 @@ void syscallPutString() {
         panic("Syscall put string address error!\nThe virtual address is %x, the length is %x\n", va, len);
     }
     char* start = (char*) pa;
-    acquireLock(&printLock);
+    // acquireLock(&printLock);
     while (len--) {
         putchar(*start);
         start++;
     }
-    releaseLock(&printLock);
+    // releaseLock(&printLock);
 }
 
 void syscallGetCpuTimes() {
@@ -382,9 +381,9 @@ void syscallProcessResourceLimit() {
     // printf("resource limit: pid: %lx, resource: %d, new: %lx, old: %lx\n", pid, resouce, newVa, oldVa);
     struct ResourceLimit newLimit;
     Process* process = myProcess();
-    acquireLock(&process->lock);
+    // acquireLock(&process->lock);
     if (newVa && copyin(process->pgdir, (char*)&newLimit, newVa, sizeof(struct ResourceLimit)) < 0) {
-        releaseLock(&process->lock);
+        // releaseLock(&process->lock);
         tf->a0 = -1;
     }
     switch(resouce) {
@@ -398,7 +397,7 @@ void syscallProcessResourceLimit() {
             }
             break;
     }
-    releaseLock(&process->lock);
+    // releaseLock(&process->lock);
     tf->a0 = 0;
 }
 
@@ -627,8 +626,8 @@ void syscallSignalReturn() {
     Trapframe *tf = getHartTrapFrame();
     Thread* thread = myThread();
     SignalContext* sc = getHandlingSignal(thread);
-    sc->contextRecover.epc = sc->uContext->uc_mcontext.MC_PC;
-    thread->blocked = sc->uContext->uc_sigmask;
+    // sc->contextRecover.epc = sc->uContext->uc_mcontext.MC_PC;
+    // thread->blocked = sc->uContext->uc_sigmask;
     bcopy(&sc->contextRecover, tf, sizeof(Trapframe));
     signalProcessEnd(sc->signal, &thread->processing);
     signalFinish(thread, sc);
@@ -698,9 +697,9 @@ void syscallSelect() {
     Trapframe *tf = getHartTrapFrame();
     // printf("thread %lx get in select, epc: %lx\n", myThread()->id, tf->epc);
     int nfd = tf->a0;
-    assert(nfd <= 128);
-    u64 read = tf->a1, write = tf->a2, except = tf->a3, timeout = tf->a4;
-    assert(timeout != 0);
+    // assert(nfd <= 128);
+    u64 read = tf->a1, write = tf->a2, except = tf->a3/*, timeout = tf->a4*/;
+    // assert(timeout != 0);
     int cnt = 0;
     struct File* file = NULL;
     // printf("[%s] \n", __func__);
@@ -773,10 +772,12 @@ void syscallSelect() {
         
     }
     if (except) {
-        FdSet set;
-        copyin(myProcess()->pgdir, (char*)&set, except, sizeof(FdSet));
-        memset(&set, 0, sizeof(FdSet));
-        copyout(myProcess()->pgdir, except, (char*)&set, sizeof(FdSet));
+        // FdSet set;
+        // copyin(myProcess()->pgdir, (char*)&set, except, sizeof(FdSet));
+        u8 zero = 0;
+        memsetOut(myProcess()->pgdir, except, zero, nfd);
+        // memset(&set, 0, sizeof(FdSet));
+        // copyout(myProcess()->pgdir, except, (char*)&set, sizeof(FdSet));
     }
     if (cnt == 0) {
         if (!(myThread()->reason & SELECT_BLOCK)) {

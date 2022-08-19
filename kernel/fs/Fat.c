@@ -17,7 +17,7 @@
 /* fields that start with "_" are something we don't use */
 
 extern Inode inodes[];
-static void eFreeInode(struct dirent *ep) {
+static void eFreeInode(Dirent *ep) {
     for (int i = INODE_SECOND_ITEM_BASE; i < INODE_THIRD_ITEM_BASE; i++) {
         if (ep->inodeMaxCluster > INODE_SECOND_LEVEL_BOTTOM + (i - INODE_SECOND_ITEM_BASE) * INODE_ITEM_NUM) {
             inodeFree(ep->inode.item[i]);
@@ -44,7 +44,7 @@ static void eFreeInode(struct dirent *ep) {
     return;
 }
 
-static void eFindInode(struct dirent *entry, int pos) {
+static void eFindInode(Dirent *entry, int pos) {
     assert(pos < entry->inodeMaxCluster);
     entry->clus_cnt = pos;
     if (pos < INODE_SECOND_LEVEL_BOTTOM) {
@@ -65,109 +65,6 @@ static void eFindInode(struct dirent *entry, int pos) {
     panic("");
 }
 
-typedef struct short_name_entry {
-    char name[CHAR_SHORT_NAME];
-    uint8 attr;
-    uint8 _nt_res;
-    uint8 _crt_time_tenth; // 39-32 of access
-    uint16 _crt_time; // 31-16 of access
-    uint16 _crt_date; // 15-0 of access
-    uint16 _lst_acce_date; // 47-32 of modify
-    uint16 fst_clus_hi;
-    uint16 _lst_wrt_time; // 31-16 of modify
-    uint16 _lst_wrt_date; // 15-0 of modify
-    uint16 fst_clus_lo;
-    uint32 file_size;
-} __attribute__((packed, aligned(4))) short_name_entry_t;
-
-typedef struct long_name_entry {
-    uint8 order;
-    wchar name1[5];
-    uint8 attr;
-    uint8 _type;
-    uint8 checksum;
-    wchar name2[6];
-    uint16 _fst_clus_lo;
-    wchar name3[2];
-} __attribute__((packed, aligned(4))) long_name_entry_t;
-
-union dentry {
-    short_name_entry_t sne;
-    long_name_entry_t lne;
-};
-
-extern DirentCache direntCache;
-//struct superblock fat;
-
-/**
- * Read the Boot Parameter Block.
- * @return  0       if success
- *          -1      if fail
-int fat32_init() {
-#ifdef ZZY_DEBUG
-    printf("[fat32_init] enter!\n");
-#endif
-    struct buf* b = bread(0, 0);
-#ifdef ZZY_DEBUG
-    printf("[fat32_init] bread finish!\n");
-#endif
-    if (strncmp((char const*)(b->data + 82), "FAT32", 5))
-        panic("not FAT32 volume");
-    // fat.bpb.byts_per_sec = *(uint16 *)(b->data + 11);
-    memmove(&fat.bpb.byts_per_sec, b->data + 11,
-            2);  // avoid misaligned load on k210
-    fat.bpb.sec_per_clus = *(b->data + 13);
-    fat.bpb.rsvd_sec_cnt = *(uint16*)(b->data + 14);
-    fat.bpb.fat_cnt = *(b->data + 16);
-    fat.bpb.hidd_sec = *(uint32*)(b->data + 28);
-    fat.bpb.tot_sec = *(uint32*)(b->data + 32);
-    fat.bpb.fat_sz = *(uint32*)(b->data + 36);
-    fat.bpb.root_clus = *(uint32*)(b->data + 44);
-    fat.first_data_sec =
-        fat.bpb.rsvd_sec_cnt + fat.bpb.fat_cnt * fat.bpb.fat_sz;
-    fat.data_sec_cnt = fat.bpb.tot_sec - fat.first_data_sec;
-    fat.data_clus_cnt = fat.data_sec_cnt / fat.bpb.sec_per_clus;
-    fat.byts_per_clus = fat.bpb.sec_per_clus * fat.bpb.byts_per_sec;
-    brelse(b);
-
-#ifdef ZZY_DEBUG
-    printf("[FAT32 init]byts_per_sec: %d\n", fat.bpb.byts_per_sec);
-    printf("[FAT32 init]root_clus: %d\n", fat.bpb.root_clus);
-    printf("[FAT32 init]sec_per_clus: %d\n", fat.bpb.sec_per_clus);
-    printf("[FAT32 init]fat_cnt: %d\n", fat.bpb.fat_cnt);
-    printf("[FAT32 init]fat_sz: %d\n", fat.bpb.fat_sz);
-    printf("[FAT32 init]first_data_sec: %d\n", fat.first_data_sec);
-#endif
-
-    // make sure that byts_per_sec has the same value with BSIZE
-    if (BSIZE != fat.bpb.byts_per_sec)
-        panic("byts_per_sec != BSIZE");
-    initLock(&ecache.lock, "ecache");
-    memset(&root, 0, sizeof(root));
-    initsleeplock(&root.lock, "entry");
-    root.attribute = (ATTR_DIRECTORY | ATTR_SYSTEM);
-    root.first_clus = root.cur_clus = fat.bpb.root_clus;
-    root.valid = 1;
-    root.prev = &root;
-    root.next = &root;
-    root.filename[0]='/';
-    for (struct dirent* de = ecache.entries;
-         de < ecache.entries + ENTRY_CACHE_NUM; de++) {
-        de->dev = 0;
-        de->valid = 0;
-        de->ref = 0;
-        de->dirty = 0;
-        de->parent = 0;
-        de->next = root.next;
-        de->prev = &root;
-        initsleeplock(&de->lock, "entry");
-        root.next->prev = de;
-        root.next = de;
-    }
-    return 0;
-}
-
- */
 /**
  * @param   cluster   cluster number starts from 2, which means no 0 and 1
  */
@@ -276,8 +173,8 @@ static void free_clus(FileSystem *fs, uint32 cluster) {
     clusterBitmap[cluster >> 6] &= ~(1UL << (cluster & 63));
 }
 
-struct dirent* create(int fd, char* path, short type, int mode) {
-    struct dirent *ep, *dp;
+Dirent* create(int fd, char* path, short type, int mode) {
+    Dirent *ep, *dp;
     char name[FAT32_MAX_FILENAME + 1];
 
     if ((dp = enameparent(fd, path, name)) == NULL) {
@@ -297,31 +194,19 @@ struct dirent* create(int fd, char* path, short type, int mode) {
         mode = 0;
     }
     
-    elock(dp);
     if ((ep = ealloc(dp, name, mode)) == NULL) {
-        eunlock(dp);
-        eput(dp);
         return NULL;
     }
-
     
     if ((type == T_DIR && !(ep->attribute & ATTR_DIRECTORY)) ||
         (type == T_FILE && (ep->attribute & ATTR_DIRECTORY))) {
-        eunlock(dp);
-        eput(ep);
-        eput(dp);
         return NULL;
     }
-
-    eunlock(dp);
-    eput(dp);
-
-    elock(ep);
     
     return ep;
 }
 
-static uint rw_clus(FileSystem *fs, uint32 cluster,
+uint rw_clus(FileSystem *fs, uint32 cluster,
                     int write,
                     int user,
                     u64 data,
@@ -366,7 +251,7 @@ static uint rw_clus(FileSystem *fs, uint32 cluster,
  * @param   alloc       whether alloc new cluster when meeting end of FAT chains
  * @return              the offset from the new cur_clus
  */
-static int reloc_clus(FileSystem *fs, struct dirent* entry, uint off, int alloc) {
+int reloc_clus(FileSystem *fs, Dirent* entry, uint off, int alloc) {
     assert(entry->first_clus != 0);
     assert(entry->inodeMaxCluster > 0);
     assert(entry->first_clus == entry->inode.item[0]);
@@ -427,7 +312,7 @@ static int reloc_clus(FileSystem *fs, struct dirent* entry, uint off, int alloc)
     return ret;
 }
 
-int getBlockNumber(struct dirent* entry, int dataBlockNum) {
+int getBlockNumber(Dirent* entry, int dataBlockNum) {
     int offset = (dataBlockNum << 9);
     if (offset > entry->file_size) {
         return -1;
@@ -441,7 +326,7 @@ int getBlockNumber(struct dirent* entry, int dataBlockNum) {
 
 /* like the original readi, but "reade" is odd, let alone "writee" */
 // Caller must hold entry->lock.
-int eread(struct dirent* entry, int user_dst, u64 dst, uint off, uint n) {
+int eread(Dirent* entry, int user_dst, u64 dst, uint off, uint n) {
     if (entry->dev == ZERO) {
         if (!either_memset(user_dst, dst, 0, n)) {
             return n;
@@ -480,7 +365,7 @@ int eread(struct dirent* entry, int user_dst, u64 dst, uint off, uint n) {
 }
 
 // Caller must hold entry->lock.
-int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n) {
+int ewrite(Dirent* entry, int user_src, u64 src, uint off, uint n) {
     if (entry->dev == NONE) {
         return n;
     }
@@ -494,7 +379,6 @@ int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n) {
         entry->cur_clus = entry->first_clus = entry->inode.item[0] = alloc_clus(fs, entry->dev);
         entry->inodeMaxCluster = 1;
         entry->clus_cnt = 0;
-        entry->dirty = 1;
     }
     uint tot, m;
     for (tot = 0; tot < n; tot += m, off += m, src += m) {
@@ -511,51 +395,12 @@ int ewrite(struct dirent* entry, int user_src, u64 src, uint off, uint n) {
     if (n > 0) {
         if (off > entry->file_size) {
             entry->file_size = off;
-            entry->dirty = 1;
         }
     }
     return tot;
 }
 
-// Returns a dirent struct. If name is given, check ecache. It is difficult to
-// cache entries by their whole path. But when parsing a path, we open all the
-// directories through it, which forms a linked list from the final file to the
-// root. Thus, we use the "parent" pointer to recognize whether an entry with
-// the "name" as given is really the file we want in the right path. Should
-// never get root by eget, it's easy to understand.
-static struct dirent* eget(struct dirent* parent, char* name) {
-    struct dirent* ep;
-    acquireLock(&direntCache.lock);
-    if (name) {
-        for (int i = 0; i < ENTRY_CACHE_NUM; i++) {
-            ep = &direntCache.entries[i];
-            if (ep->valid == 1 && ep->parent == parent &&
-                strncmp(ep->filename, name, FAT32_MAX_FILENAME) == 0) {
-                if (ep->ref++ == 0) {
-                    ep->parent->ref++;
-                }
-                releaseLock(&direntCache.lock);
-                return ep;
-            }
-        }
-    }
-    for (int i = 0; i < ENTRY_CACHE_NUM; i++) {
-        ep = &direntCache.entries[i];
-        if (ep->ref == 0) {
-            ep->ref = 1;
-            ep->dev = parent->dev;
-            ep->off = 0;
-            ep->valid = 0;
-            ep->dirty = 0;
-            ep->fileSystem = parent->fileSystem;
-            eFreeInode(ep);
-            releaseLock(&direntCache.lock);
-            return ep;
-        }
-    }
-    panic("eget: insufficient ecache");
-    return 0;
-}
+extern Dirent dirents[];
 
 // trim ' ' in the head and tail, '.' in head, and test legality
 char* formatname(char* name) {
@@ -579,52 +424,6 @@ char* formatname(char* name) {
     return name;
 }
 
-static void generate_shortname(char* shortname, char* name) {
-    static char illegal[] = {
-        '+', ',', ';', '=',
-        '[', ']', 0};  // these are legal in l-n-e but not s-n-e
-    int i = 0;
-    char c, *p = name;
-    for (int j = strlen(name) - 1; j >= 0; j--) {
-        if (name[j] == '.') {
-            p = name + j;
-            break;
-        }
-    }
-    while (i < CHAR_SHORT_NAME && (c = *name++)) {
-        if (i == 8 && p) {
-            if (p + 1 < name) {
-                break;
-            }  // no '.'
-            else {
-                name = p + 1, p = 0;
-                continue;
-            }
-        }
-        if (c == ' ') {
-            continue;
-        }
-        if (c == '.') {
-            if (name > p) {  // last '.'
-                memset(shortname + i, ' ', 8 - i);
-                i = 8, p = 0;
-            }
-            continue;
-        }
-        if (c >= 'a' && c <= 'z') {
-            c += 'A' - 'a';
-        } else {
-            if (strchr(illegal, c) != NULL) {
-                c = '_';
-            }
-        }
-        shortname[i++] = c;
-    }
-    while (i < CHAR_SHORT_NAME) {
-        shortname[i++] = ' ';
-    }
-}
-
 uint8 cal_checksum(uchar* shortname) {
     uint8 sum = 0;
     for (int i = CHAR_SHORT_NAME; i != 0; i--) {
@@ -634,109 +433,19 @@ uint8 cal_checksum(uchar* shortname) {
 }
 
 /**
- * Generate an on disk format entry and write to the disk. Caller must hold
- * dp->lock
- * @param   dp          the directory
- * @param   ep          entry to write on disk
- * @param   off         offset int the dp, should be calculated via dirlookup
- * before calling this
- */
-void emake(struct dirent* dp, struct dirent* ep, uint off) {
-    if (!(dp->attribute & ATTR_DIRECTORY))
-        panic("emake: not dir");
-    if (off % sizeof(union dentry))
-        panic("emake: not aligned");
-
-    assert(dp->fileSystem == ep->fileSystem);
-    FileSystem *fs = ep->fileSystem;
-    union dentry de;
-    memset(&de, 0, sizeof(de));
-    if (off <= 32) {
-        if (off == 0) {
-            strncpy(de.sne.name, ".          ", sizeof(de.sne.name));
-        } else {
-            strncpy(de.sne.name, "..         ", sizeof(de.sne.name));
-        }
-        de.sne.attr = ATTR_DIRECTORY;
-        de.sne.fst_clus_hi =
-            (uint16)(ep->first_clus >> 16);  // first clus high 16 bits
-        de.sne.fst_clus_lo = (uint16)(ep->first_clus & 0xffff);  // low 16 bits
-        de.sne.file_size = 0;  // filesize is updated in eupdate()
-        de.sne._nt_res = ep->_nt_res;
-        off = reloc_clus(fs, dp, off, 1);
-        rw_clus(fs, dp->cur_clus, 1, 0, (u64)&de, off, sizeof(de));
-    } else {
-        int entcnt = (strlen(ep->filename) + CHAR_LONG_NAME - 1) /
-                     CHAR_LONG_NAME;  // count of l-n-entries, rounds up
-        char shortname[CHAR_SHORT_NAME + 1];
-        memset(shortname, 0, sizeof(shortname));
-        generate_shortname(shortname, ep->filename);
-        de.lne.checksum = cal_checksum((uchar*)shortname);
-        de.lne.attr = ATTR_LONG_NAME;
-        for (int i = entcnt; i > 0; i--) {
-            if ((de.lne.order = i) == entcnt) {
-                de.lne.order |= LAST_LONG_ENTRY;
-            }
-            char* p = ep->filename + (i - 1) * CHAR_LONG_NAME;
-            uint8* w = (uint8*)de.lne.name1;
-            int end = 0;
-            for (int j = 1; j <= CHAR_LONG_NAME; j++) {
-                if (end) {
-                    *w++ = 0xff;  // on k210, unaligned reading is illegal
-                    *w++ = 0xff;
-                } else {
-                    if ((*w++ = *p++) == 0) {
-                        end = 1;
-                    }
-                    *w++ = 0;
-                }
-                switch (j) {
-                    case 5:
-                        w = (uint8*)de.lne.name2;
-                        break;
-                    case 11:
-                        w = (uint8*)de.lne.name3;
-                        break;
-                }
-            }
-            uint off2 = reloc_clus(fs, dp, off, 1);
-            rw_clus(fs, dp->cur_clus, 1, 0, (u64)&de, off2, sizeof(de));
-            off += sizeof(de);
-        }
-        memset(&de, 0, sizeof(de));
-        strncpy(de.sne.name, shortname, sizeof(de.sne.name));
-        de.sne.attr = ep->attribute;
-        de.sne.fst_clus_hi =
-            (uint16)(ep->first_clus >> 16);  // first clus high 16 bits
-        de.sne.fst_clus_lo = (uint16)(ep->first_clus & 0xffff);  // low 16 bits
-        de.sne.file_size = ep->file_size;  // filesize is updated in eupdate()
-        de.sne._nt_res = ep->_nt_res;
-        off = reloc_clus(fs, dp, off, 1);
-        rw_clus(fs, dp->cur_clus, 1, 0, (u64)&de, off, sizeof(de));
-    }
-}
-
-/**
  * Allocate an entry on disk. Caller must hold dp->lock.
  */
-struct dirent* ealloc(struct dirent* dp, char* name, int attr) {
+Dirent* ealloc(Dirent* dp, char* name, int attr) {
     if (!(dp->attribute & ATTR_DIRECTORY)) {
         panic("ealloc not dir");
     }
     
-    if (dp->valid != 1 ||
-        !(name = formatname(name))) {  // detect illegal character
-        return NULL;
-    }
-    
-    struct dirent* ep;
-    uint off = 0;
-    if ((ep = dirlookup(dp, name, &off)) != 0) {  // entry exists
+    Dirent* ep;
+    if ((ep = dirlookup(dp, name)) != 0) {  // entry exists
         return ep;
     }
     
-    ep = eget(dp, name);
-    elock(ep);
+    direntAlloc(&ep);
     if (attr == ATTR_LINK) {
         ep->attribute = 0;
         ep->_nt_res = DT_LNK;
@@ -747,11 +456,12 @@ struct dirent* ealloc(struct dirent* dp, char* name, int attr) {
     ep->file_size = 0;
     ep->first_clus = 0;
     eFreeInode(ep);
-    ep->parent = edup(dp);
-    ep->off = off;
+    ep->parent = dp;
+    ep->nextBrother = dp->firstChild;
+    dp->firstChild = ep;
     ep->clus_cnt = 0;
     ep->cur_clus = 0;
-    ep->dirty = 0;
+    ep->fileSystem = dp->fileSystem;
     strncpy(ep->filename, name, FAT32_MAX_FILENAME);
     ep->filename[FAT32_MAX_FILENAME] = '\0';
     FileSystem *fs = ep->fileSystem;
@@ -759,52 +469,19 @@ struct dirent* ealloc(struct dirent* dp, char* name, int attr) {
         ep->attribute |= ATTR_DIRECTORY;
         ep->cur_clus = ep->first_clus = ep->inode.item[0] = alloc_clus(fs, dp->dev);
         ep->inodeMaxCluster = 1;
-        emake(ep, ep, 0);
-        emake(ep, dp, 32);
     } else {
         ep->attribute |= ATTR_ARCHIVE;
     }
-    emake(dp, ep, off);
-    ep->valid = 1;
-    eunlock(ep);
     return ep;
 }
 
-struct dirent* edup(struct dirent* entry) {
-    if (entry != 0) {
-        acquireLock(&direntCache.lock);
-        entry->ref++;
-        releaseLock(&direntCache.lock);
-    }
-    
+Dirent* edup(Dirent* entry) {    
     return entry;
-}
-
-// Only update filesize and first cluster in this case.
-// caller must hold entry->parent->lock
-void eupdate(struct dirent* entry) {
-    if (!entry->dirty || entry->valid != 1) {
-        return;
-    }
-    uint entcnt = 0;
-    FileSystem *fs = entry->fileSystem;
-    uint32 off = reloc_clus(fs, entry->parent, entry->off, 0);
-    rw_clus(fs, entry->parent->cur_clus, 0, 0, (u64)&entcnt, off, 1);
-    entcnt &= ~LAST_LONG_ENTRY;
-    off = reloc_clus(fs, entry->parent, entry->off + (entcnt << 5), 0);
-    union dentry de;
-    rw_clus(fs, entry->parent->cur_clus, 0, 0, (u64)&de, off, sizeof(de));
-    de.sne.fst_clus_hi = (uint16)(entry->first_clus >> 16);
-    de.sne.fst_clus_lo = (uint16)(entry->first_clus & 0xffff);
-    de.sne.file_size = entry->file_size;
-    de.sne._nt_res = entry->_nt_res;
-    rw_clus(fs, entry->parent->cur_clus, 1, 0, (u64)&de, off, sizeof(de));
-    entry->dirty = 0;
 }
 
 #define UTIME_NOW ((1l << 30) - 1l)
 #define UTIME_OMIT ((1l << 30) - 2l)
-void eSetTime(struct dirent *entry, TimeSpec ts[2]) {
+void eSetTime(Dirent *entry, TimeSpec ts[2]) {
     uint entcnt = 0;
     FileSystem *fs = entry->fileSystem;
     uint32 off = reloc_clus(fs, entry->parent, entry->off, 0);
@@ -839,28 +516,27 @@ void eSetTime(struct dirent *entry, TimeSpec ts[2]) {
 // caller must hold entry->lock
 // caller must hold entry->parent->lock
 // remove the entry in its parent directory
-void eremove(struct dirent* entry) {
-    if (entry->valid != 1) {
-        return;
+void eremove(Dirent* entry) {
+    Dirent *i = entry->parent->firstChild;
+    if (i == entry) {
+        entry->parent->firstChild = entry->nextBrother;
+    } else {
+        for (; i->nextBrother; i = i->nextBrother) {
+            if (i->nextBrother == entry) {
+                i->nextBrother = entry->nextBrother;
+                break;
+            }
+        }
     }
-    FileSystem *fs = entry->fileSystem;
-    uint entcnt = 0;
-    uint32 off = entry->off;
-    uint32 off2 = reloc_clus(fs, entry->parent, off, 0);
-    rw_clus(fs, entry->parent->cur_clus, 0, 0, (u64)&entcnt, off2, 1);
-    entcnt &= ~LAST_LONG_ENTRY;
-    uint8 flag = EMPTY_ENTRY;
-    for (int i = 0; i <= entcnt; i++) {
-        rw_clus(fs, entry->parent->cur_clus, 1, 0, (u64)&flag, off2, 1);
-        off += 32;
-        off2 = reloc_clus(fs, entry->parent, off, 0);
+    direntFree(entry);
+    for(int i = 1; i <= 300; i++) {
+        printf("");
     }
-    entry->valid = -1;
 }
 
 // truncate a file
 // caller must hold entry->lock*全部文件名目录项
-void etrunc(struct dirent* entry) {
+void etrunc(Dirent* entry) {
     FileSystem *fs = entry->fileSystem;
 
     for (uint32 clus = entry->first_clus; clus >= 2 && clus < FAT32_EOC;) {
@@ -871,70 +547,24 @@ void etrunc(struct dirent* entry) {
     entry->file_size = 0;
     entry->first_clus = 0;
     eFreeInode(entry);
-    entry->dirty = 1;
 }
 
-void elock(struct dirent* entry) {
-    if (entry == 0 || entry->ref < 1)
-        panic("elock");
-    acquiresleep(&entry->lock);
+void elock(Dirent* entry) {
 }
 
-void eunlock(struct dirent* entry) {
-    if (entry == 0 || !holdingsleep(&entry->lock) || entry->ref < 1)
-        panic("eunlock");
-    releasesleep(&entry->lock);
+void eunlock(Dirent* entry) {
 }
 
-void eput(struct dirent* entry) {
-    return;
-    acquireLock(&direntCache.lock);
-    MSG_PRINT("acquireLock finish");
-    if ((entry >= direntCache.entries && entry < direntCache.entries + ENTRY_CACHE_NUM) && entry->valid != 0 && entry->ref == 1) {
-        // ref == 1 means no other process can have entry locked,
-        // so this acquiresleep() won't block (or deadlock).
-        acquiresleep(&entry->lock);
-        MSG_PRINT("acquireSleep finish");
-      //  entry->next->prev = entry->prev;
-      //  entry->prev->next = entry->next;
-      //  entry->next = root.next;
-      //  entry->prev = &root;
-      //  root.next->prev = entry;
-      //  root.next = entry;
-        releaseLock(&direntCache.lock);
-        if (entry->valid == -1) {  // this means some one has called eremove()
-            etrunc(entry);
-        } else {
-            elock(entry->parent);
-            eupdate(entry);
-            eunlock(entry->parent);
-        }
-        releasesleep(&entry->lock);
-
-        // Once entry->ref decreases down to 0, we can't guarantee the
-        // entry->parent field remains unchanged. Because eget() may take the
-        // entry away and write it.
-        struct dirent* eparent = entry->parent;
-        acquireLock(&direntCache.lock);
-        entry->ref--;
-        releaseLock(&direntCache.lock);
-        if (entry->ref == 0) {
-            eput(eparent);
-        }
-        return;
-    }
-    MSG_PRINT("end of eput");
-    // entry->ref--;
-    releaseLock(&direntCache.lock);
+void eput(Dirent* entry) {
 }
 
 //todo(need more)
-void estat(struct dirent* ep, struct stat* st) {
+void estat(Dirent* ep, struct stat* st) {
     // strncpy(st->name, de->filename, STAT_MAX_NAME);
     // st->type = (de->attribute & ATTR_DIRECTORY) ? T_DIR : T_FILE;
     st->st_dev = ep->dev;
     st->st_size = ep->file_size;
-    st->st_ino = (ep - direntCache.entries);
+    st->st_ino = (ep - dirents);
     st->st_mode = (ep->attribute & ATTR_DIRECTORY ? DIR_TYPE :
                 ep->attribute & ATTR_CHARACTER_DEVICE ? CHR_TYPE : REG_TYPE);
     st->st_nlink = 1;
@@ -972,114 +602,6 @@ void estat(struct dirent* ep, struct stat* st) {
 }
 
 /**
- * Read filename from directory entry.
- * @param   buffer      pointer to the array that stores the name
- * @param   raw_entry   pointer to the entry in a sector buffer
- * @param   islong      if non-zero, read as l-n-e, otherwise s-n-e.
- */
-static void read_entry_name(char* buffer, union dentry* d) {
-    if (d->lne.attr == ATTR_LONG_NAME) {  // long entry branch
-        wchar temp[NELEM(d->lne.name1)];
-        memmove(temp, d->lne.name1, sizeof(temp));
-        snstr(buffer, temp, NELEM(d->lne.name1));
-        buffer += NELEM(d->lne.name1);
-        snstr(buffer, d->lne.name2, NELEM(d->lne.name2));
-        buffer += NELEM(d->lne.name2);
-        snstr(buffer, d->lne.name3, NELEM(d->lne.name3));
-    } else {
-        // assert: only "." and ".." will enter this branch
-        memset(buffer, 0, CHAR_SHORT_NAME + 2);  // plus '.' and '\0'
-        int i;
-        for (i = 0; d->sne.name[i] != ' ' && i < 8; i++) {
-            buffer[i] = d->sne.name[i];
-        }
-        if (d->sne.name[8] != ' ') {
-            buffer[i++] = '.';
-        }
-        for (int j = 8; j < CHAR_SHORT_NAME; j++, i++) {
-            if (d->sne.name[j] == ' ') {
-                break;
-            }
-            buffer[i] = d->sne.name[j];
-        }
-    }
-}
-
-/**
- * Read entry_info from directory entry.
- * @param   entry       pointer to the structure that stores the entry info
- * @param   raw_entry   pointer to the entry in a sector buffer
- */
-static void read_entry_info(struct dirent* entry, union dentry* d) {
-    entry->attribute = d->sne.attr;
-    entry->first_clus = ((uint32)d->sne.fst_clus_hi << 16) | d->sne.fst_clus_lo;
-    entry->inode.item[0] = entry->first_clus;
-    entry->inodeMaxCluster = 1;
-    entry->file_size = d->sne.file_size;
-    entry->cur_clus = entry->first_clus;
-    entry->clus_cnt = 0;
-    entry->_nt_res = d->sne._nt_res;
-}
-
-/**
- * Read a directory from off, parse the next entry(ies) associated with one
- * file, or find empty entry slots. Caller must hold dp->lock.
- * @param   dp      the directory
- * @param   ep      the struct to be written with info
- * @param   off     offset off the directory
- * @param   count   to write the count of entries
- * @return  -1      meet the end of dir
- *          0       find empty slots
- *          1       find a file with all its entries
- */
-int enext(struct dirent* dp, struct dirent* ep, uint off, int* count) {
-    // assert(dp->fileSystem == ep->fileSystem);
-    if (!(dp->attribute & ATTR_DIRECTORY))
-        panic("enext not dir");
-    if (ep->valid)
-        panic("enext ep valid");
-    if (off % 32)
-        panic("enext not align");
-    if (dp->valid != 1) {
-        return -1;
-    }
-
-    union dentry de;
-    int cnt = 0;
-    memset(ep->filename, 0, FAT32_MAX_FILENAME + 1);
-    FileSystem *fs = dp->fileSystem;
-    for (int off2; (off2 = reloc_clus(fs, dp, off, 0)) != -1; off += 32) {
-        if (rw_clus(fs, dp->cur_clus, 0, 0, (u64)&de, off2, 32) != 32 ||
-            de.lne.order == END_OF_ENTRY) {
-            return -1;
-        }
-        if (de.lne.order == EMPTY_ENTRY) {
-            cnt++;
-            continue;
-        } else if (cnt) {
-            *count = cnt;
-            return 0;
-        }
-        if (de.lne.attr == ATTR_LONG_NAME) {
-            int lcnt = de.lne.order & ~LAST_LONG_ENTRY;
-            if (de.lne.order & LAST_LONG_ENTRY) {
-                *count = lcnt + 1;  // plus the s-n-e;
-                count = 0;
-            }
-            read_entry_name(ep->filename + (lcnt - 1) * CHAR_LONG_NAME, &de);
-        } else {
-            if (count) {
-                *count = 1;
-                read_entry_name(ep->filename, &de);
-            }
-            read_entry_info(ep, &de);
-            return 1;
-        }
-    }
-    return -1;
-}
-
-/**
  * Seacher for the entry in a directory and return a structure. Besides, record
  * the offset of some continuous empty slots that can fit the length of
  * filename. Caller must hold entry->lock.
@@ -1088,7 +610,7 @@ int enext(struct dirent* dp, struct dirent* ep, uint off, int* count) {
  * @param   poff        offset of proper empty entry slots from the beginning of
  * the dir
  */
-struct dirent* dirlookup(struct dirent* dp, char* filename, uint* poff) {
+Dirent* dirlookup(Dirent* dp, char* filename) {
     if (!(dp->attribute & ATTR_DIRECTORY))
         panic("dirlookup not DIR");
 
@@ -1101,41 +623,11 @@ struct dirent* dirlookup(struct dirent* dp, char* filename, uint* poff) {
         return edup(dp->parent);
     }
     
-    if (dp->valid != 1) {
-        return NULL;
-    }
-    
-    struct dirent* ep = eget(dp, filename);
-    if (ep->valid == 1) {
-        return ep;
-    }  // ecache hits
-
-    int len = strlen(filename);
-    int entcnt = (len + CHAR_LONG_NAME - 1) / CHAR_LONG_NAME +
-                 1;  // count of l-n-entries, rounds up. plus s-n-e
-    int count = 0;
-    int type;
-    uint off = 0;
-    FileSystem *fs = dp->fileSystem;
-    reloc_clus(fs, dp, 0, 0);
-    while ((type = enext(dp, ep, off, &count) != -1)) {
-        if (type == 0) {
-            if (poff && count >= entcnt) {
-                *poff = off;
-                poff = 0;
-            }
-        } else if (strncmp(filename, ep->filename, FAT32_MAX_FILENAME) == 0) {
-            ep->parent = edup(dp);
-            ep->off = off;
-            ep->valid = 1;
+    for (Dirent *ep = dp->firstChild; ep; ep = ep->nextBrother) {
+        if (strncmp(ep->filename, filename, FAT32_MAX_FILENAME) == 0) {
             return ep;
         }
-        off += count << 5;
     }
-    if (poff) {
-        *poff = off;
-    }
-    eput(ep);
     return NULL;
 }
 
@@ -1162,7 +654,7 @@ static char* skipelem(char* path, char* name) {
     return path;
 }
 
-static struct dirent* jumpToLinkDirent(struct dirent* link) {
+static Dirent* jumpToLinkDirent(Dirent* link) {
     char buf[FAT32_MAX_FILENAME];
     while (link && link->_nt_res == DT_LNK) {
         eread(link, 0, (u64)buf, 0, FAT32_MAX_FILENAME);
@@ -1172,8 +664,8 @@ static struct dirent* jumpToLinkDirent(struct dirent* link) {
     return link;
 }
 
-static struct dirent* lookup_path(int fd, char* path, int parent, char* name, bool jump) {
-    struct dirent *entry, *next;
+static Dirent* lookup_path(int fd, char* path, int parent, char* name, bool jump) {
+    Dirent *entry, *next;
     
     if (*path != '/' && fd != AT_FDCWD && fd >= 0 && fd < NOFILE) {
         if (myProcess()->ofile[fd] == 0) {
@@ -1199,10 +691,9 @@ static struct dirent* lookup_path(int fd, char* path, int parent, char* name, bo
         }
         
         if (entry->head != NULL) {
-            struct dirent* mountDirent = &entry->head->root;
+            Dirent* mountDirent = &entry->head->root;
             eunlock(entry);
             elock(mountDirent);
-    printf("%s %d\n", __FILE__, __LINE__);
             entry = edup(mountDirent);
         }
 
@@ -1210,7 +701,7 @@ static struct dirent* lookup_path(int fd, char* path, int parent, char* name, bo
             eunlock(entry);
             return entry;
         }
-        if ((next = dirlookup(entry, name, 0)) == 0) {
+        if ((next = dirlookup(entry, name)) == 0) {
             eunlock(entry);
             eput(entry);
             return NULL;
@@ -1233,11 +724,11 @@ static struct dirent* lookup_path(int fd, char* path, int parent, char* name, bo
     return entry;
 }
 
-struct dirent* ename(int fd, char* path, bool jump) {
+Dirent* ename(int fd, char* path, bool jump) {
     char name[FAT32_MAX_FILENAME + 1];
     return lookup_path(fd, path, 0, name, jump);
 }
 
-struct dirent* enameparent(int fd, char* path, char* name) {
+Dirent* enameparent(int fd, char* path, char* name) {
     return lookup_path(fd, path, 1, name, true);
 }

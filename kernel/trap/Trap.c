@@ -95,6 +95,7 @@ void kernelTrap() {
 }
 
 static inline void userProcessCpuTimeEnd() {
+    return;
     Process *p = myProcess();
     long currentTime = r_time();
     p->cpuTime.user += currentTime - p->processTime.lastUserTime;
@@ -137,13 +138,18 @@ void userTrap() {
             // if (trapframe->a7 == SYSCALL_WRITE || trapframe->a7 == SYSCALL_WRITE_VECTOR || trapframe->a7 == SYSCALL_SELECT || trapframe->a7 == SYSCALL_GET_TIME) {
             // if (trapframe->a7 != 63)
             //     printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
-            // // }
+            // }
+            // if (trapframe->a7 != 72 && trapframe->a7 != 63 && trapframe->a7 != 165 && trapframe->a7 != 113) {
+            //     printf("syscall-trigger: %d\n", trapframe->a7);
+            // }
             if (!syscallVector[trapframe->a7]) {
                 // printf("%lx\n", r_scause());
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
             syscallVector[trapframe->a7]();
-            // printf("syscall %d end\n", trapframe->a7);
+            // if (trapframe->a7 != 73 && trapframe->a7 != 64 && trapframe->a7 != 165 && trapframe->a7 != 113) {
+            //     printf("syscall-end: %d\n", trapframe->a7);
+            // }
             // if ((i64)trapframe->a0 <= -1) {
             // printf("return %d: %d\n", trapframe->a0, trapframe->a7);
             // }
@@ -186,6 +192,7 @@ void userTrap() {
 }
 
 static inline void userProcessCpuTimeBegin() {
+    return;
     Process *p = myProcess();
     p->processTime.lastUserTime = r_time();
 }

@@ -60,12 +60,6 @@ void ls(char *path){
 
 
 int userMain(int argc, char** argv) {
-    printf("[ls test]\n");
-    printf("argc=%d\n", argc);
-    for (int i = 0; i < argc; ++i) {
-        printf("%s ", argv[i]);
-    }
-    printf("\n");
     int i;
 
     if (argc < 2) {

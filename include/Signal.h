@@ -68,6 +68,9 @@ typedef struct SignalAction {
 	unsigned mask[2];
 } SignalAction;
 
+#define SA_SIGINFO    0x00000040 /* Invoke signal-catching function with
+				    three arguments instead of one.  */
+                    
 typedef unsigned long gregset_t[32];
 struct __riscv_f_ext_state {
 	unsigned int f[32];
