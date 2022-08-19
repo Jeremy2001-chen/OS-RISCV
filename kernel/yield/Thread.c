@@ -141,6 +141,7 @@ void threadSetup(Thread* th) {
     th->setChildTid = th->clearChildTid = 0;
     th->awakeTime = 0;
     th->robustHeadPointer = 0;
+    th->killed = false;
     LIST_INIT(&th->waitingSignal);
     PhysicalPage *page;
     if (pageAlloc(&page) < 0) {
@@ -158,27 +159,27 @@ void threadSetup(Thread* th) {
     if (pageAlloc(&page) < 0) {
         panic("");
     }
-    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 4, page2pa(page), PTE_READ | PTE_WRITE);
-    if (pageAlloc(&page) < 0) {
-        panic("");
-    }
-    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 5, page2pa(page), PTE_READ | PTE_WRITE);
-    if (pageAlloc(&page) < 0) {
-        panic("");
-    }
-    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 6, page2pa(page), PTE_READ | PTE_WRITE);
-    if (pageAlloc(&page) < 0) {
-        panic("");
-    }
-    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 7, page2pa(page), PTE_READ | PTE_WRITE);
-    if (pageAlloc(&page) < 0) {
-        panic("");
-    }
-    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 8, page2pa(page), PTE_READ | PTE_WRITE);
-    if (pageAlloc(&page) < 0) {
-        panic("");
-    }
-    pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 9, page2pa(page), PTE_READ | PTE_WRITE);
+    // pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 4, page2pa(page), PTE_READ | PTE_WRITE);
+    // if (pageAlloc(&page) < 0) {
+    //     panic("");
+    // }
+    // pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 5, page2pa(page), PTE_READ | PTE_WRITE);
+    // if (pageAlloc(&page) < 0) {
+    //     panic("");
+    // }
+    // pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 6, page2pa(page), PTE_READ | PTE_WRITE);
+    // if (pageAlloc(&page) < 0) {
+    //     panic("");
+    // }
+    // pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 7, page2pa(page), PTE_READ | PTE_WRITE);
+    // if (pageAlloc(&page) < 0) {
+    //     panic("");
+    // }
+    // pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 8, page2pa(page), PTE_READ | PTE_WRITE);
+    // if (pageAlloc(&page) < 0) {
+    //     panic("");
+    // }
+    // pageInsert(kernelPageDirectory, getThreadTopSp(th) - PAGE_SIZE * 9, page2pa(page), PTE_READ | PTE_WRITE);
 }
 
 u64 getSignalHandlerSp(Thread *th) {
@@ -440,7 +441,7 @@ void sleep(void* chan, struct Spinlock* lk) {
     th->reason |= KERNEL_GIVE_UP;
     // releaseLock(&th->lock);
 
-    if (hasKillSignal(th)) {
+    if (th->killed) {
         threadDestroy(th);
     }    
 
@@ -455,8 +456,8 @@ void sleep(void* chan, struct Spinlock* lk) {
 
     kernelProcessCpuTimeBegin();
     
-    if (hasKillSignal(th)) {
-        threadDestroy(th);    
+    if (th->killed) {
+        threadDestroy(th);
     }    
     // Reacquire original lock.
     // acquireLock(lk);

@@ -66,6 +66,7 @@ int signalSend(int tgid, int tid, int sig) {
     sc->signal = sig;
     if (sig == SIGKILL) {
         thread->state = RUNNABLE;
+        thread->killed = true;
     }
     LIST_INSERT_HEAD(&thread->waitingSignal, sc, link);
     // releaseLock(&thread->lock);
@@ -201,12 +202,11 @@ void signalFinish(Thread* thread, SignalContext* sc) {
 void handleSignal(Thread* thread) {
     SignalContext* sc;
     while (1) {
+        if (thread->killed) {
+            threadDestroy(thread);
+        }
         sc = getFirstSignalContext(thread);
         if (sc == NULL) {
-            return;
-        }
-        if (hasKillSignal(thread)) {
-            threadDestroy(thread);
             return;
         }
         if (sc->start) {
