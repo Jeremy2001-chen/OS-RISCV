@@ -73,17 +73,15 @@ int signalSend(int tgid, int tid, int sig) {
 }
 
 int processSignalSend(int pid, int sig) {
-    extern Thread threads[];
+    extern struct ThreadList usedThreads;    
     int ret = -ESRCH;
-    for (int i = 0; i < PROCESS_TOTAL_NUMBER; i++) {
-        // acquireLock(&threads[i].lock);
-        if (threads[i].state != UNUSED) {
-            if (pid == 0 || pid == -1 || pid == threads[i].process->processId) {
-                // releaseLock(&threads[i].lock);
-                ret = signalSend(0, threads[i].id, sig);
-                ret = ret == 0 ? 0 : ret;
-                continue;
-            }
+    Thread* thread = NULL;
+    LIST_FOREACH(thread, &usedThreads, link) {
+        if (pid == 0 || pid == -1 || pid == thread->process->processId) {
+            // releaseLock(&threads[i].lock);
+            ret = signalSend(0, thread->id, sig);
+            ret = ret == 0 ? 0 : ret;
+            continue;
         }
         // releaseLock(&threads[i].lock);
     }

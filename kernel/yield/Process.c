@@ -17,7 +17,7 @@
 #include <Wait.h>
 
 Process processes[PROCESS_TOTAL_NUMBER];
-static struct ProcessList freeProcesses;
+static struct ProcessList freeProcesses, usedProcesses;
 
 struct Spinlock freeProcessesLock, processIdLock, waitLock, currentProcessLock;
 
@@ -45,6 +45,7 @@ void processInit() {
     initLock(&waitLock, "waitProcess");
 
     LIST_INIT(&freeProcesses);
+    LIST_INIT(&usedProcesses);
     
     int i;
     // extern u64 kernelPageDirectory[];
@@ -170,6 +171,7 @@ int processAlloc(Process **new, u64 parentId) {
     }
     p = LIST_FIRST(&freeProcesses);
     LIST_REMOVE(p, link);
+    LIST_INSERT_HEAD(&usedProcesses, p, link);
     // printf("[Process Alloc] alloc an process %d, next : %x\n", (u32)(p - processes), (u32)(LIST_FIRST(&freeProcesses) - processes));
     // releaseLock(&freeProcessesLock);
     if ((r = processSetup(p)) < 0) {
@@ -276,8 +278,8 @@ int wait(int targetProcessId, u64 addr, int flags) {
 
     while (true) {
         haveChildProcess = 0;
-        for (int i = 0; i < PROCESS_TOTAL_NUMBER; ++i) {
-            Process* np = &processes[i];
+        Process* np = NULL;
+        LIST_FOREACH(np, &usedProcesses, link) {
             // acquireLock(&np->lock);
             if (np->state != UNUSED && np->parentId == p->processId) {
                 haveChildProcess = 1;
@@ -291,7 +293,8 @@ int wait(int targetProcessId, u64 addr, int flags) {
                     // acquireLock(&freeProcessesLock);
                     updateAncestorsCpuTime(np);
                     np->state = UNUSED;
-                    LIST_INSERT_HEAD(&freeProcesses, np, link); 
+                    LIST_REMOVE(np, link);
+                    LIST_INSERT_HEAD(&freeProcesses, np, link);
                     // printf("[Process Free] Free an process %d\n", (u32)(np - processes));
                     // releaseLock(&freeProcessesLock);
                     // releaseLock(&np->lock);

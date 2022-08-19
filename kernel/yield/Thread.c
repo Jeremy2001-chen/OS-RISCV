@@ -12,7 +12,7 @@
 
 Thread threads[PROCESS_TOTAL_NUMBER];
 
-static struct ThreadList freeThreades;
+struct ThreadList freeThreads, usedThreads;
 struct ThreadList scheduleList[2];
 Thread *currentThread[HART_TOTAL_NUMBER] = {0};
 
@@ -39,7 +39,8 @@ void threadInit() {
     initLock(&scheduleListLock, "scheduleList");
     initLock(&threadIdLock, "threadId");
 
-    LIST_INIT(&freeThreades);
+    LIST_INIT(&freeThreads);
+    LIST_INIT(&usedThreads);
     LIST_INIT(&scheduleList[0]);
     LIST_INIT(&scheduleList[1]);
 
@@ -47,7 +48,7 @@ void threadInit() {
     for (i = PROCESS_TOTAL_NUMBER - 1; i >= 0; i--) {
         threads[i].state = UNUSED;
         threads[i].trapframe.kernelSatp = MAKE_SATP(kernelPageDirectory);
-        LIST_INSERT_HEAD(&freeThreades, &threads[i], link);
+        LIST_INSERT_HEAD(&freeThreads, &threads[i], link);
     }
 }
 
@@ -98,7 +99,8 @@ void threadFree(Thread *th) {
 
     // acquireLock(&freeThreadListLock);
     th->state = UNUSED;
-    LIST_INSERT_HEAD(&freeThreades, th, link); //test pipe
+    LIST_REMOVE(th, link);
+    LIST_INSERT_HEAD(&freeThreads, th, link); //test pipe
     // releaseLock(&freeThreadListLock);
 }
 
@@ -187,14 +189,15 @@ int mainThreadAlloc(Thread **new, u64 parentId) {
     int r;
     Thread *th;
     // acquireLock(&freeThreadListLock);
-    if (LIST_EMPTY(&freeThreades)) {
+    if (LIST_EMPTY(&freeThreads)) {
         // releaseLock(&freeThreadListLock);
         panic("");
         *new = NULL;
         return -ESRCH;
     }
-    th = LIST_FIRST(&freeThreades);
+    th = LIST_FIRST(&freeThreads);
     LIST_REMOVE(th, link);
+    LIST_INSERT_HEAD(&usedThreads, th, link);
     // releaseLock(&freeThreadListLock);
 
     threadSetup(th);
@@ -219,14 +222,15 @@ int mainThreadAlloc(Thread **new, u64 parentId) {
 int threadAlloc(Thread **new, Process* process, u64 userSp) {
     Thread *th;
     // acquireLock(&freeThreadListLock);
-    if (LIST_EMPTY(&freeThreades)) {
+    if (LIST_EMPTY(&freeThreads)) {
         // releaseLock(&freeThreadListLock);
         panic("");
         *new = NULL;
         return -ESRCH;
     }
-    th = LIST_FIRST(&freeThreades);
+    th = LIST_FIRST(&freeThreads);
     LIST_REMOVE(th, link);
+    LIST_INSERT_HEAD(&usedThreads, th, link);
     // releaseLock(&freeThreadListLock);
 
     threadSetup(th);
@@ -459,15 +463,14 @@ void sleep(void* chan, struct Spinlock* lk) {
 }
 
 void wakeup(void* channel) {
-    for (int i = 0; i < PROCESS_TOTAL_NUMBER; ++i) {
-        if (&threads[i] != myThread()) {
-            // acquireLock(&threads[i].lock);
-            if (threads[i].state == SLEEPING && threads[i].chan == (u64)channel) {
-                threads[i].state = RUNNABLE;
-                // printf("wake up thread %lx\n", threads[i].id);
-            }
-            // releaseLock(&threads[i].lock);
+    Thread* thread = NULL;
+    LIST_FOREACH(thread, &usedThreads, link) {
+        // acquireLock(&threads[i].lock);
+        if (thread->state == SLEEPING && thread->chan == (u64)channel) {
+            thread->state = RUNNABLE;
+            // printf("wake up thread %lx\n", threads[i].id);
         }
+        // releaseLock(&threads[i].lock);
     }
 }
 
