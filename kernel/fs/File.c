@@ -179,14 +179,14 @@ u64 do_mmap(struct File* fd, u64 start, u64 len, int perm, int flags, u64 off) {
         start = p->mmapHeapBottom;
         p->mmapHeapBottom = UP_ALIGN(p->mmapHeapBottom + len, PAGE_SIZE);
         assert(p->mmapHeapBottom  < USER_STACK_BOTTOM);
-    }// ./runtest.exe -w entry-dynamic.exe argv
-    // printf("domap: fd: %d, start: %lx, len: %lx, perm: %lx, flags: %lx, off: %lx alloc: %d\n", fd, start, len, perm, flags, off, alloc);
+    }
+    
     u64 addr = start, end = start + len;
     if (flags & MAP_FIXED) {
         assert(start <= p->brkHeapBottom);
         p->brkHeapBottom = MAX(UP_ALIGN(end, PAGE_SIZE), p->brkHeapBottom);
     }
-    start = DOWN_ALIGN(start, PAGE_SIZE);
+
     while (start < end) {
         u64* pte;
         u64 pa = pageLookup(p->pgdir, start, &pte);
