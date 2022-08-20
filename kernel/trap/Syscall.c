@@ -714,9 +714,11 @@ void syscallSelect() {
     struct File* file = NULL;
     // printf("[%s] \n", __func__);
 
+    FdSet readSet_ready;
     if (read) {
         FdSet readSet;
         copyin(myProcess()->pgdir, (char*)&readSet, read, sizeof(FdSet));
+        readSet_ready = readSet;
         for (int i = 0; i < nfd; i++) {
             file = NULL;
             u64 cur = i < 64 ? readSet.bits[0] & (1UL << i)
@@ -760,12 +762,11 @@ void syscallSelect() {
                 ++cnt;
             } else {
                 if (i < 64)
-                    readSet.bits[0] &= ~cur;
+                    readSet_ready.bits[0] &= ~cur;
                 else
-                    readSet.bits[1] &= ~cur;
+                    readSet_ready.bits[1] &= ~cur;
             }
         }
-        copyout(myProcess()->pgdir, read, (char*)&readSet, sizeof(FdSet));
     }
     if (write) {
         FdSet writeSet;
@@ -798,6 +799,7 @@ void syscallSelect() {
         myThread()->reason &= ~SELECT_BLOCK;
         
     }
+    copyout(myProcess()->pgdir, read, (char*)&readSet_ready, sizeof(FdSet));
 
     // printf("select end cnt %d\n",cnt);
     tf->a0 = cnt;
