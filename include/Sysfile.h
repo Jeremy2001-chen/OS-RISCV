@@ -10,9 +10,9 @@
 #include <Driver.h>
 #include <Process.h>
 #include <Sysarg.h>
-#include <fat.h>
-#include <file.h>
-#include <string.h>
+#include <Fat.h>
+#include <File.h>
+#include <String.h>
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.

@@ -3,7 +3,7 @@
 
 #include "Sleeplock.h"
 #include "Type.h"
-#include "stat.h"
+#include "Stat.h"
 #include "Timer.h"
 #include "Inode.h"
 

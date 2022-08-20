@@ -7,7 +7,7 @@
 #include <Trap.h>
 #include <Spinlock.h>
 #include <Sysfile.h>
-#include <exec.h>
+#include <Exec.h>
 #include <Signal.h>
 #include <Socket.h>
 #include <Mmap.h>
@@ -19,8 +19,8 @@
 #include <KernelLog.h>
 #include <Error.h>
 #include <Select.h>
-#include <pipe.h>
 #include <IO.h>
+#include <Pipe.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]                   syscallPutchar,

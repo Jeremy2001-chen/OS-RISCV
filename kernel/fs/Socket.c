@@ -2,9 +2,9 @@
 #include <Driver.h>
 #include <Process.h>
 #include <Sysfile.h>
-#include <file.h>
+#include <File.h>
 #include <Page.h>
-#include <string.h>
+#include <String.h>
 #include <Hart.h>
 #include <Thread.h>
 

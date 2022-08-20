@@ -4,12 +4,12 @@
 #include <Type.h>
 #include <Queue.h>
 #include <Spinlock.h>
-#include <fat.h>
+#include <Fat.h>
 #include <Timer.h>
-#include <file.h>
+#include <File.h>
 #include <Signal.h>
 #include <Resource.h>
-#include <exec.h>
+#include <Exec.h>
 
 #define NOFILE 1024  //Number of fds that a process can open
 #define LOG_PROCESS_NUM 10

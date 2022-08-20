@@ -1,11 +1,11 @@
 #include <Defs.h>
-#include "bio.h"
-#include "fat.h"
+#include "Bio.h"
+#include "Fat.h"
 #include "Sleeplock.h"
 #include "Spinlock.h"
-#include "stat.h"
+#include "Stat.h"
 #include "Type.h"
-#include "string.h"
+#include "String.h"
 #include <Driver.h>
 #include <Process.h>
 #include <Debug.h>

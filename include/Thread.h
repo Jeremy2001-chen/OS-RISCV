@@ -3,7 +3,7 @@
 
 #include <Signal.h>
 #include <Process.h>
-#include <fat.h>
+#include <Fat.h>
 
 typedef struct Trapframe {
     u64 kernelSatp;

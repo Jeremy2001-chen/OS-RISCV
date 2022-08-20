@@ -1,11 +1,11 @@
 #include <Process.h>
-#include <bio.h>
+#include <Bio.h>
 #include <Page.h>
 #include <Error.h>
 #include <Elf.h>
 #include <Riscv.h>
 #include <Trap.h>
-#include <string.h>
+#include <String.h>
 #include <Spinlock.h>
 #include <Interrupt.h>
 #include <Debug.h>

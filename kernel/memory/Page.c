@@ -3,7 +3,7 @@
 #include <Error.h>
 #include <Riscv.h>
 #include <Spinlock.h>
-#include <string.h>
+#include <String.h>
 #include <Process.h>
 #include <Sysarg.h>
 #include <MemoryConfig.h>

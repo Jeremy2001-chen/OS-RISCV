@@ -1,6 +1,6 @@
 #include <Inode.h>
 #include <Driver.h>
-#include <string.h>
+#include <String.h>
 
 Inode inodes[INODE_NUM];
 u64 inodeBitmap[INODE_NUM / 64];

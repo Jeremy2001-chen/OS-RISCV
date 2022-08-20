@@ -9,7 +9,7 @@
 #include <Sysfile.h>
 #include <Debug.h>
 #include <Defs.h>
-#include <exec.h>
+#include <Exec.h>
 #include <Thread.h>
 
 void trapInit() {

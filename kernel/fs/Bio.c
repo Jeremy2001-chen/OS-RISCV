@@ -22,9 +22,9 @@
 // #include "fs.h"
 #include "Driver.h"
 #include "Sd.h"
-#include "bio.h"
+#include "Bio.h"
 #include <FileSystem.h>
-#include <file.h>
+#include <File.h>
 
 #define BCACHE_GROUP_NUM 1024
 struct {

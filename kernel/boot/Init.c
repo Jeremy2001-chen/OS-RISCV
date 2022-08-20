@@ -4,9 +4,9 @@
 #include <Thread.h>
 #include <Riscv.h>
 #include <Sd.h>
-#include <fat.h>
-#include <bio.h>
-#include <file.h>
+#include <Fat.h>
+#include <Bio.h>
+#include <File.h>
 #include <Sysfile.h>
 #include <Riscv.h>
 #include <IO.h>

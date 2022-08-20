@@ -2,13 +2,13 @@
 // Support functions for system calls that involve file descriptors.
 //
 #include <Dirent.h>
-#include <file.h>
+#include <File.h>
 #include <Process.h>
 #include <Page.h>
-#include <string.h>
+#include <String.h>
 #include <Spinlock.h>
 #include <Defs.h>
-#include <pipe.h>
+#include <Pipe.h>
 #include <Debug.h>
 #include <Socket.h>
 #include <Mmap.h>

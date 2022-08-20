@@ -1,12 +1,12 @@
 #include <Debug.h>
-#include <pipe.h>
+#include <Pipe.h>
 #include "Page.h"
 #include "Process.h"
 #include "Sleeplock.h"
 #include "Spinlock.h"
 #include "Type.h"
-#include <file.h>
-#include "string.h"
+#include <File.h>
+#include "String.h"
 #include "Riscv.h"
 
 struct pipe pipeBuffer[MAX_PIPE];

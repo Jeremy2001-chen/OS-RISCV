@@ -4,17 +4,17 @@
 // user code, and calls into file.c and fs.c.
 //
 
-#include <fat.h>
+#include <Fat.h>
 #include <Process.h>
 #include <Sysfile.h>
 #include <Driver.h>
-#include <string.h>
+#include <String.h>
 #include <Sysarg.h>
-#include <file.h>
+#include <File.h>
 #include <Debug.h>
-#include <string.h>
+#include <String.h>
 #include <Page.h>
-#include <pipe.h>
+#include <Pipe.h>
 #include <FileSystem.h>
 #include <Iovec.h>
 #include <Thread.h>

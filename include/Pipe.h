@@ -2,7 +2,7 @@
 #define __PIPE_H
 
 #include <Spinlock.h>
-#include <file.h>
+#include <File.h>
 #include <Type.h>
 
 #define PIPESIZE 65536

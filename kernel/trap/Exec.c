@@ -3,14 +3,14 @@
 #include <Page.h>
 #include <Process.h>
 #include <Type.h>
-#include <fat.h>
-#include <file.h>
-#include <string.h>
+#include <Fat.h>
+#include <File.h>
+#include <String.h>
 #include <Sysarg.h>
 #include <Debug.h>
 #include <Trap.h>
 #include <Sysfile.h>
-#include <uapi/linux/auxvec.h>
+#include <uapi/linux/Auxvec.h>
 #include <Mmap.h>
 
 #define MAXARG 32  // max exec arguments

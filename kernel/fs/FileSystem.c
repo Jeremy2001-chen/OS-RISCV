@@ -1,9 +1,9 @@
 #include "FileSystem.h"
-#include <bio.h>
+#include <Bio.h>
 #include <Queue.h>
-#include <string.h>
+#include <String.h>
 #include <Driver.h>
-#include <file.h>
+#include <File.h>
 #include <Sysfile.h>
 #include <Page.h>
 #include <Dirent.h>

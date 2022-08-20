@@ -1,5 +1,5 @@
 #include <Defs.h>
-#include <string.h>
+#include <String.h>
 #include <Sysfile.h>
 #include <Debug.h>
 

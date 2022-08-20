@@ -1,7 +1,7 @@
 #ifndef _DIRENT_H_
 #define _DIRENT_H_
 
-#include <fat.h>
+#include <Fat.h>
 
 #define DIRENT_NUM 8192
 typedef struct Dirent {

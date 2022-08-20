@@ -2,7 +2,7 @@
 #define _FILE_SYSTEM_H_
 #include <Type.h>
 #include <Queue.h>
-#include <bio.h>
+#include <Bio.h>
 #include <Dirent.h>
 #include <MemoryConfig.h>
 #define MAX_NAME_LENGTH 64

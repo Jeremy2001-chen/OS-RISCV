@@ -1,6 +1,6 @@
 #include <Dirent.h>
 #include <Driver.h>
-#include <string.h>
+#include <String.h>
 
 Dirent dirents[DIRENT_NUM];
 Dirent *direntHead;
