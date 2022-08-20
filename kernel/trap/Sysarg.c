@@ -2,7 +2,7 @@
 #include <Type.h>
 #include <Sysarg.h>
 #include <Driver.h>
-#include <string.h>
+#include <String.h>
 #include <Page.h>
 #include <Debug.h>
 #include <Thread.h>

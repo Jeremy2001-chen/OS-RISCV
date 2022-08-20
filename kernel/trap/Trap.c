@@ -9,7 +9,7 @@
 #include <Sysfile.h>
 #include <Debug.h>
 #include <Defs.h>
-#include <exec.h>
+#include <Exec.h>
 #include <Thread.h>
 
 void trapInit() {
@@ -95,14 +95,13 @@ void kernelTrap() {
 }
 
 static inline void userProcessCpuTimeEnd() {
+    return;
     Process *p = myProcess();
     long currentTime = r_time();
     p->cpuTime.user += currentTime - p->processTime.lastUserTime;
 }
 
 void userTrap() {
-    // u64 sepc = r_sepc();
-    // u64 scause = r_scause();
     u64* pgdir = myProcess()->pgdir;
     // if ((scause & SCAUSE_EXCEPTION_CODE) != SCAUSE_ENVIRONMENT_CALL) {
     // int hartId = r_hartid();
@@ -129,8 +128,7 @@ void userTrap() {
         u64 *pte = NULL;
         u64 pa = -1;
         // printf("sepc:%lx sstatus:%lx scause:%lx \n", sepc, sstatus, scause);
-        switch (r_scause() & SCAUSE_EXCEPTION_CODE)
-        {
+        switch (r_scause() & SCAUSE_EXCEPTION_CODE) {
         // case SCAUSE_BREAKPOINT:
         //     trapframe->epc += 4;
         //     break;
@@ -141,17 +139,19 @@ void userTrap() {
             // if (trapframe->a7 != 63)
             //     printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
             // }
+            // if (trapframe->a7 != 72 && trapframe->a7 != 63 && trapframe->a7 != 165 && trapframe->a7 != 113) {
+            //     printf("syscall-trigger: %d\n", trapframe->a7);
+            // }
             if (!syscallVector[trapframe->a7]) {
                 // printf("%lx\n", r_scause());
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
             syscallVector[trapframe->a7]();
-            // printf("syscall %d end\n", trapframe->a7);
-            // if ((i64)trapframe->a0 <= -1) {
-            //     printf("return %d: %d\n", trapframe->a0, trapframe->a7);
+            // if (trapframe->a7 != 73 && trapframe->a7 != 64 && trapframe->a7 != 165 && trapframe->a7 != 113) {
+            //     printf("syscall-end: %d\n", trapframe->a7);
             // }
-            // if (trapframe->a7 == 72) {
-            //     printf("epc = %lx\n", trapframe->epc);
+            // if ((i64)trapframe->a0 <= -1) {
+            // printf("return %d: %d\n", trapframe->a0, trapframe->a7);
             // }
             break;
         case SCAUSE_LOAD_PAGE_FAULT:
@@ -192,6 +192,7 @@ void userTrap() {
 }
 
 static inline void userProcessCpuTimeBegin() {
+    return;
     Process *p = myProcess();
     p->processTime.lastUserTime = r_time();
 }

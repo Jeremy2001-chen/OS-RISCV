@@ -4,7 +4,7 @@ BIN_TOC		:= ../utility/BinaryToC.c
 
 USER_LIB	:= LibMain.o Printf.o uLib.o userHeap.o
 
-MOUNT_DIR	:= ./mnt
+MOUNT_DIR	:= ./mnt/bin
 
 USER_TARGET	:= ProcessA.x ProcessB.x ForkTest.x ProcessIdTest.x SysfileTest.x PipeTest.x ExecTest.x ExecToLs.x SyscallTest.x WaitTest.x MkdirTest.x MountTest.x LinkTest.x MuslLibcTest.x BusyboxTest.x \
 		ls.x sh.x echo.x xargs.x cat.x mkdir.x touch.x rm.x\

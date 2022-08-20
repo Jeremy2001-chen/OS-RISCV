@@ -2,7 +2,7 @@
 #include <Syscall.h>
 #include <uLib.h>
 #include <userfile.h>
-#include "../include/file.h"
+#include "../include/File.h"
 char* fmtname(char* name) {
     static char buf[STAT_MAX_NAME + 1];
     int len = strlen(name);
@@ -60,12 +60,6 @@ void ls(char *path){
 
 
 int userMain(int argc, char** argv) {
-    printf("[ls test]\n");
-    printf("argc=%d\n", argc);
-    for (int i = 0; i < argc; ++i) {
-        printf("%s ", argv[i]);
-    }
-    printf("\n");
     int i;
 
     if (argc < 2) {

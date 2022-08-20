@@ -22,9 +22,9 @@
 // #include "fs.h"
 #include "Driver.h"
 #include "Sd.h"
-#include "bio.h"
+#include "Bio.h"
 #include <FileSystem.h>
-#include <file.h>
+#include <File.h>
 
 #define BCACHE_GROUP_NUM 1024
 struct {
@@ -63,13 +63,13 @@ static struct buf* bget(int dev, uint blockno) {
     struct buf* b;
 
     int group = blockno & (BCACHE_GROUP_NUM - 1);
-    acquireLock(&bcache[group].lock);
+    // acquireLock(&bcache[group].lock);
 
     if (dev >= 0) {
         for (b = bcache[group].head.next; b != &bcache[group].head; b = b->next) {
             if (b->dev == dev && b->blockno == blockno) {
                 b->refcnt++;
-                releaseLock(&bcache[group].lock);
+                // releaseLock(&bcache[group].lock);
                 acquiresleep(&b->lock);
                 return b;
             }
@@ -85,7 +85,7 @@ static struct buf* bget(int dev, uint blockno) {
             b->blockno = blockno;
             b->valid = 0;
             b->refcnt = 1;
-            releaseLock(&bcache[group].lock);
+            // releaseLock(&bcache[group].lock);
             acquiresleep(&b->lock);
             return b;
         }
@@ -99,7 +99,7 @@ struct buf* mountBlockRead(FileSystem* fs, u64 blockNum) {
         return bread(file->major, blockNum);
     }
     assert(file->type == FD_ENTRY);
-    struct dirent *image = fs->image->ep;
+    Dirent *image = fs->image->ep;
     FileSystem* parentFs = image->fileSystem;
     int parentBlockNum = getBlockNumber(image, blockNum); 
     if (parentBlockNum < 0) {
@@ -141,7 +141,7 @@ void brelse(struct buf* b) {
     releasesleep(&b->lock);
 
     int group = b->blockno & (BCACHE_GROUP_NUM - 1);
-    acquireLock(&bcache[group].lock);
+    // acquireLock(&bcache[group].lock);
     b->refcnt--;
     if (b->refcnt == 0) {
         // no one is waiting for it.
@@ -153,19 +153,19 @@ void brelse(struct buf* b) {
         bcache[group].head.next = b;
     }
 
-    releaseLock(&bcache[group].lock);
+    // releaseLock(&bcache[group].lock);
 }
 
 void bpin(struct buf* b) {
-    int group = b->blockno & (BCACHE_GROUP_NUM - 1);
-    acquireLock(&bcache[group].lock);
+    // int group = b->blockno & (BCACHE_GROUP_NUM - 1);
+    // acquireLock(&bcache[group].lock);
     b->refcnt++;
-    releaseLock(&bcache[group].lock);
+    // releaseLock(&bcache[group].lock);
 }
 
 void bunpin(struct buf* b) {
-    int group = b->blockno & (BCACHE_GROUP_NUM - 1);
-    acquireLock(&bcache[group].lock);
+    // int group = b->blockno & (BCACHE_GROUP_NUM - 1);
+    // acquireLock(&bcache[group].lock);
     b->refcnt--;
-    releaseLock(&bcache[group].lock);
+    // releaseLock(&bcache[group].lock);
 }

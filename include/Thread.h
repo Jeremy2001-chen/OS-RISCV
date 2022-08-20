@@ -3,7 +3,7 @@
 
 #include <Signal.h>
 #include <Process.h>
-#include <fat.h>
+#include <Fat.h>
 
 typedef struct Trapframe {
     u64 kernelSatp;
@@ -103,6 +103,7 @@ typedef struct Thread {
     u64 clearChildTid;
     struct Process* process;
     u64 robustHeadPointer;
+    bool killed;
 	struct SignalContextList waitingSignal;
 } Thread;
 

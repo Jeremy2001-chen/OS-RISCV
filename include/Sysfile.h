@@ -10,9 +10,9 @@
 #include <Driver.h>
 #include <Process.h>
 #include <Sysarg.h>
-#include <fat.h>
-#include <file.h>
-#include <string.h>
+#include <Fat.h>
+#include <File.h>
+#include <String.h>
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
@@ -35,7 +35,6 @@ void syscallChangeDir(void);
 void syscallGetWorkDir(void);
 void syscallPipe(void);
 void syscallDevice(void);
-void syscallReadDir(void);
 void syscallGetDirent();
 void syscallMount(void);
 void syscallUmount(void);
@@ -53,8 +52,9 @@ void syscallReadLinkAt(void);
 void syscallUmask(void);
 void syscallFileSychornize();
 void syscallOpen(void);
+void syscallChangeModAt(void);
 
-int getAbsolutePath(struct dirent* d, int isUser, u64 buf, int maxLen);
+int getAbsolutePath(Dirent* d, int isUser, u64 buf, int maxLen);
 
 u64 sys_remove(void);
 int do_linkat(int oldDirFd, char* oldPath, int newDirFd, char* newPath);

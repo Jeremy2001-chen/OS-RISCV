@@ -22,13 +22,13 @@ int processFork() {
         *new = *psm;
         appendSegmentMap(process, new);
     }
-    for (int i = 0; i < NOFILE; i++)
+    for (int i = 0; i < process->fileDescription.hard; i++)
         if (current->ofile[i])
             process->ofile[i] = filedup(current->ofile[i]);
     process->priority = current->priority;
     process->brkHeapBottom = current->brkHeapBottom;
     process->mmapHeapBottom = current->mmapHeapBottom;
-    assert(current->threadCount == 1);
+    // assert(current->threadCount == 1);
     Trapframe* trapframe = getHartTrapFrame();
     bcopy(trapframe, &thread->trapframe, sizeof(Trapframe));
     thread->trapframe.a0 = 0;
@@ -60,9 +60,9 @@ int processFork() {
             }
         }
     }
-    acquireLock(&scheduleListLock);
+    // acquireLock(&scheduleListLock);
     LIST_INSERT_TAIL(&scheduleList[0], thread, scheduleLink);
-    releaseLock(&scheduleListLock);
+    // releaseLock(&scheduleListLock);
     return process->processId;
 }
 
@@ -83,9 +83,9 @@ int threadFork(u64 stackVa, u64 ptid, u64 tls, u64 ctid) {
         copyout(current->pgdir, ptid, (char*) &thread->id, sizeof(u32));
     }
     thread->clearChildTid = ctid;
-    acquireLock(&scheduleListLock);
+    // acquireLock(&scheduleListLock);
     LIST_INSERT_TAIL(&scheduleList[0], thread, scheduleLink);
-    releaseLock(&scheduleListLock);
+    // releaseLock(&scheduleListLock);
     return thread->id;
 }
 

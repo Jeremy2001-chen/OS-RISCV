@@ -2,9 +2,9 @@
 #include <Driver.h>
 #include <Process.h>
 #include <Sysfile.h>
-#include <file.h>
+#include <File.h>
 #include <Page.h>
-#include <string.h>
+#include <String.h>
 #include <Hart.h>
 #include <Thread.h>
 
@@ -37,6 +37,21 @@ int socketAlloc(Socket **s) {
     return -1;
 }
 
+/**
+ * @brief 寻找远程主机（其实就是本机）上与 local_sock 建立连接的 socket
+ */
+ Socket* remote_find_peer_socket(const Socket* local_sock) {
+    for (int i = 0; i < SOCKET_COUNT; ++i) {
+        if (sockets[i].used &&
+            sockets[i].addr.family == local_sock->target_addr.family &&
+            sockets[i].addr.port == local_sock->target_addr.port &&
+            sockets[i].target_addr.port == local_sock->addr.port) {
+            return &sockets[i];
+        }
+    }
+    return NULL;
+}
+
 void socketFree(Socket *s) {
     extern u64 kernelPageDirectory[];
     pageRemove(kernelPageDirectory, getSocketBufferBase(s));
@@ -44,7 +59,7 @@ void socketFree(Socket *s) {
 }
 
 int createSocket(int family, int type, int protocal) {
-    printf("[%s] family %x type  %x protocal %x\n", __func__, family, type, protocal);
+    // printf("[%s] family %x type  %x protocal %x\n", __func__, family, type, protocal);
     // if (family != 2)
     //     return -1;  // ANET_ERR
     // assert(family == 2);
@@ -56,7 +71,7 @@ int createSocket(int family, int type, int protocal) {
     s->addr.family = family;
     s->pending_h = s->pending_t = 0;
     s->listening = 0;
-
+    
     f->socket = s;
     f->type = FD_SOCKET;
     f->readable = f->writable = true;
@@ -65,7 +80,7 @@ int createSocket(int family, int type, int protocal) {
 }
 
 int bindSocket(int fd, SocketAddr *sa) {
-    printf("[%s]  addr 0x%lx port 0x%lx \n",__func__, sa->addr, sa->port);
+    // printf("[%s]  addr 0x%lx port 0x%lx \n",__func__, sa->addr, sa->port);
     File *f = myProcess()->ofile[fd];
     assert(f->type == FD_SOCKET);
     Socket *s = f->socket;
@@ -93,21 +108,6 @@ int getSocketName(int fd, u64 va) {
     assert(f->type == FD_SOCKET);
     copyout(myProcess()->pgdir, va, (char*)&f->socket->addr, sizeof(SocketAddr));
     return 0;
-}
-
-/**
- * @brief 寻找远程主机（其实就是本机）上与 local_sock 建立连接的 socket
- */
-static Socket* remote_find_peer_socket(const Socket* local_sock) {
-    for (int i = 0; i < SOCKET_COUNT; ++i) {
-        if (sockets[i].used &&
-            sockets[i].addr.family == local_sock->target_addr.family &&
-            sockets[i].addr.port == local_sock->target_addr.port &&
-            sockets[i].target_addr.port == local_sock->addr.port) {
-            return &sockets[i];
-        }
-    }
-    return NULL;
 }
 
 // 有修改，这个接口暂时无法通过 libc-test
@@ -155,7 +155,7 @@ int socket_read(Socket* sock, bool isUser, u64 addr, int n) {
     return receiveFrom(sock, addr, n, 0, 0);
 }
 int socket_write(Socket* sock, bool isUser, u64 addr, int n) {
-    static char buf[128];
+    static char buf[PAGE_SIZE * 10];
     either_copyin(buf, isUser, addr, n);
     return sendTo(sock, buf, n, 0, &sock->target_addr);
 }
@@ -210,7 +210,8 @@ int accept(int sockfd, SocketAddr* addr) {
         return -11; //EAGAIN /* Try again */
     }
 
-    *addr = local_sock->pending_queue[local_sock->pending_h++];
+    *addr =
+        local_sock->pending_queue[(local_sock->pending_h++) % PENDING_COUNT];
 
     Socket* new_sock;
     socketAlloc(&new_sock);
@@ -272,7 +273,11 @@ int connect(int sockfd, const SocketAddr* addr) {
         printf("remote socket don't exists!");
         return -1;
     }
-    target_socket->pending_queue[target_socket->pending_t++] = local_sock->addr;
+    if (target_socket->pending_t - target_socket->pending_h == PENDING_COUNT) {
+        return -1;  // Connect Count Reach Limit.
+    }
+    target_socket->pending_queue[(target_socket->pending_t++) % PENDING_COUNT] =
+        local_sock->addr;
     // printf("[%s] wakeup server sid %d\n", __func__, target_socket-sockets);
     // wakeup(target_socket);
 

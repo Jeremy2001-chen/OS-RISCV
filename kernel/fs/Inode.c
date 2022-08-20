@@ -1,6 +1,6 @@
 #include <Inode.h>
 #include <Driver.h>
-#include <string.h>
+#include <String.h>
 
 Inode inodes[INODE_NUM];
 u64 inodeBitmap[INODE_NUM / 64];
@@ -18,9 +18,6 @@ int inodeAlloc() {
 }
 
 void inodeFree(int x) {
-    if (x == -1) {
-        panic("");
-    }
     assert(inodeBitmap[x >> 6] & (1UL << (x & 63)));
     inodeBitmap[x >> 6] &= ~(1UL << (x & 63));
 }

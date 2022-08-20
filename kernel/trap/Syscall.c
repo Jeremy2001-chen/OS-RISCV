@@ -7,7 +7,7 @@
 #include <Trap.h>
 #include <Spinlock.h>
 #include <Sysfile.h>
-#include <exec.h>
+#include <Exec.h>
 #include <Signal.h>
 #include <Socket.h>
 #include <Mmap.h>
@@ -19,7 +19,8 @@
 #include <KernelLog.h>
 #include <Error.h>
 #include <Select.h>
-#include <pipe.h>
+#include <IO.h>
+#include <Pipe.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]                   syscallPutchar,
@@ -51,7 +52,6 @@ void (*syscallVector[])(void) = {
     [SYSCALL_FSTATAT]                   syscallGetFileStateAt,
     [SYSCALL_MAP_MEMORY]                syscallMapMemory,
     [SYSCALL_UNMAP_MEMORY]              syscallUnMapMemory,
-    [SYSCALL_READDIR]                   syscallReadDir,
     [SYSCALL_EXEC]                      syscallExec,
     [SYSCALL_GET_DIRENT]                syscallGetDirent,
     [SYSCALL_MOUNT]                     syscallMount,
@@ -111,16 +111,20 @@ void (*syscallVector[])(void) = {
     [SYSCALL_FSSYC]                     syscallFileSychornize,
     [SYSCALL_MSYNC]                     syscallMemorySychronize,
     [SYSCALL_OPEN]                      syscallOpen,
-    [SYSCALL_MADVISE]                   syscallMemeryAdvise
+    [SYSCALL_MADVISE]                   syscallMemeryAdvise,
+    [SYSCALL_GET_GROUP_ID]              syscallGetGroupId,
+    [SYSCALL_GET_EFFECTIVE_GROUP_ID]    syscallGetEffectiveGroupId,
+    [SYSCALL_GET_RANDOM]                syscallGetRandom,
+    [SYSCALL_CHANGE_MODAT]              syscallChangeModAt
 };
 
 extern struct Spinlock printLock;
 
 void syscallPutchar() {
     Trapframe* trapframe = getHartTrapFrame();
-    acquireLock(&printLock);
+    // acquireLock(&printLock);
     putchar(trapframe->a0);
-    releaseLock(&printLock);
+    // releaseLock(&printLock);
 }
 
 void syscallGetProcessId() {
@@ -181,12 +185,12 @@ void syscallPutString() {
         panic("Syscall put string address error!\nThe virtual address is %x, the length is %x\n", va, len);
     }
     char* start = (char*) pa;
-    acquireLock(&printLock);
+    // acquireLock(&printLock);
     while (len--) {
         putchar(*start);
         start++;
     }
-    releaseLock(&printLock);
+    // releaseLock(&printLock);
 }
 
 void syscallGetCpuTimes() {
@@ -275,6 +279,7 @@ void syscallMapMemory() {
 
     trapframe->a0 =
         do_mmap(fd, start, len, perm, /*'type' currently not used */ flags, off);
+    // printf("mmap return value: %d\n", trapframe->a0);
     return;
 }
 
@@ -377,9 +382,9 @@ void syscallProcessResourceLimit() {
     // printf("resource limit: pid: %lx, resource: %d, new: %lx, old: %lx\n", pid, resouce, newVa, oldVa);
     struct ResourceLimit newLimit;
     Process* process = myProcess();
-    acquireLock(&process->lock);
+    // acquireLock(&process->lock);
     if (newVa && copyin(process->pgdir, (char*)&newLimit, newVa, sizeof(struct ResourceLimit)) < 0) {
-        releaseLock(&process->lock);
+        // releaseLock(&process->lock);
         tf->a0 = -1;
     }
     switch(resouce) {
@@ -393,13 +398,23 @@ void syscallProcessResourceLimit() {
             }
             break;
     }
-    releaseLock(&process->lock);
+    // releaseLock(&process->lock);
     tf->a0 = 0;
 }
 
+#define TIOCGWINSZ	0x5413
+struct WinSize {
+    unsigned short ws_row;
+    unsigned short ws_col;
+    unsigned short ws_xpixel;
+    unsigned short ws_ypixel;
+} winSize = {24, 80, 0, 0};
+
 void syscallIOControl() {
-    Trapframe *tf = getHartTrapFrame();
-    // printf("fd: %d, cmd: %d, argc: %d\n", tf->a0, tf->a1, tf->a2);
+    Trapframe* tf = getHartTrapFrame();
+    // printf("fd: %d, cmd: %d, argc: %lx\n", tf->a0, tf->a1, tf->a2);
+    if (tf->a1 == TIOCGWINSZ)
+        copyout(myProcess()->pgdir, tf->a2, (char*)&winSize, sizeof(winSize));
     tf->a0 = 0;
 }
 
@@ -622,8 +637,8 @@ void syscallSignalReturn() {
     Trapframe *tf = getHartTrapFrame();
     Thread* thread = myThread();
     SignalContext* sc = getHandlingSignal(thread);
-    sc->contextRecover.epc = sc->uContext->uc_mcontext.MC_PC;
-    thread->blocked = sc->uContext->uc_sigmask;
+    // sc->contextRecover.epc = sc->uContext->uc_mcontext.MC_PC;
+    // thread->blocked = sc->uContext->uc_sigmask;
     bcopy(&sc->contextRecover, tf, sizeof(Trapframe));
     signalProcessEnd(sc->signal, &thread->processing);
     signalFinish(thread, sc);
@@ -693,16 +708,18 @@ void syscallSelect() {
     Trapframe *tf = getHartTrapFrame();
     // printf("thread %lx get in select, epc: %lx\n", myThread()->id, tf->epc);
     int nfd = tf->a0;
-    assert(nfd <= 128);
+    // assert(nfd <= 128);
     u64 read = tf->a1, write = tf->a2, except = tf->a3, timeout = tf->a4;
-    assert(timeout != 0);
+    // assert(timeout != 0);
     int cnt = 0;
     struct File* file = NULL;
     // printf("[%s] \n", __func__);
 
+    FdSet readSet_ready;
     if (read) {
         FdSet readSet;
         copyin(myProcess()->pgdir, (char*)&readSet, read, sizeof(FdSet));
+        readSet_ready = readSet;
         for (int i = 0; i < nfd; i++) {
             file = NULL;
             u64 cur = i < 64 ? readSet.bits[0] & (1UL << i)
@@ -737,6 +754,13 @@ void syscallSelect() {
                         ready_to_read = 1;
                     }
                     break;
+                case FD_DEVICE:
+                    if (hasChar()) {
+                        ready_to_read = 1;
+                    } else {
+                        ready_to_read = 0;
+                    }
+                    break;
                 default:
                     ready_to_read = 1;
                     break;
@@ -746,12 +770,11 @@ void syscallSelect() {
                 ++cnt;
             } else {
                 if (i < 64)
-                    readSet.bits[0] &= ~cur;
+                    readSet_ready.bits[0] &= ~cur;
                 else
-                    readSet.bits[1] &= ~cur;
+                    readSet_ready.bits[1] &= ~cur;
             }
         }
-        copyout(myProcess()->pgdir, read, (char*)&readSet, sizeof(FdSet));
     }
     if (write) {
         FdSet writeSet;
@@ -768,20 +791,26 @@ void syscallSelect() {
         
     }
     if (except) {
-        FdSet set;
-        copyin(myProcess()->pgdir, (char*)&set, except, sizeof(FdSet));
-        memset(&set, 0, sizeof(FdSet));
-        copyout(myProcess()->pgdir, except, (char*)&set, sizeof(FdSet));
+        // FdSet set;
+        // copyin(myProcess()->pgdir, (char*)&set, except, sizeof(FdSet));
+        u8 zero = 0;
+        memsetOut(myProcess()->pgdir, except, zero, nfd);
+        // memset(&set, 0, sizeof(FdSet));
+        // copyout(myProcess()->pgdir, except, (char*)&set, sizeof(FdSet));
     }
     if (cnt == 0) {
-        if (!(myThread()->reason & SELECT_BLOCK)) {
-            myThread()->reason |= SELECT_BLOCK;
-            tf->epc -= 4;
-            yield();
+        if (timeout) {
+            struct TimeSpec ts;
+            copyin(myProcess()->pgdir, (char*)&ts, timeout, sizeof(struct TimeSpec));
+            if (ts.nanoSecond == 0 && ts.second == 0) {
+                goto selectFinish;
+            }
         }
-        myThread()->reason &= ~SELECT_BLOCK;
-        
+        tf->epc -= 4;
+        yield();
     }
+selectFinish:
+    copyout(myProcess()->pgdir, read, (char*)&readSet_ready, sizeof(FdSet));
 
     // printf("select end cnt %d\n",cnt);
     tf->a0 = cnt;
@@ -809,4 +838,19 @@ void syscallMemorySychronize() {
 void syscallMemeryAdvise(){
     Trapframe *tf = getHartTrapFrame();
     tf->a0 = 0;
+}
+
+void syscallGetGroupId() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallGetEffectiveGroupId() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = 0;
+}
+
+void syscallGetRandom() {
+    Trapframe *tf = getHartTrapFrame();
+    tf->a0 = r_time();
 }

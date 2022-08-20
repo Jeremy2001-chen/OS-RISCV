@@ -4,15 +4,20 @@
 #include <Thread.h>
 #include <Riscv.h>
 #include <Sd.h>
-#include <fat.h>
-#include <bio.h>
-#include <file.h>
+#include <Fat.h>
+#include <Bio.h>
+#include <File.h>
 #include <Sysfile.h>
 #include <Riscv.h>
-#define SINGLE_CORE
+#include <IO.h>
 
-volatile int mainCount = 1000;
+// #define SINGLE_CORE
+
+volatile int mainCount = 0;
 volatile int initFinish = 0;
+volatile int nextHart = 0;
+volatile int consoleInput = 0;
+volatile int consoleOutput = 0;
 
 static inline void initHartId(u64 hartId) {
     asm volatile("mv tp, %0" : : "r" (hartId & 0x7));
@@ -23,7 +28,7 @@ extern struct superblock *fat;
 void main(u64 hartId) {
     initHartId(hartId);
 
-    if (mainCount == 1000) {
+    if (mainCount == 0) {
         extern u64 bssStart[];
         extern u64 bssEnd[];
         for (u64 *i = bssStart; i < bssEnd; i++) {
@@ -36,7 +41,6 @@ void main(u64 hartId) {
         pageLockInit();
         printf("Hello, risc-v!\nBoot hartId: %ld \n\n", hartId);
 
-        // while (getchar() != '\n');
         memoryInit();
         processInit();
 
@@ -57,13 +61,7 @@ void main(u64 hartId) {
         trapInit();
 
         __sync_synchronize();     
-
-#ifdef SINGLE_CORE
-        initFinish = 0;
-#else
-        initFinish = 1;
-#endif
-
+        
         // PROCESS_CREATE_PRIORITY(ProcessA, 2);
         // PROCESS_CREATE_PRIORITY(ProcessB, 3);
         // PROCESS_CREATE_PRIORITY(ForkTest, 5);
@@ -79,20 +77,39 @@ void main(u64 hartId) {
         // PROCESS_CREATE_PRIORITY(WaitTest, 1);
         // PROCESS_CREATE_PRIORITY(MuslLibcTest, 1);
         PROCESS_CREATE_PRIORITY(BusyboxTest, 1);
-
+        
+        #ifdef SINGLE_CORE
+        initFinish = 0;
+        #else
+        initFinish = 1;
+        #endif
+        
+        nextHart = (hartId & 3) + 1;
     } else {
         while (initFinish == 0);
         __sync_synchronize();
 
+        while (hartId != nextHart);
         printf("Hello, risc-v!\nCurrent hartId: %ld \n\n", hartId);
 
         startPage();
         trapInit();
 
+        if (!consoleInput) {
+            consoleInput |= 1;
+            asynInputInit();
+            nextHart = (hartId & 3) + 1;
+            asynInput();
+        }   
+        
         //PROCESS_CREATE_PRIORITY(ForkTest, 1);
         //PROCESS_CREATE_PRIORITY(ProcessB, 3);
         //printf("Reach this place\n");
+        initFinish = 2;
+        for(;;);
     }
 
+    while (initFinish != 2);
+    printf("start yield\n");
     yield();
 }

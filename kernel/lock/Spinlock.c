@@ -12,7 +12,7 @@ void initLock(struct Spinlock* lock, char* name) {
 
 void acquireLock(struct Spinlock* lock) {
     return;
-    interruptPush();
+    // interruptPush();
     if (holding(lock)) {
         panic("You have acquire the lock! The lock is %s\n", lock->name);
     }
@@ -54,7 +54,7 @@ void releaseLock(struct Spinlock* lock) {
     //   s1 = &lk->locked
     //   amoswap.w zero, zero, (s1)
     __sync_lock_release(&lock->locked);
-    interruptPop();
+    // interruptPop();
 }
 
 int holding(struct Spinlock* lock) {
