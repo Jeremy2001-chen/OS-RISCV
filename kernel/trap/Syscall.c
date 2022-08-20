@@ -401,9 +401,19 @@ void syscallProcessResourceLimit() {
     tf->a0 = 0;
 }
 
+#define TIOCGWINSZ	0x5413
+struct WinSize {
+    unsigned short ws_row;
+    unsigned short ws_col;
+    unsigned short ws_xpixel;
+    unsigned short ws_ypixel;
+} winSize = {24, 80, 0, 0};
+
 void syscallIOControl() {
-    Trapframe *tf = getHartTrapFrame();
-    // printf("fd: %d, cmd: %d, argc: %d\n", tf->a0, tf->a1, tf->a2);
+    Trapframe* tf = getHartTrapFrame();
+    printf("fd: %d, cmd: %d, argc: %lx\n", tf->a0, tf->a1, tf->a2);
+    if (tf->a1 == TIOCGWINSZ)
+        copyout(myProcess()->pgdir, tf->a2, (char*)&winSize, sizeof(winSize));
     tf->a0 = 0;
 }
 
