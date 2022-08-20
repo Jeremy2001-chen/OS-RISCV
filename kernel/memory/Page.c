@@ -51,10 +51,11 @@ int pageAlloc(PhysicalPage **pp) {
     PhysicalPage *page;
     if ((page = LIST_FIRST(&freePages)) != NULL) {
         *pp = page;
-        page->hartId = r_hartid();
+        // page->hartId = r_hartid();
         LIST_REMOVE(page, link);
         // releaseLock(&pageListLock);
-        bzero((void*)page2pa(page), PAGE_SIZE);
+        zeroPage((u64)page2pa(page));
+        // bzero((void*)page2pa(page), PAGE_SIZE);
         return 0;
     }
     panic("");
@@ -197,6 +198,7 @@ u64 pageout(u64 *pgdir, u64 badAddr) {
         panic("^^^^^^^^^^TOO LOW^^^^^^^^^^^\n");
     }
     PhysicalPage *page = NULL;
+    // printf("[Pageout] get in %lx\n", badAddr);
     if (badAddr >= USER_STACK_BOTTOM && badAddr < USER_STACK_TOP) {
         if (pageAlloc(&page) < 0) {
             panic("");
@@ -205,6 +207,7 @@ u64 pageout(u64 *pgdir, u64 badAddr) {
             PTE_USER | PTE_READ | PTE_WRITE) < 0) {
             panic("");
         }
+        // printf("[Pageout-1] get out %lx\n", badAddr);
         return page2pa(page) + (badAddr & 0xFFF);
     }
     u64 perm = 0;

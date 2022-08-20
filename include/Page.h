@@ -53,6 +53,13 @@ inline PhysicalPage* pa2page(u64 pa) {
 
 void bcopy(void *src, void *dst, u32 len);
 void bzero(void *start, u32 len);
+
+inline void zeroPage(u64 start) {
+    for(int i = 0; i < PAGE_SIZE; i += 8) {
+        *(u64*)(start + i) = 0;
+    }
+}
+
 void memoryInit();
 void startPage();
 
