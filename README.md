@@ -14,6 +14,7 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 
 ## 仓库架构
 
+```c
 OS-RISCV
     |- bootloader (QEMU 启动所需文件)
     |- docs (比赛文档)
@@ -37,7 +38,8 @@ OS-RISCV
     |    |- usr (用户程序)
     |- user (用户文件及自行编写的 Shell)
     |- utility (辅助文件)
-    
+```
+
 ## 文档
 
 ### 总体情况
