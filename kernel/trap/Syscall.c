@@ -412,7 +412,7 @@ struct WinSize {
 
 void syscallIOControl() {
     Trapframe* tf = getHartTrapFrame();
-    printf("fd: %d, cmd: %d, argc: %lx\n", tf->a0, tf->a1, tf->a2);
+    // printf("fd: %d, cmd: %d, argc: %lx\n", tf->a0, tf->a1, tf->a2);
     if (tf->a1 == TIOCGWINSZ)
         copyout(myProcess()->pgdir, tf->a2, (char*)&winSize, sizeof(winSize));
     tf->a0 = 0;
