@@ -14,5 +14,6 @@ struct AsynInput{
 
 void asynInputInit();
 void asynInput();
+bool hasChar();
 
 #endif
