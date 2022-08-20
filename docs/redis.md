@@ -1,5 +1,10 @@
 # Redis
 
+
+## 简介
+
+Redis（Remote Dictionary Server )，即远程字典服务，是一个开源的使用ANSI C语言编写、支持网络、可基于内存亦可持久化的日志型、Key-Value数据库，并提供多种语言的API。
+
 ## 下载链接
 
 ```
@@ -24,8 +29,8 @@ Note:
 
 ```shell
 redis-server redis.conf &
-redis-cli
 redis-benchmark -n 1000 -c 1
+redis-cli
 ```
 
 ## 系统调用
@@ -40,7 +45,7 @@ bind(3, {sa_family=AF_INET, sin_port=htons(6379), sin_addr=inet_addr("127.0.0.1"
 listen(3, 511)                          = 0     # 设置为监听状态
 fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK)    = 0     # 设置为非阻塞
 select(4, [3], [], NULL, {tv_sec=0, tv_usec=100000}) = 0 (Timeout)      # 一直 select 直到 3 号文件描述符（那个 socket）有连接请求到来
-accept(3, {sa_family=AF_INET, sin_port=htons(40968), sin_addr=inet_addr("127.0.0.1")}, [128->16]) = 4 # 接受等待队列的地一个请求，并返回一个新的 socket fd，也就是 4 号 fd。
+accept(3, {sa_family=AF_INET, sin_port=htons(40968), sin_addr=inet_addr("127.0.0.1")}, [128->16]) = 4 # 接受等待队列的第一个请求，并返回一个新的 socket fd，也就是 4 号 fd。
 fcntl(4, F_SETFL, O_RDWR|O_NONBLOCK)    = 0 # 设置为非阻塞
 setsockopt(4, SOL_TCP, TCP_NODELAY, [1], 4) = 0
 setsockopt(4, SOL_SOCKET, SO_KEEPALIVE, [1], 4) = 0
@@ -57,7 +62,7 @@ client 核心系统调用
 socket(AF_INET, SOCK_STREAM, IPPROTO_TCP) = 3 # 客户端创建一个 socket
 fcntl(3, F_SETFL, O_RDWR|O_NONBLOCK)    = 0 # 将 socket 设置为非阻塞
 connect(3, {sa_family=AF_INET, sin_port=htons(6379), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 EINPROGRESS (操作现在正在进行) # 连接服务器
-poll([{fd=3, events=POLLOUT}], 1, -1)   = 1 ([{fd=3, revents=POLLOUT}]) # 直到 socket 链接服务器完成。
+poll([{fd=3, events=POLLOUT}], 1, -1)   = 1 ([{fd=3, revents=POLLOUT}]) # 直到 socket 连接服务器完成。
 write(3, "*1\r\n$7\r\nCOMMAND\r\n", 17) = 17 # 写数据
 read(3, "*174\r\n*6\r\n$6\r\ndbsize\r\n:1\r\n", 16384) = 26 # 读数据
 ```
