@@ -6,11 +6,41 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 
 在决赛第一阶段，我们的内核增加了信号、动态链接、信号量、内核级线程的支持，并通过了 Musl-Libc 上的测试。
 
+在决赛第二阶段，我们完善了我们的内核，提供了内核的性能，并在内核上移植了 redis 和 musl-gcc。
+
 ## 环境与配置
 
 * 交叉编译器：riscv64-unknown-elf-gcc 11.1.0
 * QEMU 模拟器：qemu-riscv64 5.0.0
 * OpenSBI：[2022.04.11 3383d6a](https://github.com/riscv-software-src/opensbi/commit/3383d6a4d1461bb029b21fa53417382e34ae4906)
+
+## 仓库架构
+
+```c
+OS-RISCV
+    |- bootloader (QEMU 启动所需文件)
+    |- docs (比赛文档)
+    |- include (内核头文件源码)
+    |- kernel (内核源码)
+    |    |- boot (内核入口)
+    |    |- driver (串口驱动及 SD 卡驱动)
+    |    |- fs (文件系统相关代码)
+    |    |- lock (锁相关代码)
+    |    |- memory (内存管理相关)
+    |    |- system (系统特性相关，包括信号量、信号、资源)
+    |    |- trap (异常及加载)
+    |    |- utility (辅助文件)
+    |    |- yield (进程管理及线程管理)
+    |- linkscript (链接脚本)
+    |- root (磁盘文件格式)
+    |    |- bin (可执行文件)
+    |    |- etc (配置文件相关)
+    |    |- home (测试相关)
+    |    |- lib (动态库及静态库)
+    |    |- usr (用户程序)
+    |- user (用户文件及自行编写的 Shell)
+    |- utility (辅助文件)
+```
 
 ## 文档
 
@@ -39,6 +69,7 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 
 * [多核启动](docs/multicore.md)
 * [睡眠锁](docs/sleeplock.md)
+* [异步IO](docs/asynIO.md)
 
 ### 用户程序
 
@@ -56,7 +87,7 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 
 ### 决赛第二阶段
 
-* [性能优化](docs/optimize.md)
+* [懒加载](docs/lazy_load.md)
 * [Socket](docs/socket.md)
 * [Redis](docs/redis.md)
 * [Musl-gcc](docs/gcc.md)
@@ -73,18 +104,3 @@ RISC-V 内核，目前已经在 Sifive Unmatched 开发板上通过基础系统�
 * 查看磁盘镜像：`make mount` 将磁盘镜像 `fs.img` 挂载到 `/mnt` 上
 * 解除查看：`make umount` 取消挂载
 * 在 QEMU 上测试内核：`make run`，此命令在使用前需要先生成**磁盘镜像**
-
-## GDB 调试
-
-* 启动两个 `shell`
-* 一个 `shell` 执行 `make gdb`，等待通信
-* 另一个 `shell` 执行 `gdb-multiarch target/vmlinux.img` 加载符号表
-
-```shell
-(gdb) target extended-remote localhost:1234
-(gdb) add-inferior
-(gdb) inferior 2
-(gdb) attach 2
-(gdb) set schedule-multiple on
-(gdb) c
-```

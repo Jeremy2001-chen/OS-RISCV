@@ -86,7 +86,7 @@ int main() {
 ```c
 / # /usr/musl-gcc/bin/gcc a_plus_b.c -static
 / # ./a.out
-7
+a+b=7
 / #
 ```
 
