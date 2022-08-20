@@ -137,7 +137,7 @@ void userTrap() {
             // printf("syscall %d\n", trapframe->a7);
             // if (trapframe->a7 == SYSCALL_WRITE || trapframe->a7 == SYSCALL_WRITE_VECTOR || trapframe->a7 == SYSCALL_SELECT || trapframe->a7 == SYSCALL_GET_TIME) {
             // if (trapframe->a7 != 63)
-            //     printf("syscall-trigger %d, sepc: %lx\n", trapframe->a7, trapframe->epc);
+            //     printf("syscall-trigger %d, sepc: %lx", trapframe->a7, trapframe->epc);
             // }
             // if (trapframe->a7 != 72 && trapframe->a7 != 63 && trapframe->a7 != 165 && trapframe->a7 != 113) {
             //     printf("syscall-trigger: %d\n", trapframe->a7);
@@ -147,6 +147,8 @@ void userTrap() {
                 panic("unknown-syscall: %d\n", trapframe->a7);
             }
             syscallVector[trapframe->a7]();
+            // if (trapframe->a7 != 63)
+            //     printf(" syscall end\n");
             // if (trapframe->a7 != 73 && trapframe->a7 != 64 && trapframe->a7 != 165 && trapframe->a7 != 113) {
             //     printf("syscall-end: %d\n", trapframe->a7);
             // }
