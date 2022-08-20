@@ -5,8 +5,11 @@
 #include <file.h>
 #include <Process.h>
 #include <Thread.h>
+#include <IO.h>
 
 static u64 uartBaseAddr = 0x10010000;
+
+struct AsynInput asynInputBuffer;
 
 struct Spinlock consoleLock;
 
@@ -43,6 +46,17 @@ inline void putchar(char ch)
     writel(ch, uartRegTXFIFO);
 }
 
+inline u8 asynGetChar() {
+    u8 ret = -1;
+    acquireLock(&asynInputBuffer.lock);
+    if (asynInputBuffer.head != asynInputBuffer.tail) {
+        ret = asynInputBuffer.buffer[asynInputBuffer.head & (IO_BUFFER - 1)];
+        asynInputBuffer.head++;
+    }
+    releaseLock(&asynInputBuffer.lock);
+    return ret;
+}
+
 inline int getchar(void)
 {
     int* uartRegRXFIFO = (int*)(uartBaseAddr + UART_REG_RXFIFO);
@@ -75,7 +89,7 @@ char buf[GET_BUF_LEN];
 int consoleRead(int isUser, u64 dst, u64 start, u64 n) {
     int i;
     for (i = 0; i < n; i++) {
-        char c = getchar();
+        char c = asynGetChar();
         if (c == (char)-1 && i == 0) {
             getHartTrapFrame()->epc -= 4;
             yield();
@@ -95,4 +109,25 @@ void consoleInit() {
 
     devsw[DEV_CONSOLE].read = consoleRead;
     devsw[DEV_CONSOLE].write = consoleWrite;
+}
+
+void asynInputInit() {
+    initLock(&asynInputBuffer.lock, "asynInput");
+    asynInputBuffer.head = asynInputBuffer.tail = 0;
+}
+
+void asynInput() {
+    while(true) {
+        acquireLock(&asynInputBuffer.lock);
+        if (asynInputBuffer.tail - asynInputBuffer.head == IO_BUFFER) {
+            releaseLock(&asynInputBuffer.lock);
+            continue;
+        }
+        u8 c = getchar();
+        if (c != (char)-1) {
+            asynInputBuffer.buffer[asynInputBuffer.tail & (IO_BUFFER - 1)] = c;
+            asynInputBuffer.tail++;
+        }
+        releaseLock(&asynInputBuffer.lock);
+    }
 }
