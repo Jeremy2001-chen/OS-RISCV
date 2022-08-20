@@ -35,7 +35,7 @@ sifive: clean build
 fat: $(user_dir)
 	if [ ! -f "$(fs_img)" ]; then \
 		echo "making fs image..."; \
-		dd if=/dev/zero of=$(fs_img) bs=512k count=256; fi
+		dd if=/dev/zero of=$(fs_img) bs=512 count=16k; fi
 	mkfs.vfat -F 32 $(fs_img); 
 	@sudo mount $(fs_img) $(dst)
 	# @if [ ! -d "$(dst)/bin" ]; then sudo mkdir $(dst)/bin; fi
