@@ -69,6 +69,10 @@ inline int getchar(void)
     return ret & UART_RXFIFO_DATA;
 }
 
+bool hasChar() {
+    return asynInputBuffer.head != asynInputBuffer.tail;
+}
+
 int consoleWrite(int user_src, u64 src, u64 start, u64 n) {
     int i;
     for (i = 0; i < n; i++) {

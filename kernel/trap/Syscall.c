@@ -20,6 +20,7 @@
 #include <Error.h>
 #include <Select.h>
 #include <pipe.h>
+#include <IO.h>
 
 void (*syscallVector[])(void) = {
     [SYSCALL_PUTCHAR]                   syscallPutchar,
@@ -708,12 +709,11 @@ void syscallSelect() {
     // printf("thread %lx get in select, epc: %lx\n", myThread()->id, tf->epc);
     int nfd = tf->a0;
     // assert(nfd <= 128);
-    u64 read = tf->a1, write = tf->a2, except = tf->a3/*, timeout = tf->a4*/;
+    u64 read = tf->a1, write = tf->a2, except = tf->a3, timeout = tf->a4;
     // assert(timeout != 0);
     int cnt = 0;
     struct File* file = NULL;
     // printf("[%s] \n", __func__);
-
     if (read) {
         FdSet readSet;
         copyin(myProcess()->pgdir, (char*)&readSet, read, sizeof(FdSet));
@@ -751,6 +751,12 @@ void syscallSelect() {
                         ready_to_read = 1;
                     }
                     break;
+                case FD_DEVICE:
+                    if (hasChar()) {
+                        ready_to_read = 1;
+                    } else {
+                        ready_to_read = 0;
+                    }
                 default:
                     ready_to_read = 1;
                     break;
@@ -790,13 +796,10 @@ void syscallSelect() {
         // copyout(myProcess()->pgdir, except, (char*)&set, sizeof(FdSet));
     }
     if (cnt == 0) {
-        if (!(myThread()->reason & SELECT_BLOCK)) {
-            myThread()->reason |= SELECT_BLOCK;
+        if (timeout) {
             tf->epc -= 4;
             yield();
         }
-        myThread()->reason &= ~SELECT_BLOCK;
-        
     }
 
     // printf("select end cnt %d\n",cnt);
